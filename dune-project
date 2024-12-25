@@ -1,4 +1,3 @@
-;; dune-project
 (lang dune 3.0)
 (name qed_labyrinth)
 (generate_opam_files true)

@@ -1,4 +1,3 @@
-;; src/dune
 (library
  (name qed_labyrinth_lib)
  (public_name qed_labyrinth)
