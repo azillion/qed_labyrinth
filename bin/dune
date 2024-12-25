@@ -1,0 +1,9 @@
+;; bin/dune
+(executable
+ (name main)
+ (public_name qed_labyrinth)
+ (libraries
+  qed_labyrinth_lib
+  base)
+ (preprocess
+  (pps ppx_jane)))

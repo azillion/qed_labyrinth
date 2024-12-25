@@ -1,0 +1,8 @@
+;; src/dune
+(library
+ (name qed_labyrinth_lib)
+ (public_name qed_labyrinth)
+ (libraries base ppx_jane ppx_let)
+ (preprocess
+  (pps ppx_jane ppx_let))
+ (inline_tests))
