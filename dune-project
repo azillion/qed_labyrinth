@@ -21,4 +21,6 @@
   ; (caqti-driver-postgresql (>= 1.9.0)); Postgres driver
   (caqti-lwt (>= 1.9.0))             ; Async DB interface
   (yojson (>= 2.1.0))                ; JSON handling
-  (ppx_deriving_yojson (>= 3.7.0)))) ; JSON deriving
+  (ppx_deriving_yojson (>= 3.7.0))
+  (ppx_yojson_conv (>= 0.1.0))
+  (ppx_deriving (>= 5.2.1))))

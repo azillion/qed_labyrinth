@@ -1,7 +1,14 @@
 open Base
+open Ppx_yojson_conv_lib.Yojson_conv.Primitives
+
+
+type command_object = {
+  command : string;
+} [@@deriving yojson]
 
 let handle_command body =
   let command = Command.parse body in
+  ignore (Printf.sprintf "Command: %s\n" (Command.show_command command));
   match command with 
   | Look -> "You look around..."
   | Say msg -> Printf.sprintf "You say: %s" msg
@@ -15,6 +22,11 @@ let () =
 
     Dream.post "/command" (fun request ->
       let%lwt body = Dream.body request in
-      Dream.json (handle_command body)
+      let cmd_obj =
+        body
+        |> Yojson.Safe.from_string
+        |> command_object_of_yojson
+      in
+      Dream.json (handle_command cmd_obj.command)
     );
   ]

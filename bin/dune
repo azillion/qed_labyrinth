@@ -1,7 +1,7 @@
 (executable
  (name main)
  (public_name qed_labyrinth)
- (preprocess (pps lwt_ppx))
+ (preprocess (pps lwt_ppx ppx_yojson_conv))
  (libraries
   qed_labyrinth.command
   qed_labyrinth.db
