@@ -1,0 +1,6 @@
+(library
+ (name state)
+ (public_name qed_labyrinth.state)
+ (libraries base qed_labyrinth)
+ (preprocess
+  (pps ppx_jane)))

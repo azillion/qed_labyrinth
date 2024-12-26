@@ -1,0 +1,4 @@
+(tests
+ (names test)
+ (libraries
+  qed_labyrinth))

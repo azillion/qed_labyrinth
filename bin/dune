@@ -1,8 +1,10 @@
 (executable
  (name main)
  (public_name qed_labyrinth)
+ (preprocess (pps lwt_ppx))
  (libraries
-  qed_labyrinth_lib
-  base)
- (preprocess
-  (pps ppx_jane)))
+  qed_labyrinth.command
+  qed_labyrinth.db
+  qed_labyrinth.state
+  qed_labyrinth.server
+  dream))

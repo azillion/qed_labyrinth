@@ -1,0 +1,10 @@
+(library
+ (name server)
+ (public_name qed_labyrinth.server)
+ (libraries
+  base
+  qed_labyrinth
+  dream
+  yojson)
+ (preprocess
+  (pps ppx_jane)))

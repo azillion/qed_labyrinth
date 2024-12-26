@@ -1,0 +1,6 @@
+(library
+ (name command)
+ (public_name qed_labyrinth.command)
+ (libraries base qed_labyrinth yojson)
+ (preprocess
+  (pps ppx_jane ppx_deriving_yojson)))

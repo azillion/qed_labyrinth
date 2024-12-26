@@ -10,8 +10,11 @@ depends: [
   "base" {>= "v0.16.0"}
   "ppx_jane" {>= "v0.16.0"}
   "ppx_let" {>= "v0.16.0"}
-  "alcotest" {with-test}
-  "qcheck" {with-test}
+  "dream" {>= "1.0.0~alpha4"}
+  "caqti" {>= "1.9.0"}
+  "caqti-lwt" {>= "1.9.0"}
+  "yojson" {>= "2.1.0"}
+  "ppx_deriving_yojson" {>= "3.7.0"}
   "odoc" {with-doc}
 ]
 build: [
