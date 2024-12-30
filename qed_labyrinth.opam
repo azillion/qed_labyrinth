@@ -13,6 +13,7 @@ depends: [
   "dream" {>= "1.0.0~alpha4"}
   "caqti" {>= "1.9.0"}
   "caqti-lwt" {>= "1.9.0"}
+  "caqti-driver-sqlite3" {>= "1.9.0"}
   "yojson" {>= "2.1.0"}
   "ppx_deriving_yojson" {>= "3.7.0"}
   "ppx_yojson_conv" {>= "0.1.0"}

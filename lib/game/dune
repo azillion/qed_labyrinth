@@ -1,5 +1,5 @@
 (library
- (name command)
- (public_name qed_labyrinth.command)
+ (name game)
+ (public_name qed_labyrinth.game)
  (preprocess (pps ppx_deriving.show))
  (libraries base))

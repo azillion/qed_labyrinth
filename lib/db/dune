@@ -4,7 +4,10 @@
  (libraries
   base
   qed_labyrinth
+  lwt
   caqti
-  caqti-lwt)
+  caqti-lwt.unix
+  caqti-driver-sqlite3
+  uri)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane lwt_ppx)))
