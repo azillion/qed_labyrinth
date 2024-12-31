@@ -119,13 +119,6 @@ qed_labyrinth/
 dune runtest
 ```
 
-## Implementation Notes
-
-- Use strong typing for safety
-- Consider memory management with large agent populations
-- Implement efficient state update systems
-- Focus on agent behavior consistency
-
 ## Future Development
 
 1. Enhanced Intelligence

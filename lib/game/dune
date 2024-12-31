@@ -2,4 +2,4 @@
  (name game)
  (public_name qed_labyrinth.game)
  (preprocess (pps ppx_deriving.show))
- (libraries base))
+ (libraries qed_labyrinth.core base unix))

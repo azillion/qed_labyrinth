@@ -19,6 +19,7 @@
   (yojson (>= 2.1.0))                ; JSON handling
   (ppx_deriving_yojson (>= 3.7.0))   ; JSON deriving
   (ppx_deriving (>= 5.2.1))          ; General deriving
+  (digestif (>= 0.8.0))              ; Hashing
 
   ;; Future dependencies - uncomment as needed
   ; Network & Database - for post-MVP
