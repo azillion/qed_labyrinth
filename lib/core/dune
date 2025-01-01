@@ -4,9 +4,10 @@
  (libraries
   base
   yojson
+  ppx_deriving_yojson.runtime
+  ppx_deriving.runtime
   digestif
-  unix
-  ppx_deriving.runtime)
+  unix)
  (preprocess
   (pps
    ppx_jane
