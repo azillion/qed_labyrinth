@@ -2,21 +2,27 @@ open Core
 
 (* we should load the store if the file exists *)
 let event_store =
-  try
-    ref (EventStore.load "game_events.json")
-  with _ -> 
-    ref (EventStore.create "game_events.json")
+  try ref (EventStore.load "game_events.json")
+  with _ -> ref (EventStore.create "game_events.json")
 
 type command = Look | Move of string | Quit | Unknown
+
+let valid_directions = [ "north"; "south"; "east"; "west" ]
 
 let parse_command input =
   match
     String.trim input |> String.lowercase_ascii |> String.split_on_char ' '
   with
   | [ "look" ] -> Look
-  | [ "move"; direction ] -> Move direction
+  | [ "move"; direction ] when List.mem direction valid_directions ->
+      Move direction
+  | [ "move"; _ ] ->
+      Printf.printf "\nInvalid direction. Use: north, south, east, or west\n";
+      Unknown
   | [ "quit" ] -> Quit
-  | _ -> Unknown
+  | _ ->
+      Printf.printf "\nValid commands are: look, move <direction>, quit\n";
+      Unknown
 
 let find_connection direction space =
   List.find_opt

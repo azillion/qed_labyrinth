@@ -27,4 +27,7 @@ setup.log
 
 # Local OPAM switch
 _opam/
+
+# Local files
 game_events.json
+.DS_Store

@@ -18,3 +18,29 @@ let make_id name =
 
 let create name description connections =
   { id = make_id name; name; description; connections }
+
+let test_world =
+  [
+    {
+      id = "kitchen";
+      name = "Kitchen";
+      description = "A clean and organized space.";
+      connections = [ { target = "living_room"; direction = "east" } ];
+    };
+    {
+      id = "living_room";
+      name = "Living Room";
+      description = "A cozy space with comfortable furniture.";
+      connections =
+        [
+          { target = "kitchen"; direction = "west" };
+          { target = "garden"; direction = "south" };
+        ];
+    };
+    {
+      id = "garden";
+      name = "Garden";
+      description = "A peaceful outdoor space.";
+      connections = [ { target = "living_room"; direction = "north" } ];
+    };
+  ]
