@@ -1,6 +1,0 @@
-(library
- (name util)
- (public_name qed_labyrinth.util)
- (libraries yojson)
- (preprocess
-  (pps ppx_deriving.show ppx_deriving.eq)))
