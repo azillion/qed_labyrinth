@@ -23,7 +23,7 @@
 
   ;; Future dependencies - uncomment as needed
   ; Network & Database - for post-MVP
-  ; (dream (>= 1.0.0~alpha4))          ; Async web framework
+  (dream (>= 1.0.0~alpha4))          ; Async web framework
   ; (caqti (>= 1.9.0))                 ; Database abstraction
   ; (caqti-driver-postgresql (>= 1.9.0)); Postgres driver
   ; (caqti-lwt (>= 1.9.0))             ; Async DB interface

@@ -1,0 +1,11 @@
+(library
+ (name server)
+ (public_name qed_labyrinth.server)
+ (preprocess (pps ppx_deriving.show ppx_deriving_yojson lwt_ppx))
+ (libraries
+  qed_labyrinth.core
+  qed_labyrinth.protocol
+  dream
+  base
+  lwt
+  unix))

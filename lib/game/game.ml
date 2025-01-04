@@ -2,8 +2,8 @@ open Core
 
 (* we should load the store if the file exists *)
 let event_store =
-  try ref (EventStore.load "game_events.json")
-  with _ -> ref (EventStore.create "game_events.json")
+  try ref (Event_store.load "game_events.json")
+  with _ -> ref (Event_store.create "game_events.json")
 
 type command = Look | Move of string | Quit | Unknown
 
@@ -42,7 +42,7 @@ let handle_look state spaces =
   Printf.printf "\n%s\n%s\nExits: %s\n" space.Space.name space.Space.description
     exits_str;
   let event = Event.player_looked ~space_id:state.State.current_space_id in
-  event_store := EventStore.append !event_store event;
+  event_store := Event_store.append !event_store event;
   { state with event_log = event :: state.event_log }
 
 let handle_move direction state spaces =
@@ -60,7 +60,7 @@ let handle_move direction state spaces =
         Event.player_moved ~from_space_id:state.State.current_space_id
           ~to_space_id:connection.target ~direction
       in
-      event_store := EventStore.append !event_store event;
+      event_store := Event_store.append !event_store event;
       let new_state =
         {
           State.current_space_id = connection.target;
@@ -92,7 +92,7 @@ let game_loop initial_state spaces =
   loop initial_state
 
 let start_game starting_space_id spaces =
-  let stored_events = EventStore.get_events !event_store in
+  let stored_events = Event_store.get_events !event_store in
   Printf.printf "Loaded %d events\n" (List.length stored_events);
 
   let initial_state =
