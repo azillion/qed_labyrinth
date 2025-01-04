@@ -4,7 +4,7 @@ open Protocol.Message
 type client = {
   id : string;
   ws : Dream.websocket;
-  mutable subscriptions : frame_id list;
+  mutable subscriptions : content_type list;
 }
 
 let clients = ref []
@@ -20,13 +20,13 @@ let remove_client client_id =
       clients := List.filter (fun c -> c.id <> client_id) !clients;
       Lwt.return_unit)
 
-let broadcast_frames updates =
+let broadcast updates =
   Lwt_mutex.with_lock clients_mutex (fun () ->
       Lwt_list.iter_p
         (fun client ->
           let relevant_updates =
             List.filter
-              (fun update -> List.mem update.frame_id client.subscriptions)
+              (fun update -> List.mem update.content_type client.subscriptions)
               updates
           in
           if relevant_updates <> [] then
@@ -59,10 +59,13 @@ let handle_client ws =
 
   let handle_message msg =
     match client_message_of_string msg with
-    | Ok (Subscribe { frames }) ->
-        client.subscriptions <- frames;
+    | Ok (Subscribe { content_types }) ->
+        client.subscriptions <- content_types;
         Lwt.return_unit
-    | Ok (Command { command_type = _; args = _}) ->
+    | Ok (Unsubscribe { content_types }) ->
+        client.subscriptions <- List.filter (fun ct -> not (List.mem ct content_types)) client.subscriptions;
+        Lwt.return_unit
+    | Ok (Command { content = _ }) ->
         (* implement command handling here *)
         Lwt.return_unit
     | Error err ->

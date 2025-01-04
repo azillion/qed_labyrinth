@@ -1,23 +1,29 @@
-(* Frame type representing different UI components *)
-type frame_id = AreaDescription | Navigation | ActionLog | PlayerList
+(* Content type representing different message types *)
+type content_type = AreaDescription | Characters | CommandList
 [@@deriving yojson]
 
-(* Core update type for a single UI frame *)
-type frame_update = {
-  frame_id : frame_id;
+(* Core update type for a single message *)
+type content_update = {
+  content_type : content_type;
   content : Yojson.Safe.t;
-  mode : [ `Replace | `Append ];
+}
+[@@deriving yojson]
+
+type command_content = {
+  command : string;
+  args : Yojson.Safe.t;
 }
 [@@deriving yojson]
 
 (* Messages that can be sent from client to server *)
 type client_message =
-  | Command of { command_type : string; args : Yojson.Safe.t }
-  | Subscribe of { frames : frame_id list }
+  | Command of { content : command_content }
+  | Subscribe of { content_types : content_type list }
+  | Unsubscribe of { content_types : content_type list }
 [@@deriving yojson]
 
 (* Messages that can be sent from server to client *)
-type server_message = StateUpdate of frame_update list | Error of string
+type server_message = StateUpdate of content_update list | Error of string
 [@@deriving yojson]
 
 (* Conversion functions *)

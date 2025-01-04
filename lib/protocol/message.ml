@@ -1,19 +1,25 @@
-type frame_id = AreaDescription | Navigation | ActionLog | PlayerList
+type content_type = AreaDescription | Characters | CommandList
 [@@deriving yojson]
 
-type frame_update = {
-  frame_id : frame_id;
+type content_update = {
+  content_type : content_type;
   content : Yojson.Safe.t;
-  mode : [ `Replace | `Append ];
+}
+[@@deriving yojson]
+
+type command_content = {
+  command : string;
+  args : Yojson.Safe.t;
 }
 [@@deriving yojson]
 
 type client_message =
-  | Command of { command_type : string; args : Yojson.Safe.t }
-  | Subscribe of { frames : frame_id list }
+  | Command of { content : command_content }
+  | Subscribe of { content_types : content_type list }
+  | Unsubscribe of { content_types : content_type list }
 [@@deriving yojson]
 
-type server_message = StateUpdate of frame_update list | Error of string
+type server_message = StateUpdate of content_update list | Error of string
 [@@deriving yojson]
 
 let client_message_of_string s =
