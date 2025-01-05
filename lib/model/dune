@@ -13,4 +13,4 @@
   digestif
   ptime.clock)
  (preprocess
-  (pps ppx_jane lwt_ppx ppx_deriving.show ppx_deriving_yojson)))
+  (pps ppx_jane lwt_ppx ppx_deriving.show ppx_deriving_yojson ppx_let)))
