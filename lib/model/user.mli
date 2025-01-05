@@ -16,20 +16,7 @@ type t =
   created_at : Ptime.t;
 }
 
-module Q :
-  sig
-    val user : t Caqti_type.t
-    val create_table : (unit, unit, [ `Zero ]) Caqti_request.t
-    val insert_user : (t, unit, [ `Zero ]) Caqti_request.t
-    val find_user_by_id : (string, t, [ `One | `Zero ]) Caqti_request.t
-    val find_user_by_username : (string, t, [ `One | `Zero ]) Caqti_request.t
-    val get_user_count : (unit, int, [ `One | `Zero ]) Caqti_request.t
-  end
-
 (* Database operations *)
-val create_table :
-  (module Caqti_lwt.CONNECTION) ->
-  (unit, [> Caqti_error.call_or_retrieve ]) result Lwt.t
 val insert_user :
   (module Caqti_lwt.CONNECTION) ->
   User.t -> (unit, [> Caqti_error.call_or_retrieve ]) result Lwt.t

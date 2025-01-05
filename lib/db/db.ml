@@ -23,14 +23,6 @@ module Q = struct
       password_hash TEXT NOT NULL
     )
   |}
-
-  let add_user =
-    Caqti_request.Infix.(T.user_info ->! Caqti_type.unit)
-      "INSERT INTO users (username, password_hash) VALUES (?, ?)"
-
-  let get_user =
-    Caqti_request.Infix.(T.user_info ->? T.user_info)
-      "SELECT username, password_hash FROM users WHERE username = ?"
 end
 
 (* Handle DB errors *)

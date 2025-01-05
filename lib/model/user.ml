@@ -27,17 +27,6 @@ module Q = struct
     @@ proj ptime (fun u -> u.created_at)
     @@ proj_end
 
-  let create_table =
-    (unit ->. unit)
-    @@ {eos|
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        username TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL
-      )
-    |eos}
-
   let insert_user =
     (user ->. unit)
     @@ {eos|
@@ -59,9 +48,6 @@ module Q = struct
         SELECT COALESCE(COUNT(*), 0) FROM users
       |eos} 
 end
-
-
-let create_table (module Db : Caqti_lwt.CONNECTION) = Db.exec Q.create_table ()
 
 let insert_user (module Db : Caqti_lwt.CONNECTION) user =
   Db.exec Q.insert_user user
