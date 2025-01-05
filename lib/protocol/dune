@@ -2,5 +2,5 @@
  (name protocol)
  (public_name qed_labyrinth.protocol)
  (preprocess (pps ppx_deriving.show ppx_deriving_yojson))
- (libraries qed_labyrinth.core base unix))
+ (libraries qed_labyrinth.core base unix qed_labyrinth.model))
 

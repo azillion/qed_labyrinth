@@ -1,0 +1,16 @@
+(library
+ (name model)
+ (public_name qed_labyrinth.model)
+ (libraries
+  base
+  qed_labyrinth
+  lwt
+  caqti
+  caqti-lwt.unix
+  caqti-driver-sqlite3
+  uri
+  uuidm
+  digestif
+  ptime.clock)
+ (preprocess
+  (pps ppx_jane lwt_ppx ppx_deriving.show ppx_deriving_yojson)))

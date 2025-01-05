@@ -1,35 +1,21 @@
-type content_type = AreaDescription | Characters | CommandList
-[@@deriving yojson]
-
-type content_update = {
-  content_type : content_type;
-  content : Yojson.Safe.t;
-}
-[@@deriving yojson]
-
-type command_content = {
-  command : string;
-  args : Yojson.Safe.t;
-}
-[@@deriving yojson]
+(* lib/protocol/message.ml *)
+type character = {
+  id: string;
+  name: string;
+  location_id: string;
+} [@@deriving yojson]
 
 type client_message =
-  | Command of { content : command_content }
-  | Subscribe of { content_types : content_type list }
-  | Unsubscribe of { content_types : content_type list }
+  | Register of { username: string; password: string }
+  | Login of { username: string; password: string }
+  | CreateCharacter of { name: string }
+  | SelectCharacter of { character_id: string }
 [@@deriving yojson]
 
-type server_message = StateUpdate of content_update list | Error of string
+type server_message =
+  | AuthSuccess of { token: string; user_id: string }
+  | CharacterList of { characters: character list }
+  | CharacterCreated of { character: character }  
+  | CharacterSelected of { character: character }
+  | Error of { message: string }
 [@@deriving yojson]
-
-let client_message_of_string s =
-  try
-    match client_message_of_yojson (Yojson.Safe.from_string s) with
-    | Ok msg -> Ok msg
-    | Error err -> Error ("JSON decode error: " ^ err)
-  with
-  | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
-  | _ -> Error "Invalid message format"
-
-let server_message_to_string msg =
-  Yojson.Safe.to_string (server_message_to_yojson msg)
