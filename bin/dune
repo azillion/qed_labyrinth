@@ -6,4 +6,6 @@
   qed_labyrinth.core
   qed_labyrinth.game
   qed_labyrinth.db
+  qed_labyrinth.protocol
+  uuidm
   dream))

@@ -4,6 +4,7 @@
  (libraries
   base
   qed_labyrinth
+  qed_labyrinth.model
   lwt
   caqti
   caqti-lwt.unix

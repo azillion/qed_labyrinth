@@ -43,17 +43,17 @@ export const AuthFrame = () => {
     document.querySelector('[tabindex="0"]').focus();
   });
   return (
-    <div 
+    <div
       class="fixed inset-0 flex items-center justify-center bg-black focus:outline-none"
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      <div class={`bg-black p-8 w-full max-w-2xl font-mono 
-                   ${theme().textBase} ${theme().border} ${theme().shadow}`}>
+      <div
+        class={`bg-black p-8 w-full max-w-2xl font-mono 
+                   ${theme().textBase} ${theme().border} ${theme().shadow}`}
+      >
         <div class="mb-8">
-          <TerminalText class="text-2xl">
-            Welcome to {GAME_NAME}
-          </TerminalText>
+          <TerminalText class="text-2xl">Welcome to {GAME_NAME}</TerminalText>
           <TerminalText class={`mt-2 ${theme().textDim}`}>
             [Connection established at {new Date().toLocaleTimeString()}]
           </TerminalText>
@@ -79,7 +79,7 @@ export const AuthFrame = () => {
         <Show when={step() === "username"}>
           <div class="space-y-4">
             <TerminalText class={theme().textBase}>
-              {mode() === "login" 
+              {mode() === "login"
                 ? "=== Login Sequence Initiated ==="
                 : "=== New Adventurer Creation ==="}
             </TerminalText>
