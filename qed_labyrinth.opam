@@ -4,6 +4,12 @@ version: "0.1.0"
 synopsis: "Agent-driven social simulation MUD"
 description:
   "A text-based world where aliveness emerges from autonomous agents interacting in intimate social spaces"
+maintainer: ["azillionbytes <azillionbytes@gmail.com>"]
+authors: ["azillionbytes <azillionbytes@gmail.com>"]
+license: "MIT"
+homepage: "https://github.com/azillion/qed_labryinth"
+doc: "https://github.com/azillion/qed_labyrinth"
+bug-reports: "https://github.com/azillion/qed_labryinth"
 depends: [
   "ocaml" {>= "5.0.0"}
   "dune" {>= "3.0" & >= "3.0.0"}
@@ -16,6 +22,9 @@ depends: [
   "ppx_deriving" {>= "5.2.1"}
   "digestif" {>= "0.8.0"}
   "dream" {>= "1.0.0~alpha4"}
+  "caqti" {>= "1.9.0"}
+  "caqti-lwt" {>= "1.9.0"}
+  "caqti-driver-sqlite3" {>= "1.9.0"}
   "odoc" {with-doc}
 ]
 build: [
@@ -32,3 +41,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
+dev-repo: "git+https://github.com/azillion/qed_labyrinth.git"

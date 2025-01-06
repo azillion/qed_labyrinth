@@ -1,5 +1,5 @@
 (library
- (name core)
+ (name qed_labyrinth_core)
  (public_name qed_labyrinth.core)
  (libraries
   base

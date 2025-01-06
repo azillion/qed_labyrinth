@@ -43,8 +43,8 @@ let rec game_loop state =
 let handle_client_message state client message =
   let db = state.GameState.db in
   match message with
-  | Register { username; password } -> (
-      let%lwt result = Model.User.register db ~username ~password in
+  | Register { username; password; email } -> (
+      let%lwt result = Model.User.register db ~email ~username ~password in
       match result with
       | Ok user ->
           client.Client.user_id <- Some user.id;
@@ -70,66 +70,6 @@ let handle_client_message state client message =
       | Error _ ->
           client.Client.send
             (Error { message = "Invalid credentials" }
-            |> server_message_to_yojson |> Yojson.Safe.to_string))
-  | CreateCharacter { name } -> (
-      match client.Client.user_id with
-      | Some user_id -> (
-          let character =
-            Model.Character.create ~user_id ~name ~location_id:"starting_area"
-          in
-          let%lwt result = Model.Character.insert_character db character in
-          match result with
-          | Ok () ->
-              let msg =
-                CharacterCreated
-                  {
-                    character =
-                      {
-                        id = character.id;
-                        name = character.name;
-                        location_id = character.location_id;
-                      };
-                  }
-              in
-              client.Client.send
-                (msg |> server_message_to_yojson |> Yojson.Safe.to_string)
-          | Error _ ->
-              client.Client.send
-                (Error { message = "Failed to create character" }
-                |> server_message_to_yojson |> Yojson.Safe.to_string))
-      | None ->
-          client.Client.send
-            (Error { message = "Not authenticated" }
-            |> server_message_to_yojson |> Yojson.Safe.to_string))
-  | SelectCharacter { character_id } -> (
-      match client.Client.user_id with
-      | Some _ -> (
-          let%lwt result =
-            Model.Character.find_character_by_id db character_id
-          in
-          match result with
-          | Ok (Some character) ->
-              client.Client.character_id <- Some character.id;
-              let msg =
-                CharacterSelected
-                  {
-                    character =
-                      {
-                        id = character.id;
-                        name = character.name;
-                        location_id = character.location_id;
-                      };
-                  }
-              in
-              client.Client.send
-                (msg |> server_message_to_yojson |> Yojson.Safe.to_string)
-          | _ ->
-              client.Client.send
-                (Error { message = "Character not found" }
-                |> server_message_to_yojson |> Yojson.Safe.to_string))
-      | None ->
-          client.Client.send
-            (Error { message = "Not authenticated" }
             |> server_message_to_yojson |> Yojson.Safe.to_string))
 
 let handle_client state client_id send_message =
