@@ -17,11 +17,6 @@ module Schema = struct
           password_hash TEXT NOT NULL,
           email TEXT NOT NULL UNIQUE
         );
-        CREATE TABLE IF NOT EXISTS characters (
-          id INTEGER PRIMARY KEY,
-          name TEXT NOT NULL,
-          user_id INTEGER NOT NULL
-        );
       |}
 end
 
