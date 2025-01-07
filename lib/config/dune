@@ -1,10 +1,9 @@
 (library
- (name db)
- (public_name qed_labyrinth.db)
+ (name config)
+ (public_name qed_labyrinth.config)
  (libraries
   base
   qed_labyrinth
-  qed_labyrinth.config
   lwt
   caqti
   caqti-lwt.unix

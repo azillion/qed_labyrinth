@@ -7,5 +7,7 @@
   qed_labyrinth.game
   qed_labyrinth.db
   qed_labyrinth.protocol
+  qed_labyrinth.server
+  qed_labyrinth.error
   uuidm
   dream))

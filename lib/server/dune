@@ -1,0 +1,16 @@
+(library
+ (name server)
+ (public_name qed_labyrinth.server)
+ (preprocess (pps ppx_deriving.show lwt_ppx))
+ (libraries 
+ qed_labyrinth.core 
+ qed_labyrinth.protocol 
+ qed_labyrinth.client 
+ qed_labyrinth.game 
+ qed_labyrinth.error
+ base 
+ unix 
+ lwt 
+ dream
+ digestif
+ caqti-lwt))

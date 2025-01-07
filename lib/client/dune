@@ -1,0 +1,6 @@
+(library
+ (name client)
+ (public_name qed_labyrinth.client)
+ (preprocess (pps ppx_deriving.show))
+ (libraries qed_labyrinth.core base unix lwt))
+

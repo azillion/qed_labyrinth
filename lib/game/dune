@@ -1,5 +1,5 @@
 (library
  (name game)
  (public_name qed_labyrinth.game)
- (preprocess (pps ppx_deriving.show))
- (libraries qed_labyrinth.core base unix))
+ (preprocess (pps ppx_deriving.show lwt_ppx))
+ (libraries qed_labyrinth.core qed_labyrinth.client base unix lwt caqti-lwt lwt.unix))

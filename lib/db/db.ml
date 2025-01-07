@@ -1,45 +1,41 @@
 open Base
 
-let uri = Uri.of_string "sqlite3:qed.db"
-
-module T = struct
-  include Caqti_type
-end
-
-(* database queries *)
 module Schema = struct
   let create_tables =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      {|
-        CREATE TABLE IF NOT EXISTS users (
-          id INTEGER PRIMARY KEY,
-          username TEXT NOT NULL UNIQUE,
-          password_hash TEXT NOT NULL,
-          email TEXT NOT NULL UNIQUE
-        );
-      |}
+      {| CREATE TABLE IF NOT EXISTS users (
+           id UUID PRIMARY KEY,
+           username VARCHAR(255) NOT NULL UNIQUE,
+           password_hash VARCHAR(255) NOT NULL,
+           email VARCHAR(255) NOT NULL UNIQUE,
+           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+         ) |}
 end
 
-(* handle db errors *)
-let or_error m =
-  Result.map_error ~f:(fun e -> Error.of_string (Caqti_error.show e)) m
+module Pool = struct
+  type t = (Caqti_lwt.connection, Caqti_error.t) Caqti_lwt_unix.Pool.t
 
-(* initialize connection *)
-let connect () =
-  match%lwt Caqti_lwt_unix.connect uri with
-  | Ok connection -> (
-      let (module C : Caqti_lwt.CONNECTION) = connection in
-      let open Lwt.Syntax in
-      let* start_res = C.start () in
-      match start_res with
-      | Error e -> Lwt.return_error (Error.of_string (Caqti_error.show e))
-      | Ok () ->
-          let* exec_res = C.exec Schema.create_tables () in
-          match exec_res with
-          | Error e -> Lwt.return_error (Error.of_string (Caqti_error.show e))
-          | Ok () ->
-              let* commit_res = C.commit () in
-              match commit_res with
-              | Ok () -> Lwt.return_ok connection
-              | Error e -> Lwt.return_error (Error.of_string (Caqti_error.show e)))
-  | Error e -> Lwt.return_error (Error.of_string (Caqti_error.show e))
+  let create ?(max_size=10) uri =
+    let pool_config = Caqti_pool_config.create ~max_size () in
+    Lwt.return (Caqti_lwt_unix.connect_pool ~pool_config uri)
+
+  let use pool f =
+    Caqti_lwt_unix.Pool.use f pool
+end
+
+let connect ?(pool_size=10) config =
+  let uri = Config.Database.to_uri config in
+  let open Lwt.Syntax in
+  match%lwt Pool.create ~max_size:pool_size uri with
+  | Error e -> 
+      Stdio.eprintf "Database connection error: %s\n" (Caqti_error.show e);
+      Lwt.return_error (Error.of_string (Caqti_error.show e))
+  | Ok pool ->
+      match%lwt Pool.use pool (fun (module C : Caqti_lwt.CONNECTION) ->
+        C.exec Schema.create_tables ()) with
+      | Error e -> 
+          Stdio.eprintf "Schema creation error: %s\n" (Caqti_error.show e);
+          Lwt.return_error (Error.of_string (Caqti_error.show e))
+      | Ok () -> 
+          Stdio.printf "Database initialized successfully\n";
+          Lwt.return_ok pool
