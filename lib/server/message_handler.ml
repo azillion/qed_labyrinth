@@ -9,7 +9,13 @@ let auth_error_to_string = function
   | UsernameTaken -> "Username already taken"
   | DatabaseError _msg -> "Database error occurred"
 
-let handle_auth_message state client = function
+let handle_message state client message =
+  let send_error msg =
+    client.Client.send
+      (Error { message = msg }
+      |> server_message_to_yojson |> Yojson.Safe.to_string)
+  in
+  match message with
   | Register { username; password; email } -> (
       match%lwt
         State.with_db state (fun db ->
@@ -17,22 +23,10 @@ let handle_auth_message state client = function
       with
       | Ok user ->
           Client.set_authenticated client user.id;
-          let auth_msg =
-            AuthSuccess { token = "temp_token"; user_id = user.id }
-          in
           client.Client.send
-            (auth_msg |> server_message_to_yojson |> Yojson.Safe.to_string)
-      | Error err ->
-          let msg =
-            match err with
-            | UserNotFound -> "User not found"
-            | InvalidPassword -> "Invalid password"
-            | UsernameTaken -> "Username already taken"
-            | DatabaseError _ -> "A database error occurred"
-          in
-          client.Client.send
-            (Error { message = msg }
-            |> server_message_to_yojson |> Yojson.Safe.to_string))
+            (AuthSuccess { token = "temp_token"; user_id = user.id }
+            |> server_message_to_yojson |> Yojson.Safe.to_string)
+      | Error err -> send_error (auth_error_to_string err))
   | Login { username; password } -> (
       match%lwt
         State.with_db state (fun db ->
@@ -40,20 +34,7 @@ let handle_auth_message state client = function
       with
       | Ok user ->
           Client.set_authenticated client user.id;
-          let auth_msg =
-            AuthSuccess { token = "temp_token"; user_id = user.id }
-          in
           client.Client.send
-            (auth_msg |> server_message_to_yojson |> Yojson.Safe.to_string)
-      | Error err ->
-          let msg =
-            match err with
-            | UserNotFound -> "User not found"
-            | InvalidPassword -> "Invalid password"
-            | UsernameTaken ->
-                "Username already taken" (* Shouldn't happen for login *)
-            | DatabaseError _ -> "A database error occurred"
-          in
-          client.Client.send
-            (Error { message = msg }
-            |> server_message_to_yojson |> Yojson.Safe.to_string))
+            (AuthSuccess { token = "temp_token"; user_id = user.id }
+            |> server_message_to_yojson |> Yojson.Safe.to_string)
+      | Error err -> send_error (auth_error_to_string err))

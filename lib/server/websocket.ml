@@ -14,18 +14,15 @@ let handler state websocket =
   let rec process_messages () =
     match%lwt Dream.receive websocket with
     | Some msg -> (
-        match
-          Protocol.Message.client_message_of_yojson
-            (Yojson.Safe.from_string msg)
-        with
-        | Ok message -> (
-            match message with
-            | Login _ | Register _ ->
-                let%lwt () =
-                  Message_handler.handle_auth_message state client message
-                in
-                process_messages ())
-        | Error _ ->
+        let open Protocol.Message in
+        let yojson_msg = Yojson.Safe.from_string msg in
+        let message = client_message_of_yojson yojson_msg in
+        match message with
+        | Ok message ->
+            let%lwt () = Message_handler.handle_message state client message in
+            process_messages ()
+        | Error err ->
+            ignore (Stdio.print_endline ("Parse error: " ^ err));
             let%lwt () =
               client.send
                 (Protocol.Message.Error

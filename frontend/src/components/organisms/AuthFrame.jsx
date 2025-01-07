@@ -4,6 +4,7 @@ import { TerminalInput } from "../atoms/TerminalInput";
 import { TerminalOption } from "../molecules/TerminalOption";
 import { GAME_NAME } from "../../lib/constants";
 import { theme } from "../../stores/themeStore";
+import { socket } from "../../lib/socket";
 
 export const AuthFrame = () => {
 	const [step, setStep] = createSignal("select");
@@ -61,6 +62,13 @@ export const AuthFrame = () => {
 			});
 		} else {
 			console.log("Creating new adventurer...");
+			socket().send(JSON.stringify([
+				"Register", {
+					username: username(),
+					password: password(),
+					email: email(),
+				}
+			]));
 			console.log({
 				username: username(),
 				password: password(),
