@@ -1,12 +1,20 @@
 open Base
 open Protocol.Message
 open Game
-open Qed_error
+open Model.User
+
+let auth_error_to_string = function
+  | Model.User.UserNotFound -> "User not found"
+  | InvalidPassword -> "Invalid password"
+  | UsernameTaken -> "Username already taken"
+  | DatabaseError _msg -> "Database error occurred"
 
 let handle_auth_message state client = function
   | Register { username; password; email } -> (
-      let%lwt result = Model.User.register state.State.db ~username ~password ~email in
-      match result with
+      match%lwt
+        State.with_db state (fun db ->
+            Model.User.register db ~username ~password ~email)
+      with
       | Ok user ->
           Client.set_authenticated client user.id;
           let auth_msg =
@@ -14,15 +22,22 @@ let handle_auth_message state client = function
           in
           client.Client.send
             (auth_msg |> server_message_to_yojson |> Yojson.Safe.to_string)
-      | Error _ ->
+      | Error err ->
+          let msg =
+            match err with
+            | UserNotFound -> "User not found"
+            | InvalidPassword -> "Invalid password"
+            | UsernameTaken -> "Username already taken"
+            | DatabaseError _ -> "A database error occurred"
+          in
           client.Client.send
-            (Error { message = Qed_error.auth_error_to_string RegistrationFailed }
+            (Error { message = msg }
             |> server_message_to_yojson |> Yojson.Safe.to_string))
   | Login { username; password } -> (
-      let%lwt result =
-        Model.User.authenticate state.State.db ~username ~password
-      in
-      match result with
+      match%lwt
+        State.with_db state (fun db ->
+            Model.User.authenticate db ~username ~password)
+      with
       | Ok user ->
           Client.set_authenticated client user.id;
           let auth_msg =
@@ -30,7 +45,15 @@ let handle_auth_message state client = function
           in
           client.Client.send
             (auth_msg |> server_message_to_yojson |> Yojson.Safe.to_string)
-      | Error _ ->
+      | Error err ->
+          let msg =
+            match err with
+            | UserNotFound -> "User not found"
+            | InvalidPassword -> "Invalid password"
+            | UsernameTaken ->
+                "Username already taken" (* Shouldn't happen for login *)
+            | DatabaseError _ -> "A database error occurred"
+          in
           client.Client.send
-            (Error { message = Qed_error.auth_error_to_string InvalidCredentials }
+            (Error { message = msg }
             |> server_message_to_yojson |> Yojson.Safe.to_string))

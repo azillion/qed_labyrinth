@@ -34,3 +34,4 @@ game_events.json
 
 # solidjs
 .pnpm-lock.yaml
+.env

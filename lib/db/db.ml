@@ -15,27 +15,28 @@ end
 module Pool = struct
   type t = (Caqti_lwt.connection, Caqti_error.t) Caqti_lwt_unix.Pool.t
 
-  let create ?(max_size=10) uri =
+  let create ?(max_size = 10) uri =
     let pool_config = Caqti_pool_config.create ~max_size () in
     Lwt.return (Caqti_lwt_unix.connect_pool ~pool_config uri)
 
-  let use pool f =
-    Caqti_lwt_unix.Pool.use f pool
+  let use pool f = Caqti_lwt_unix.Pool.use f pool
 end
 
-let connect ?(pool_size=10) config =
-  let uri = Config.Database.to_uri config in
-  let open Lwt.Syntax in
+let connect ?(pool_size = 10) config =
+  let open Qed_config.Database in
+  let uri = to_uri config in
   match%lwt Pool.create ~max_size:pool_size uri with
-  | Error e -> 
+  | Error e ->
       Stdio.eprintf "Database connection error: %s\n" (Caqti_error.show e);
       Lwt.return_error (Error.of_string (Caqti_error.show e))
-  | Ok pool ->
-      match%lwt Pool.use pool (fun (module C : Caqti_lwt.CONNECTION) ->
-        C.exec Schema.create_tables ()) with
-      | Error e -> 
+  | Ok pool -> (
+      match%lwt
+        Pool.use pool (fun (module C : Caqti_lwt.CONNECTION) ->
+            C.exec Schema.create_tables ())
+      with
+      | Error e ->
           Stdio.eprintf "Schema creation error: %s\n" (Caqti_error.show e);
           Lwt.return_error (Error.of_string (Caqti_error.show e))
-      | Ok () -> 
+      | Ok () ->
           Stdio.printf "Database initialized successfully\n";
-          Lwt.return_ok pool
+          Lwt.return_ok pool)

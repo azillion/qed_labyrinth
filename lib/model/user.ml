@@ -83,29 +83,37 @@ let verify_password t password =
   String.equal t.password_hash (hash_password password)
 
 (* Types for authentication results *)
-type auth_error = UserNotFound | InvalidPassword | UsernameTaken
+type auth_error =
+  | UserNotFound
+  | InvalidPassword
+  | UsernameTaken
+  | DatabaseError of string (* Wrap DB errors but don't expose details *)
+
+type 'a auth_result = ('a, auth_error) result Lwt.t
+
+let wrap_db_error = function
+  | Error e -> Error (DatabaseError (Caqti_error.show e))
+  | Ok v -> Ok v
 
 let authenticate (module Db : Caqti_lwt.CONNECTION) ~username ~password =
-  let%lwt user_result = find_user_by_username (module Db) username in
-  match user_result with
+  match%lwt find_user_by_username (module Db) username with
+  | Error err -> Lwt.return (Error (DatabaseError (Caqti_error.show err)))
+  | Ok None -> Lwt.return (Error UserNotFound)
   | Ok (Some user) ->
       if verify_password user password then
-        Lwt.return_ok user
+        Lwt.return (Ok user)
       else
         Lwt.return (Error InvalidPassword)
-  | Ok None -> Lwt.return (Error UserNotFound)
-  | Error _ -> Lwt.return (Error UserNotFound)
 
 let register (module Db : Caqti_lwt.CONNECTION) ~username ~password ~email =
-  let%lwt existing_result = find_user_by_username (module Db) username in
-  match existing_result with
+  match%lwt find_user_by_username (module Db) username with
+  | Error err -> Lwt.return (Error (DatabaseError (Caqti_error.show err)))
   | Ok (Some _) -> Lwt.return (Error UsernameTaken)
   | Ok None -> (
       let user = create ~username ~password ~email in
       match%lwt insert_user (module Db) user with
       | Ok () -> Lwt.return (Ok user)
-      | Error _ -> Lwt.return (Error UsernameTaken))
-  | Error _ -> Lwt.return (Error UsernameTaken)
+      | Error err -> Lwt.return (Error (DatabaseError (Caqti_error.show err))))
 
 let username_exists (module Db : Caqti_lwt.CONNECTION) username =
   find_user_by_username (module Db) username >|= function

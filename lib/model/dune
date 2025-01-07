@@ -7,7 +7,7 @@
   lwt
   caqti
   caqti-lwt.unix
-  caqti-driver-sqlite3
+  caqti-driver-postgresql
   uri
   uuidm
   digestif
