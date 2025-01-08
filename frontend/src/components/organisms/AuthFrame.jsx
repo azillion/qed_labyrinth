@@ -1,10 +1,11 @@
-import { createSignal, Show, onMount } from "solid-js";
+import { createSignal, Show, onMount, onCleanup } from "solid-js";
 import { TerminalText } from "../atoms/TerminalText";
 import { TerminalInput } from "../atoms/TerminalInput";
 import { TerminalOption } from "../molecules/TerminalOption";
 import { GAME_NAME } from "../../lib/constants";
 import { theme } from "../../stores/themeStore";
-import { socket } from "../../lib/socket";
+import { messageHandlers } from "../../lib/socket";
+import { authError } from '../../lib/auth';
 
 export const AuthFrame = () => {
 	const [step, setStep] = createSignal("select");
@@ -52,35 +53,30 @@ export const AuthFrame = () => {
 		}
 	};
 
+	// Replace the handleSubmit function with:
 	const handleSubmit = () => {
-		// Here you would handle the auth request
-		if (mode() === "login") {
-			console.log("Logging in...");
-			console.log({
-				username: username(),
-				password: password(),
-			});
+		if (mode() === 'login') {
+			messageHandlers.auth.login(username(), password());
 		} else {
-			console.log("Creating new adventurer...");
-			socket().send(JSON.stringify([
-				"Register", {
-					username: username(),
-					password: password(),
-					email: email(),
-				}
-			]));
-			console.log({
-				username: username(),
-				password: password(),
-				email: email(),
-			});
+			messageHandlers.auth.register(username(), password(), email());
 		}
 	};
 
+	// Add subscription in onMount:
 	onMount(() => {
-		// Focus the container when component mounts
 		document.querySelector('[tabindex="0"]').focus();
+
+		const unsub = messageHandlers.auth.subscribe((type, payload) => {
+			if (type === 'AuthSuccess') {
+				window.authToken = payload.token;
+			} else if (type === 'Error') {
+				setError(payload.message);
+			}
+		});
+
+		onCleanup(() => unsub());
 	});
+
 	return (
 		<div
 			class="fixed inset-0 flex items-center justify-center bg-black focus:outline-none"
@@ -118,6 +114,12 @@ export const AuthFrame = () => {
 				<Show when={error()}>
 					<div class="bg-red-500 text-white p-2 rounded-lg mt-4">
 						<TerminalText>{error()}</TerminalText>
+					</div>
+				</Show>
+
+				<Show when={authError()}>
+					<div class="bg-red-500 text-white p-2 rounded-lg mt-4">
+						<TerminalText>{authError()}</TerminalText>
 					</div>
 				</Show>
 

@@ -1,33 +1,24 @@
 import { GameLayout } from "./components/templates/GameLayout";
 import { setCurrentTheme } from "./stores/themeStore";
-import { onCleanup } from "solid-js";
-import { setSocket, SOCKET_URL } from "./lib/socket";
+import { onMount } from "solid-js";
+import { initializeWebSocket } from "./lib/socket";
+import { ConnectionStatus } from "./components/molecules/ConnectionStatus";
+import { initAuth } from "./lib/auth";
 
 const App = () => {
-	const ws = new WebSocket(SOCKET_URL);
-	setSocket(ws);
-
-	ws.onopen = () => {
-		console.log("Connected to server");
-	};
-
-	ws.onmessage = (event) => {
-		console.log(event.data);
-	};
-
-	ws.onclose = () => {
-		console.log("Disconnected from server");
-	};
-
-	// clean up the websocket on unmount
-	onCleanup(() => {
-		ws.close();
+	onMount(() => {
+		initAuth();
+		initializeWebSocket();
 	});
 
-	setCurrentTheme("red"); // or "red" or "green"
+	setCurrentTheme("red");
 
-	return <GameLayout />;
+	return (
+		<>
+			<GameLayout />
+			<ConnectionStatus />
+		</>
+	);
 };
 
 export default App;
-
