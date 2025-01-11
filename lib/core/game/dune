@@ -1,0 +1,12 @@
+(library
+ (name game)
+ (public_name qed_labyrinth.game)
+ (libraries
+  base
+  lwt
+  lwt.unix
+  caqti-lwt
+  caqti-lwt.unix
+  qed_labyrinth.model
+  unix
+  qed_labyrinth.core))

@@ -1,0 +1,20 @@
+(library
+ (name model)
+ (public_name qed_labyrinth.model)
+ (libraries
+  base
+  caqti
+  caqti-lwt
+  digestif
+  lwt
+  ptime
+  ptime.clock
+  uuidm
+  yojson)
+ (preprocess
+  (pps
+   ppx_deriving.show
+   ppx_deriving_yojson
+   ppx_jane
+   ppx_let
+   lwt_ppx)))

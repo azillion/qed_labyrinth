@@ -1,4 +1,0 @@
-(library
- (name qed_config)
- (public_name qed_labyrinth.qed_config)
- (libraries base uri))

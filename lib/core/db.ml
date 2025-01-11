@@ -23,7 +23,7 @@ module Pool = struct
 end
 
 let connect ?(pool_size = 10) config =
-  let open Qed_config.Database in
+  let open Config.Database in
   let uri = to_uri config in
   match%lwt Pool.create ~max_size:pool_size uri with
   | Error e ->

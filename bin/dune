@@ -4,10 +4,6 @@
  (preprocess (pps lwt_ppx ppx_yojson_conv))
  (libraries
   qed_labyrinth.core
-  qed_labyrinth.game
-  qed_labyrinth.db
-  qed_labyrinth.protocol
   qed_labyrinth.server
-  qed_labyrinth.error
   uuidm
   dream))

@@ -1,6 +1,3 @@
 (library
  (name qed_labyrinth)
- (public_name qed_labyrinth)
- (libraries base ppx_jane ppx_let)
- (preprocess
-  (pps ppx_jane ppx_let)))
+ (public_name qed_labyrinth))

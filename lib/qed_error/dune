@@ -1,5 +1,0 @@
-(library
- (name qed_error)
- (public_name qed_labyrinth.error)
- (preprocess (pps ppx_deriving.show))
- (libraries qed_labyrinth.core base unix))
