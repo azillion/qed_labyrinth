@@ -1,5 +1,17 @@
 open Base
 
+type app_state = {
+  connection_manager : Connection_manager.t;
+  db_pool : Qed_labyrinth_core.Db.Pool.t;
+  game_state : Game.State.t;
+}
+
+let create_app_state db_pool = {
+  connection_manager = Connection_manager.create ();
+  db_pool;
+  game_state = Game.State.create;
+}
+
 let cors_middleware inner_handler request =
   match Dream.method_ request with
   | `OPTIONS ->
@@ -13,12 +25,11 @@ let cors_middleware inner_handler request =
       Dream.add_header response "Access-Control-Allow-Origin" "*";
       Lwt.return response
 
-let start db =
+let start pool =
   let open Game in
-  let state = State.create db in
-
+  let app_state = create_app_state pool in
   (* Start game loop *)
-  Lwt.async (fun () -> Loop.run state);
+  Lwt.async (fun () -> Loop.run app_state.game_state);
 
   (* Configure web server *)
   Dream.run ~interface:"0.0.0.0" ~port:3030
@@ -53,5 +64,5 @@ let start db =
     
         Dream.get "/auth/verify" (fun request -> handle_verify ~db request); *)
 
-        Dream.get "/websocket" (fun _ -> Dream.websocket (Websocket.handler state))
+        Dream.get "/websocket" (fun _ -> Dream.websocket (Websocket_handler.handler app_state.connection_manager))
       ]

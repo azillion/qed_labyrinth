@@ -1,16 +1,23 @@
 open Base
 open Qed_labyrinth_core
+open Model.User
+
+let auth_error_to_string = function
+  | Model.User.UserNotFound -> "User not found"
+  | InvalidPassword -> "Invalid password"
+  | Model.User.EmailTaken -> "Email already taken"
+  | UsernameTaken -> "Username already taken"
+  | DatabaseError msg -> "Database error occurred" ^ msg
 
 let handler state websocket =
-  let open Game in
   let client_id =
     Digestif.SHA256.(
       digest_string (Int64.of_int (Random.bits ()) |> Int64.to_string) |> to_hex)
   in
   let send_message msg = Dream.send websocket msg in
-  let client = Qed_labyrinth_core.Client.create client_id send_message in
+  let client = Client.create client_id send_message in
 
-  State.add_client state client;
+  Connection_manager.add_client state client;
 
   let rec process_messages () =
     match%lwt Dream.receive websocket with
@@ -38,7 +45,7 @@ let handler state websocket =
             in *)
             process_messages ())
     | None ->
-        State.remove_client state client_id;
+        Connection_manager.remove_client state client_id;
         Lwt.return_unit
   in
   process_messages ()
