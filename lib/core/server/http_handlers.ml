@@ -1,5 +1,6 @@
 open Base
 open Lwt.Syntax
+open Qed_labyrinth_core
 
 let error_response ~status error = 
   Dream.json ~status
