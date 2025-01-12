@@ -5,5 +5,14 @@
   base
   dream
   qed_labyrinth.game
+  qed_labyrinth.core
+  qed_labyrinth.auth
   lwt
-  yojson))
+  yojson)
+   (preprocess
+  (pps
+   ppx_jane
+   ppx_let
+   lwt_ppx
+   ppx_deriving.show
+   ppx_deriving_yojson)))

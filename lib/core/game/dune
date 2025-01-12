@@ -9,4 +9,12 @@
   caqti-lwt.unix
   qed_labyrinth.model
   unix
-  qed_labyrinth.core))
+  qed_labyrinth.core)
+ (preprocess
+  (pps
+   ppx_jane
+   ppx_let
+   lwt_ppx
+   ppx_deriving.show
+   ppx_deriving_yojson)))
+

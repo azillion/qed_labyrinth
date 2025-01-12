@@ -1,7 +1,7 @@
 open Base
 
 type t = {
-  clients : (string, Client.t) Hashtbl.t;
+  clients : (string, Qed_labyrinth_core.Client.t) Hashtbl.t;
   db_pool : (Caqti_lwt.connection, Caqti_error.t) Caqti_lwt_unix.Pool.t;
   mutable last_tick : float;
 }
@@ -14,13 +14,13 @@ let create pool =
   }
 
 let add_client t client =
-  Hashtbl.set t.clients ~key:client.Client.id ~data:client
+  Hashtbl.set t.clients ~key:client.Qed_labyrinth_core.Client.id ~data:client
 
 let remove_client t client_id = Hashtbl.remove t.clients client_id
 
 let broadcast t message =
   Hashtbl.iter t.clients ~f:(fun client ->
-      Lwt.async (fun () -> client.Client.send message))
+      Lwt.async (fun () -> client.Qed_labyrinth_core.Client.send message))
 
 let update_tick t = t.last_tick <- Unix.gettimeofday ()
 

@@ -1,4 +1,5 @@
 open Base
+open Qed_labyrinth_core
 
 let handler state websocket =
   let open Game in
@@ -7,23 +8,25 @@ let handler state websocket =
       digest_string (Int64.of_int (Random.bits ()) |> Int64.to_string) |> to_hex)
   in
   let send_message msg = Dream.send websocket msg in
-  let client = Client.create client_id send_message in
+  let client = Qed_labyrinth_core.Client.create client_id send_message in
 
   State.add_client state client;
 
   let rec process_messages () =
     match%lwt Dream.receive websocket with
     | Some msg -> (
-        let open Protocol.Message in
+        let open Protocol in
         let yojson_msg = Yojson.Safe.from_string msg in
         let message = client_message_of_yojson yojson_msg in
         match message with
-        | Ok message ->
-            let%lwt () = Message_handler.handle_message state client message in
+        | Ok _message ->
+            Stdio.print_endline "Processing message";
+            Stdio.print_endline msg;
+            (* let%lwt () = Message_handler.handle_message state client message in *)
             process_messages ()
         | Error err ->
             ignore (Stdio.print_endline ("Parse error: " ^ err));
-            let%lwt () =
+            (* let%lwt () =
               client.send
                 (Protocol.Message.Error
                    {
@@ -32,7 +35,7 @@ let handler state websocket =
                    }
                 |> Protocol.Message.server_message_to_yojson
                 |> Yojson.Safe.to_string)
-            in
+            in *)
             process_messages ())
     | None ->
         State.remove_client state client_id;
@@ -72,7 +75,7 @@ let start db =
             "Access-Control-Allow-Methods", "GET, POST, OPTIONS";
             "Access-Control-Allow-Headers", "Content-Type, Authorization"
           ] "");
-          
+(*           
         Dream.post "/auth/login" (fun request ->
           let%lwt body = Dream.body request in
           match Yojson.Safe.from_string body with
@@ -80,7 +83,7 @@ let start db =
               Dream.json ~status:`Bad_Request
                 (Yojson.Safe.to_string 
                   (`Assoc [("error", `String "Invalid JSON")]))
-          | body_json -> Auth.handle_login db body_json);
+          | body_json -> handle_login ~db request body_json);
     
         Dream.post "/auth/register" (fun request ->
           let%lwt body = Dream.body request in
@@ -89,9 +92,9 @@ let start db =
               Dream.json ~status:`Bad_Request
                 (Yojson.Safe.to_string 
                   (`Assoc [("error", `String "Invalid JSON")]))
-          | body_json -> Auth.handle_register db body_json);
+          | body_json -> handle_register ~db body_json);
     
-        Dream.get "/auth/verify" (Auth.handle_verify db);
+        Dream.get "/auth/verify" (fun request -> handle_verify ~db request); *)
 
         Dream.get "/websocket" (fun _ -> Dream.websocket (handler state))
       ]

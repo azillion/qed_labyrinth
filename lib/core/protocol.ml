@@ -10,7 +10,7 @@ type auth_message =
 
 type client_message =
   | CreateCharacter of { name : string }
-  | SelectCharacter of { character_id : string }
+  (* | SelectCharacter of { character_id : string } *)
 [@@deriving yojson]
 
 type server_message =
