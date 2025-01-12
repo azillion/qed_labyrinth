@@ -15,11 +15,15 @@ end
 module Pool = struct
   type t = (Caqti_lwt.connection, Caqti_error.t) Caqti_lwt_unix.Pool.t
 
+  let pool_ref : t option ref = ref None
+  let get () = !pool_ref
+  let set p = pool_ref := Some p
+
   let create ?(max_size = 10) uri =
     let pool_config = Caqti_pool_config.create ~max_size () in
     Lwt.return (Caqti_lwt_unix.connect_pool ~pool_config uri)
 
-  let use pool f = Caqti_lwt_unix.Pool.use f pool
+  let use (pool : t) f = Caqti_lwt_unix.Pool.use f pool
 end
 
 let connect ?(pool_size = 10) config =
@@ -39,4 +43,5 @@ let connect ?(pool_size = 10) config =
           Lwt.return_error (Error.of_string (Caqti_error.show e))
       | Ok () ->
           Stdio.printf "Database initialized successfully\n";
+          Pool.set pool;
           Lwt.return_ok pool)

@@ -1,4 +1,5 @@
 open Lwt.Syntax
+open Qed_labyrinth_core
 
 type t = {
   id : string;
@@ -70,55 +71,86 @@ let to_public (user : internal) =
     created_at = user.created_at;
   }
 
-let register ~(db : (module Caqti_lwt.CONNECTION)) ~username ~password ~email =
-  let (module Db) = db in
-  let open Lwt_result.Infix in
-  let* existing_user =
-    Db.find_opt Q.find_by_username username
-    |> Lwt_result.map_error (fun e -> DatabaseError (Caqti_error.show e))
-  in
-  match existing_user with
-  | Ok (Some _) -> Lwt.return_error UsernameTaken
-  | Ok None -> (
-      let* existing_email =
-        Db.find_opt Q.find_by_email email
-        |> Lwt_result.map_error (fun e -> DatabaseError (Caqti_error.show e))
+let register ~username ~password ~email =
+  match Database.Pool.get () with
+  | None -> Lwt.return_error (DatabaseError "Database pool not initialized")
+  | Some pool ->
+      let db_operation (module Db : Caqti_lwt.CONNECTION) =
+        let* existing_user = Db.find_opt Q.find_by_username username in
+        match existing_user with
+        | Error e -> Lwt_result.fail e
+        | Ok (Some _) -> Lwt_result.return (`UsernameTaken : [ `UsernameTaken | `EmailTaken | `Success of t ])
+
+        | Ok None -> 
+            let* existing_email = Db.find_opt Q.find_by_email email in
+            match existing_email with
+            | Error e -> Lwt_result.fail e 
+            | Ok (Some _) -> Lwt_result.return (`EmailTaken)
+            | Ok None ->
+                let user = create ~username ~password ~email in
+                match%lwt Db.exec Q.insert user with
+                | Error e -> Lwt_result.fail e
+                | Ok () -> Lwt_result.return (`Success (to_public user))
       in
-      match existing_email with
-      | Ok (Some _) -> Lwt.return_error EmailTaken
-      | Ok None ->
-          let user = create ~username ~password ~email in
-          Db.exec Q.insert user
-          |> Lwt_result.map_error (fun e ->
-                 DatabaseError (Caqti_error.show e))
-          >|= fun () -> to_public user
-      | Error e -> Lwt.return_error e)
-  | Error e -> Lwt.return_error e
+      let* result = Database.Pool.use pool db_operation in
+      match result with
+      | Ok (`Success user) -> Lwt.return_ok user
+      | Ok `UsernameTaken -> Lwt.return_error UsernameTaken
+      | Ok `EmailTaken -> Lwt.return_error EmailTaken
+      | Error e -> Lwt.return_error (DatabaseError (Caqti_error.show e))
 
-let authenticate ~(db : (module Caqti_lwt.CONNECTION)) ~username ~password =
-  let (module Db) = db in
-  let open Lwt_result.Infix in
-  Db.find_opt Q.find_by_username username
-  |> Lwt_result.map_error (fun e -> DatabaseError (Caqti_error.show e))
-  >>= function
-  | None -> Lwt.return_error UserNotFound
-  | Some user ->
-      let password_hash = hash_password password in
-      if String.equal user.password_hash password_hash then
-        Lwt.return_ok (to_public user)
-      else
-        Lwt.return_error InvalidPassword
+let authenticate ~username ~password =
+  match Database.Pool.get () with
+  | None -> Lwt.return_error (DatabaseError "Database pool not initialized")
+  | Some pool ->
+    let db_operation (module Db : Caqti_lwt.CONNECTION) =
+       let* user_result = Db.find_opt Q.find_by_username username in
+       match user_result with
+       | Error e -> Lwt_result.fail e
+       | Ok None -> Lwt_result.return (`UserNotFound : [ `UserNotFound | `Success of t | `InvalidPassword ])
+       | Ok (Some user) -> 
+            let password_hash = hash_password password in
+            if String.equal user.password_hash password_hash then
+              Lwt_result.return (`Success (to_public user))
+            else
+              Lwt_result.return (`InvalidPassword)
+    in
+    let* result = Database.Pool.use pool db_operation in
+    match result with
+    | Ok (`Success user) -> Lwt.return_ok user
+    | Ok `UserNotFound -> Lwt.return_error UserNotFound
+    | Ok `InvalidPassword -> Lwt.return_error InvalidPassword
+    | Error e -> Lwt.return_error (DatabaseError (Caqti_error.show e))
 
-let find_by_id ~(db : (module Caqti_lwt.CONNECTION)) id =
-  let (module Db) = db in
-  let open Lwt_result.Infix in
-  Db.find_opt Q.find_by_id id
-  |> Lwt_result.map_error (fun e -> DatabaseError (Caqti_error.show e))
-  >|= Option.map to_public
+let find_by_id id =
+  match Database.Pool.get () with
+  | None -> Lwt.return_error (DatabaseError "Database pool not initialized")
+  | Some pool ->
+      let db_operation (module Db : Caqti_lwt.CONNECTION) =
+        let* user_result = Db.find_opt Q.find_by_id id in
+        match user_result with
+        | Error e -> Lwt_result.fail e
+        | Ok result -> Lwt_result.return result
+      in
+      let* result = Database.Pool.use pool db_operation in
+      match result with
+      | Error e -> Lwt.return_error (DatabaseError (Caqti_error.show e))
+      | Ok (Some user) -> Lwt.return_ok (to_public user)
+      | Ok None -> Lwt.return_error UserNotFound
 
-let find_by_username ~(db : (module Caqti_lwt.CONNECTION)) username =
-  let (module Db) = db in
-  let open Lwt_result.Infix in
-  Db.find_opt Q.find_by_username username
-  |> Lwt_result.map_error (fun e -> DatabaseError (Caqti_error.show e))
-  >|= Option.map to_public
+
+let find_by_username username =
+  match Database.Pool.get () with
+  | None -> Lwt.return_error (DatabaseError "Database pool not initialized")
+  | Some pool ->
+      let db_operation (module Db : Caqti_lwt.CONNECTION) =
+        let* user_result = Db.find_opt Q.find_by_username username in
+        match user_result with
+        | Error e -> Lwt_result.fail e
+        | Ok result -> Lwt_result.return result
+      in
+      let* result = Database.Pool.use pool db_operation in
+      match result with
+      | Error e -> Lwt.return_error (DatabaseError (Caqti_error.show e))
+      | Ok (Some user) -> Lwt.return_ok (to_public user)
+      | Ok None -> Lwt.return_error UserNotFound

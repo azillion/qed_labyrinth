@@ -18,17 +18,18 @@ let user_response ~token (user : Model.User.t) =
       ])
     ]))
 
-let handle_login db body =
+let handle_login body =
   match body with
   | `Assoc [("username", `String username); ("password", `String password)] ->
-      let* result = Model.User.authenticate ~db ~username ~password in
+      let* result = Model.User.authenticate ~username ~password in
       (match result with
       | Ok user ->
           (match Jwt.generate_token user.Model.User.id with
           | Ok token -> (
-              let* user = Model.User.find_by_username ~db username in
+              let* user = Model.User.find_by_username username in
               (match user with
-              | Ok (Some user) -> user_response ~token user
+              | Ok user -> user_response ~token user
+              | Error Model.User.UserNotFound -> error_response ~status:`Unauthorized "User not found"
               | _ -> error_response ~status:`Internal_Server_Error "Failed to retrieve user"))
           | Error _ -> error_response ~status:`Internal_Server_Error "Failed to generate token")
       | Error Model.User.UserNotFound | Error Model.User.InvalidPassword ->
@@ -39,14 +40,14 @@ let handle_login db body =
           error_response ~status:`Internal_Server_Error "Authentication failed")
   | _ -> error_response ~status:`Bad_Request "Invalid request format"
 
-let handle_register db body =
+let handle_register body =
   match body with
   | `Assoc [
       ("username", `String username);
       ("password", `String password);
       ("email", `String email)
     ] ->
-      let* register_result = Model.User.register ~db ~username ~password ~email in
+      let* register_result = Model.User.register ~username ~password ~email in
       (match register_result with
       | Ok user ->
           (match Jwt.generate_token user.id with
@@ -62,17 +63,17 @@ let handle_register db body =
           error_response ~status:`Bad_Request "Registration failed")
   | _ -> error_response ~status:`Bad_Request "Invalid request format"
 
-let handle_verify db request =
+let handle_verify request =
   match Dream.header request "Authorization" with
   | Some auth_header when String.is_prefix auth_header ~prefix:"Bearer " ->
       let token = String.drop_prefix auth_header 7 in
       let verify_result = Jwt.verify_token token in
       (match verify_result with
       | Ok user_id ->
-          let* user_result = Model.User.find_by_id ~db user_id in
+          let* user_result = Model.User.find_by_id user_id in
           (match user_result with
-          | Ok (Some user) -> user_response ~token user
-          | Ok None -> error_response ~status:`Unauthorized "User not found"
+          | Ok user -> user_response ~token user
+          | Error Model.User.UserNotFound -> error_response ~status:`Unauthorized "User not found"
           | Error _ -> error_response ~status:`Internal_Server_Error "Database error")
       | Error `TokenExpired -> error_response ~status:`Unauthorized "Token expired"
       | Error _ -> error_response ~status:`Unauthorized "Invalid token")

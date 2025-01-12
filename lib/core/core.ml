@@ -1,3 +1,3 @@
 module Config = Config
-module Db = Db
+module Database = Database
 module Protocol = Protocol

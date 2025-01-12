@@ -2,13 +2,11 @@ open Base
 
 type app_state = {
   connection_manager : Connection_manager.t;
-  db_pool : Qed_labyrinth_core.Db.Pool.t;
   game_state : Game.State.t;
 }
 
-let create_app_state db_pool = {
+let create_app_state = {
   connection_manager = Connection_manager.create ();
-  db_pool;
   game_state = Game.State.create;
 }
 
@@ -25,9 +23,9 @@ let cors_middleware inner_handler request =
       Dream.add_header response "Access-Control-Allow-Origin" "*";
       Lwt.return response
 
-let start pool =
+let start =
   let open Game in
-  let app_state = create_app_state pool in
+  let app_state = create_app_state in
   (* Start game loop *)
   Lwt.async (fun () -> Loop.run app_state.game_state);
 

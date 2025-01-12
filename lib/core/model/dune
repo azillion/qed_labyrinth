@@ -9,6 +9,7 @@
   lwt
   ptime
   ptime.clock
+  qed_labyrinth.core
   uuidm
   yojson)
  (preprocess
