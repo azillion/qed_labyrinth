@@ -38,7 +38,7 @@ let handle_login body =
           error_response ~status:`Internal_Server_Error msg
       | Error _ -> 
           error_response ~status:`Internal_Server_Error "Authentication failed")
-  | _ -> error_response ~status:`Bad_Request "Invalid request format"
+  | e -> error_response ~status:`Bad_Request ("Invalid request format: " ^ Yojson.Safe.to_string e)
 
 let handle_register body =
   match body with

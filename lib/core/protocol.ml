@@ -1,6 +1,5 @@
-
 (* type character = { id : string; name : string; location_id : string }
-[@@deriving yojson] *)
+   [@@deriving yojson] *)
 
 type auth_message =
   | Register of { username : string; password : string; email : string }
@@ -10,13 +9,12 @@ type auth_message =
 
 type client_message =
   | CreateCharacter of { name : string }
-  (* | SelectCharacter of { character_id : string } *)
+    (* | SelectCharacter of { character_id : string } *)
 [@@deriving yojson]
 
 type server_message =
-  | AuthSuccess of { token : string; user_id : string }
   (* | CharacterList of { characters : character list }
-  | CharacterCreated of { character : character }
-  | CharacterSelected of { character : character } *)
+     | CharacterCreated of { character : character }
+     | CharacterSelected of { character : character } *)
   | Error of { message : string }
 [@@deriving yojson]

@@ -6,8 +6,8 @@ import { ConnectionStatus } from "./components/molecules/ConnectionStatus";
 import { initAuth } from "./lib/auth";
 
 const App = () => {
-	onMount(() => {
-		initAuth();
+	onMount(async () => {
+		await initAuth();
 		initializeWebSocket();
 	});
 

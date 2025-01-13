@@ -18,7 +18,9 @@ const calculateNextDelay = (currentDelay) => {
 };
 
 export const handleConnection = (ws) => {
-	console.log('WebSocket connected');
+	if (DEBUG) {
+		console.log('WebSocket connected');
+	}
 	setConnectionStatus('connected');
 	setIsReconnecting(false);
 	setRetryCount(0);
@@ -51,7 +53,9 @@ export const handleDisconnect = (event) => {
 	const nextDelay = calculateNextDelay(currentDelay);
 	setRetryDelay(nextDelay);
 
-	console.log(`Reconnecting in ${nextDelay}ms... (Attempt ${currentRetryCount + 1}/${MAX_RETRIES})`);
+	if (DEBUG) {
+		console.log(`Reconnecting in ${nextDelay}ms... (Attempt ${currentRetryCount + 1}/${MAX_RETRIES})`);
+	}
 
 	clearTimeout(reconnectTimeout);
 	reconnectTimeout = setTimeout(() => {

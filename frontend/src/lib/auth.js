@@ -1,5 +1,7 @@
 import { createSignal } from 'solid-js';
 import { socket } from './socket';
+import fetcher from './fetcher';
+import { ENDPOINTS } from './constants';
 
 // Auth state management
 export const [isAuthenticated, setIsAuthenticated] = createSignal(false);
@@ -55,10 +57,18 @@ export const logout = () => {
 };
 
 // Check for existing auth token on startup
-export const initAuth = () => {
+export const initAuth = async () => {
 	const token = localStorage.getItem('auth_token');
 	if (token) {
 		setAuthToken(token);
 		// Here you could verify the token with the server
+	}
+	await verifyAuth();
+};
+
+export const verifyAuth = async () => {
+	const response = await fetcher.get(ENDPOINTS.verify);
+	if (!response.ok) {
+		logout();
 	}
 };

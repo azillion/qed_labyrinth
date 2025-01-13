@@ -1,14 +1,13 @@
 import { createSignal } from 'solid-js';
 import { handleConnection, handleDisconnect } from './connection';
 import { handleMessage } from './handlers';
+import { SOCKET_URL } from '../constants';
 
-export const SOCKET_URL = 'ws://localhost:3030/websocket';
 export const [socket, setSocket] = createSignal(null);
 export const [connectionStatus, setConnectionStatus] = createSignal('disconnected');
 
 // Message handler registry
 export const handlers = {
-	auth: new Set(),
 	game: new Set(),
 	chat: new Set(),
 	error: new Set()
@@ -50,14 +49,6 @@ export const initializeWebSocket = () => {
 
 // Message handler categories
 export const messageHandlers = {
-	auth: {
-		subscribe: (handler) => onMessage('auth', handler),
-		login: (username, password) =>
-			sendMessage('Login', { username, password }),
-		register: (username, password, email) =>
-			sendMessage('Register', { username, password, email })
-	},
-
 	game: {
 		subscribe: (handler) => onMessage('game', handler),
 		move: (direction) =>
