@@ -4,8 +4,8 @@ import { TerminalInput } from "../atoms/TerminalInput";
 import { TerminalOption } from "../molecules/TerminalOption";
 import { GAME_NAME } from "../../lib/constants";
 import { theme } from "../../stores/themeStore";
-import { messageHandlers } from "../../lib/socket";
 import { authError } from '../../lib/auth';
+import { login, register } from '../../lib/auth';
 
 export const AuthFrame = () => {
 	const [step, setStep] = createSignal("select");
@@ -54,28 +54,13 @@ export const AuthFrame = () => {
 	};
 
 	// Replace the handleSubmit function with:
-	const handleSubmit = () => {
+	const handleSubmit = async () => {
 		if (mode() === 'login') {
-			messageHandlers.auth.login(username(), password());
+			await login(username(), password());
 		} else {
-			messageHandlers.auth.register(username(), password(), email());
+			await register(username(), password(), email());
 		}
 	};
-
-	// Add subscription in onMount:
-	onMount(() => {
-		document.querySelector('[tabindex="0"]').focus();
-
-		const unsub = messageHandlers.auth.subscribe((type, payload) => {
-			if (type === 'AuthSuccess') {
-				window.authToken = payload.token;
-			} else if (type === 'Error') {
-				setError(payload.message);
-			}
-		});
-
-		onCleanup(() => unsub());
-	});
 
 	return (
 		<div
@@ -134,6 +119,7 @@ export const AuthFrame = () => {
 							<TerminalText class={theme().textBase}>&gt;</TerminalText>
 							<div class="ml-2 flex-1">
 								<TerminalInput
+									id="username"
 									value={username()}
 									onInput={setUsername}
 									placeholder="Enter username"
@@ -166,7 +152,13 @@ export const AuthFrame = () => {
 						<div class="flex items-center">
 							<TerminalText class={theme().textBase}>&gt;</TerminalText>
 							<div class="ml-2 flex-1">
-								<TerminalInput value={email()} onInput={setEmail} placeholder="Enter email" autofocus={true} />
+								<TerminalInput
+									id="email"
+									value={email()}
+									onInput={setEmail}
+									placeholder="Enter email"
+									autofocus={true}
+								/>
 							</div>
 						</div>
 					</div>

@@ -41,12 +41,22 @@ export const handleAuthMessage = (event) => {
 };
 
 // Auth actions
-export const login = (username, password) => {
-	socket()?.send(JSON.stringify(["Login", { username, password }]));
+export const login = async (username, password) => {
+	const response = await fetcher.post(ENDPOINTS.login, { username, password });
+	if (response.ok) {
+		setAuthToken(response.token);
+		setCurrentUser(response.user);
+		setIsAuthenticated(true);
+	}
 };
 
-export const register = (username, password, email) => {
-	socket()?.send(JSON.stringify(["Register", { username, password, email }]));
+export const register = async (username, password, email) => {
+	const response = await fetcher.post(ENDPOINTS.register, { username, password, email });
+	if (response.ok) {
+		setAuthToken(response.token);
+		setCurrentUser(response.user);
+		setIsAuthenticated(true);
+	}
 };
 
 export const logout = () => {
@@ -61,9 +71,8 @@ export const initAuth = async () => {
 	const token = localStorage.getItem('auth_token');
 	if (token) {
 		setAuthToken(token);
-		// Here you could verify the token with the server
+		await verifyAuth();
 	}
-	await verifyAuth();
 };
 
 export const verifyAuth = async () => {

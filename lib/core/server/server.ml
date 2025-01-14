@@ -23,7 +23,7 @@ let cors_middleware inner_handler request =
       Dream.add_header response "Access-Control-Allow-Origin" "*";
       Lwt.return response
 
-let start =
+let start () =
   let open Game in
   let open Http_handlers in
   let app_state = create_app_state in
@@ -31,7 +31,7 @@ let start =
   Lwt.async (fun () -> Loop.run app_state.game_state);
 
   (* Configure web server *)
-  Dream.run ~interface:"0.0.0.0" ~port:3030
+  Lwt.return (Dream.run ~interface:"0.0.0.0" ~port:3030
   @@ Dream.logger
   @@ cors_middleware
   @@ Dream.router
@@ -65,3 +65,4 @@ let start =
 
         Dream.get "/websocket" (fun _ -> Dream.websocket (Websocket_handler.handler app_state.connection_manager))
       ]
+  )
