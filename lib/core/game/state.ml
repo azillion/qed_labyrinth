@@ -1,10 +1,8 @@
-open Base
-
 type t = {
   mutable last_tick : float;
 }
 
-let create =
+let create () =
   {
     last_tick = Unix.gettimeofday ();
   }
