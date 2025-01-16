@@ -6,14 +6,9 @@ type t = {
   username : string;
   email : string;
   created_at : Ptime.t;
+  token : string option;
+  token_expires_at : Ptime.t option;
 }
-
-type error =
-  | UserNotFound
-  | InvalidPassword
-  | UsernameTaken
-  | EmailTaken
-  | DatabaseError of string
 
 (* Private type for internal use *)
 type internal = {
@@ -25,6 +20,23 @@ type internal = {
   token : string option;
   token_expires_at : Ptime.t option;
 }
+
+let to_public (user : internal) =
+  { 
+    id = user.id;
+    username = user.username;
+    email = user.email;
+    created_at = user.created_at;
+    token = user.token;
+    token_expires_at = user.token_expires_at;
+  }
+
+type error =
+  | UserNotFound
+  | InvalidPassword
+  | UsernameTaken
+  | EmailTaken
+  | DatabaseError of string
 
 let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 
@@ -71,13 +83,6 @@ module Q = struct
          WHERE id = ? |}
 end
 
-let to_public (user : internal) =
-  { 
-    id = user.id;
-    username = user.username;
-    email = user.email;
-    created_at = user.created_at;
-  }
 
 let register ~username ~password ~email =
   let open Base in
@@ -158,7 +163,7 @@ let find_by_username username =
 let update_token ~user_id ~token ~expires_at =
   let open Base in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    match%lwt Db.exec Q.update_token (Some token, Some expires_at, user_id) with
+    match%lwt Db.exec Q.update_token (token, expires_at, user_id) with
     | Ok () -> Lwt_result.return ()
     | Error e -> Lwt_result.fail e
   in

@@ -3,6 +3,8 @@ type t = {
   username : string;
   email : string;
   created_at : Ptime.t;
+  token : string option;
+  token_expires_at : Ptime.t option;
 }
 
 type error =
@@ -33,6 +35,6 @@ val find_by_username :
 
 val update_token :
   user_id:string ->
-  token:string ->
-  expires_at:Ptime.t ->
+  token:string option ->
+  expires_at:Ptime.t option ->
   (unit, error) result Lwt.t

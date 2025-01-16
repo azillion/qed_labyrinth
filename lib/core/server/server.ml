@@ -1,16 +1,5 @@
 open Base
 
-type app_state = {
-  connection_manager : Connection_manager.t;
-  game_state : Game.State.t;
-}
-
-let create_app_state =
-  {
-    connection_manager = Connection_manager.create ();
-    game_state = Game.State.create;
-  }
-
 let cors_middleware inner_handler request =
   match Dream.method_ request with
   | `OPTIONS ->
@@ -28,11 +17,11 @@ let cors_middleware inner_handler request =
       Lwt.return response
 
 let start () =
-  let open Game in
   let open Http_handlers in
-  let app_state = create_app_state in
+  let connection_manager = Connection_manager.create () in
+  let app_state = State.create ~connection_manager in
   (* Start game loop *)
-  Lwt.async (fun () -> Loop.run app_state.game_state);
+  Lwt.async (fun () -> Game.Loop.run ());
 
   (* Configure web server *)
   Lwt.return
@@ -67,6 +56,7 @@ let start () =
                         (`Assoc [ ("error", `String "Invalid JSON") ]))
                | body_json -> handle_register body_json);
            Dream.get "/auth/verify" (fun request -> handle_verify request);
+           Dream.get "/auth/logout" (fun request -> handle_logout request app_state);
            Dream.get "/websocket" (fun _ ->
                Dream.websocket
                  (Websocket_handler.handler app_state.connection_manager));
