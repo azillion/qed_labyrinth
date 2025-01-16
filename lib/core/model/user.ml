@@ -22,6 +22,8 @@ type internal = {
   password_hash : string;
   email : string;
   created_at : Ptime.t;
+  token : string option;
+  token_expires_at : Ptime.t option;
 }
 
 let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
@@ -33,26 +35,26 @@ let create ~username ~password ~email =
   let id = Uuidm.to_string (uuid ()) in
   let password_hash = hash_password password in
   let created_at = Ptime_clock.now () in
-  { id; username; password_hash; email; created_at }
+  { id; username; password_hash; email; created_at; token = None; token_expires_at = None }
 
 module Q = struct
   open Caqti_request.Infix
   open Caqti_type.Std
 
   let user_type =
-    let encode { id; username; password_hash; email; created_at } =
-      Ok (id, username, password_hash, email, created_at)
+    let encode { id; username; password_hash; email; created_at; token; token_expires_at } =
+      Ok (id, username, password_hash, email, created_at, token, token_expires_at)
     in
-    let decode (id, username, password_hash, email, created_at) =
-      Ok { id; username; password_hash; email; created_at }
+    let decode (id, username, password_hash, email, created_at, token, token_expires_at) =
+      Ok { id; username; password_hash; email; created_at; token; token_expires_at }
     in
-    let rep = t5 string string string string ptime in
+    let rep = t7 string string string string ptime (option string) (option ptime) in
     custom ~encode ~decode rep
 
   let insert =
     (user_type ->. unit)
-      {| INSERT INTO users (id, username, password_hash, email, created_at)
-       VALUES (?, ?, ?, ?, ?) |}
+      {| INSERT INTO users (id, username, password_hash, email, created_at, token, token_expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?) |}
 
   let find_by_id = (string ->? user_type) "SELECT * FROM users WHERE id = ?"
 
@@ -61,6 +63,12 @@ module Q = struct
 
   let find_by_email =
     (string ->? user_type) "SELECT * FROM users WHERE email = ?"
+
+  let update_token =
+    (t3 (option string) (option ptime) string ->. unit)
+      {| UPDATE users 
+         SET token = ?, token_expires_at = ?
+         WHERE id = ? |}
 end
 
 let to_public (user : internal) =
@@ -146,3 +154,15 @@ let find_by_username username =
       | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
       | Ok (Some user) -> Lwt.return_ok (to_public user)
       | Ok None -> Lwt.return_error UserNotFound
+
+let update_token ~user_id ~token ~expires_at =
+  let open Base in
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    match%lwt Db.exec Q.update_token (Some token, Some expires_at, user_id) with
+    | Ok () -> Lwt_result.return ()
+    | Error e -> Lwt_result.fail e
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Ok () -> Lwt.return_ok ()
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))

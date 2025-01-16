@@ -30,3 +30,9 @@ val find_by_id :
 val find_by_username :
   string ->
   (t, error) result Lwt.t
+
+val update_token :
+  user_id:string ->
+  token:string ->
+  expires_at:Ptime.t ->
+  (unit, error) result Lwt.t
