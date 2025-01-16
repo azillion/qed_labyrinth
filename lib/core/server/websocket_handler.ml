@@ -15,7 +15,7 @@ let handler state websocket =
       digest_string (Int64.of_int (Random.bits ()) |> Int64.to_string) |> to_hex)
   in
   let send_message msg = Dream.send websocket msg in
-  let client = Client.create client_id send_message in
+  let client = Client.create client_id send_message (Some websocket) in
 
   Connection_manager.add_client state client;
 
@@ -33,16 +33,6 @@ let handler state websocket =
             process_messages ()
         | Error err ->
             ignore (Stdio.print_endline ("Parse error: " ^ err));
-            (* let%lwt () =
-              client.send
-                (Protocol.Message.Error
-                   {
-                     message =
-                       Qed_error.auth_error_to_string InvalidMessageFormat;
-                   }
-                |> Protocol.Message.server_message_to_yojson
-                |> Yojson.Safe.to_string)
-            in *)
             process_messages ())
     | None ->
         Connection_manager.remove_client state client_id;
