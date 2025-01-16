@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js';
 import { setConnectionStatus } from './index';
 import { DEBUG } from '../constants';
+import { initializeWebSocket } from './index';
 
 const INITIAL_RETRY_DELAY = 1000;
 const MAX_RETRY_DELAY = 30000;

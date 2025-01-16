@@ -1,4 +1,4 @@
-import { isAuthenticated, setIsAuthenticated } from "../../lib/auth";
+import { isAuthenticated } from "../../lib/auth";
 import { AuthFrame } from "../organisms/AuthFrame";
 
 export const GameLayout = () => {

@@ -1,15 +1,20 @@
 import { GameLayout } from "./components/templates/GameLayout";
 import { setCurrentTheme } from "./stores/themeStore";
-import { onMount } from "solid-js";
+import { onMount, createEffect } from "solid-js";
 import { initializeWebSocket } from "./lib/socket";
 import { ConnectionStatus } from "./components/molecules/ConnectionStatus";
-import { initAuth } from "./lib/auth";
+import { initAuth, authToken } from "./lib/auth";
+
 
 const App = () => {
 	onMount(async () => {
 		await initAuth();
-		initializeWebSocket();
 	});
+
+	createEffect(() => {
+		if (authToken())
+			initializeWebSocket();
+	}, [authToken()]);
 
 	setCurrentTheme("red");
 

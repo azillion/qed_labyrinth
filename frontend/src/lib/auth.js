@@ -1,28 +1,11 @@
 import { createSignal } from 'solid-js';
-import { socket } from './socket';
 import fetcher from './fetcher';
 import { ENDPOINTS } from './constants';
 
 // Auth state management
 export const [isAuthenticated, setIsAuthenticated] = createSignal(false);
 export const [authToken, setAuthToken] = createSignal(null);
-export const [currentUser, setCurrentUser] = createSignal(null);
 export const [authError, setAuthError] = createSignal(null);
-
-// Message handlers for different response types
-const messageHandlers = {
-	AuthSuccess: ({ token, user_id }) => {
-		setAuthToken(token);
-		setCurrentUser({ id: user_id });
-		setIsAuthenticated(true);
-		setAuthError(null);
-		// Store auth token for persistence
-		localStorage.setItem('auth_token', token);
-	},
-	Error: ({ message }) => {
-		setAuthError(message);
-	}
-};
 
 // Handle incoming WebSocket messages
 export const handleAuthMessage = (event) => {
@@ -43,9 +26,9 @@ export const handleAuthMessage = (event) => {
 // Auth actions
 export const login = async (username, password) => {
 	const response = await fetcher.post(ENDPOINTS.login, { username, password });
-	if (response.ok) {
+	console.log(response);
+	if (response.token) {
 		setAuthToken(response.token);
-		setCurrentUser(response.user);
 		setIsAuthenticated(true);
 	}
 };
