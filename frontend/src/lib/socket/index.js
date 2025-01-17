@@ -35,17 +35,22 @@ export const sendMessage = (type, payload) => {
 
 // Initialize WebSocket connection
 export const initializeWebSocket = () => {
-	const ws = new WebSocket(`${SOCKET_URL}?token=${authToken()}`);
+	try {
+		const ws = new WebSocket(`${SOCKET_URL}?token=${authToken()}`);
 
-	ws.onopen = () => handleConnection(ws);
-	ws.onclose = handleDisconnect;
-	ws.onmessage = (event) => handleMessage(event, handlers);
-	ws.onerror = (error) => {
-		console.error('WebSocket error:', error);
+		ws.onopen = () => handleConnection(ws);
+		ws.onclose = handleDisconnect;
+		ws.onmessage = (event) => handleMessage(event, handlers);
+		ws.onerror = (error) => {
+			console.error('WebSocket error:', error);
+			setConnectionStatus('error');
+		};
+
+		setSocket(ws);
+	} catch (error) {
+		console.error('Error initializing WebSocket:', error);
 		setConnectionStatus('error');
-	};
-
-	setSocket(ws);
+	}
 };
 
 // Message handler categories

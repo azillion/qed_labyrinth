@@ -9,14 +9,14 @@ let error_response ~status error =
 let user_response ~token =
   Dream.json (Yojson.Safe.to_string (`Assoc [ ("token", `String token) ]))
 
-(* let is_valid_username username = String.length username >= 3 *)
-(* let is_valid_password password = String.length password >= 8 *)
+let is_valid_username username = String.length username >= 3
+let is_valid_password password = String.length password >= 8
 
-(* let is_valid_email email = *)
-(*   let email_regex = *)
-(*     Str.regexp "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" *)
-(*   in *)
-(*   Str.string_match email_regex email 0 *)
+let is_valid_email email =
+  let email_regex =
+    Str.regexp "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+  in
+  Str.string_match email_regex email 0
 
 let handle_login body =
   match body with
@@ -62,35 +62,42 @@ let handle_register body =
         ("password", `String password);
         ("email", `String email);
       ] -> (
-      let* register_result = Model.User.register ~username ~password ~email in
-      match register_result with
-      | Ok user -> (
-          match Jwt.generate_token user.id with
-          | Ok token -> (
-              let expires_at =
-                Ptime.add_span (Ptime_clock.now ())
-                  (Ptime.Span.of_int_s (24 * 60 * 60))
-                |> Option.value_exn
-              in
-              let* token_result =
-                Model.User.update_token ~user_id:user.id ~token:(Some token)
-                  ~expires_at:(Some expires_at)
-              in
-              match token_result with
-              | Ok () -> user_response ~token
-              | Error _ ->
-                  error_response ~status:`Internal_Server_Error
-                    "Failed to store token")
-          | Error _ ->
-              error_response ~status:`Internal_Server_Error
-                "Token generation failed")
-      | Error Model.User.UsernameTaken ->
-          error_response ~status:`Bad_Request "Username already taken"
-      | Error Model.User.EmailTaken ->
-          error_response ~status:`Bad_Request "Email already taken"
-      | Error (Model.User.DatabaseError msg) ->
-          error_response ~status:`Internal_Server_Error msg
-      | Error _ -> error_response ~status:`Bad_Request "Registration failed")
+      if not (is_valid_username username) then
+        error_response ~status:`Bad_Request "Invalid username"
+      else if not (is_valid_password password) then
+        error_response ~status:`Bad_Request "Invalid password"
+      else if not (is_valid_email email) then
+        error_response ~status:`Bad_Request "Invalid email"
+      else
+        let* register_result = Model.User.register ~username ~password ~email in
+        match register_result with
+        | Ok user -> (
+            match Jwt.generate_token user.id with
+            | Ok token -> (
+                let expires_at =
+                  Ptime.add_span (Ptime_clock.now ())
+                    (Ptime.Span.of_int_s (24 * 60 * 60))
+                  |> Option.value_exn
+                in
+                let* token_result =
+                  Model.User.update_token ~user_id:user.id ~token:(Some token)
+                    ~expires_at:(Some expires_at)
+                in
+                match token_result with
+                | Ok () -> user_response ~token
+                | Error _ ->
+                    error_response ~status:`Internal_Server_Error
+                      "Failed to store token")
+            | Error _ ->
+                error_response ~status:`Internal_Server_Error
+                  "Token generation failed")
+        | Error Model.User.UsernameTaken ->
+            error_response ~status:`Bad_Request "Username already taken"
+        | Error Model.User.EmailTaken ->
+            error_response ~status:`Bad_Request "Email already taken"
+        | Error (Model.User.DatabaseError msg) ->
+            error_response ~status:`Internal_Server_Error msg
+        | Error _ -> error_response ~status:`Bad_Request "Registration failed")
   | _ -> error_response ~status:`Bad_Request "Invalid request format"
 
 let handle_logout request (app_state : State.t) =
