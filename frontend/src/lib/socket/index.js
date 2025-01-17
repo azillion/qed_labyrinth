@@ -2,6 +2,7 @@ import { createSignal } from 'solid-js';
 import { handleConnection, handleDisconnect } from './connection';
 import { handleMessage } from './handlers';
 import { SOCKET_URL } from '../constants';
+import { authToken } from '../auth';
 
 export const [socket, setSocket] = createSignal(null);
 export const [connectionStatus, setConnectionStatus] = createSignal('disconnected');
@@ -34,7 +35,7 @@ export const sendMessage = (type, payload) => {
 
 // Initialize WebSocket connection
 export const initializeWebSocket = () => {
-	const ws = new WebSocket(SOCKET_URL);
+	const ws = new WebSocket(`${SOCKET_URL}?token=${authToken()}`);
 
 	ws.onopen = () => handleConnection(ws);
 	ws.onclose = handleDisconnect;

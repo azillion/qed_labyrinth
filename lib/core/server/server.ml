@@ -1,14 +1,14 @@
 open Base
 
 let error_response ?(status = `Bad_Request) message =
-  Dream.response ~code:(Dream.status_to_int status)
+  Dream.response
+    ~code:(Dream.status_to_int status)
     (Yojson.Safe.to_string (`Assoc [ ("error", `String message) ]))
 
 let is_valid_token request : (unit, Dream.response) Lwt_result.t =
   let open Lwt.Syntax in
-  match Dream.header request "Authorization" with
-  | Some auth_header when String.is_prefix auth_header ~prefix:"Bearer " -> (
-      let token = String.drop_prefix auth_header 7 in
+  match Dream.query request "token" with
+  | Some token -> (
       let verify_result = Qed_labyrinth_core.Jwt.verify_token token in
       match verify_result with
       | Ok user_id -> (
@@ -19,9 +19,9 @@ let is_valid_token request : (unit, Dream.response) Lwt_result.t =
               match (user.token, user.token_expires_at) with
               | Some db_token, Some expires_at
                 when String.equal db_token token
-                     && Ptime.is_later now ~than:expires_at ->
+                     && Ptime.is_later expires_at ~than:now ->
                   Lwt.return_ok ()
-              | _ ->
+              | _, None | None, _ | Some _, Some _ ->
                   Lwt.return_error
                     (error_response ~status:`Unauthorized
                        "Token invalid or expired"))
@@ -38,7 +38,7 @@ let is_valid_token request : (unit, Dream.response) Lwt_result.t =
       | Error _ ->
           Lwt.return_error
             (error_response ~status:`Unauthorized "Invalid token"))
-  | _ ->
+  | None ->
       Lwt.return_error
         (error_response ~status:`Unauthorized "No authorization token")
 
@@ -104,14 +104,14 @@ let start () =
                      (Yojson.Safe.to_string
                         (`Assoc [ ("error", `String "Invalid JSON") ]))
                | body_json -> handle_register body_json);
-           Dream.get "/auth/verify" (auth_middleware handle_verify);
-           Dream.get "/auth/logout" (auth_middleware (fun request -> 
-               handle_logout request app_state));
-           Dream.get "/websocket" (auth_middleware (fun request ->
-               let%lwt auth_result = is_valid_token request in
-               match auth_result with
-               | Ok () -> 
-                   Dream.websocket
-                     (Websocket_handler.handler app_state.connection_manager)
-               | Error response -> Lwt.return response));
+           Dream.get "/auth/logout" (fun request ->
+               handle_logout request app_state);
+           Dream.get "/websocket"
+             (auth_middleware (fun request ->
+                  let%lwt auth_result = is_valid_token request in
+                  match auth_result with
+                  | Ok () ->
+                      Dream.websocket
+                        (Websocket_handler.handler app_state.connection_manager)
+                  | Error response -> Lwt.return response));
          ])

@@ -7,6 +7,16 @@ export const [isAuthenticated, setIsAuthenticated] = createSignal(false);
 export const [authToken, setAuthToken] = createSignal(null);
 export const [authError, setAuthError] = createSignal(null);
 
+const setAuthState = (token) => {
+	setAuthToken(token);
+	if (token) {
+		localStorage.setItem('auth_token', token);
+	} else {
+		localStorage.removeItem('auth_token');
+	}
+	setIsAuthenticated(!!token);
+};
+
 // Handle incoming WebSocket messages
 export const handleAuthMessage = (event) => {
 	try {
@@ -26,27 +36,20 @@ export const handleAuthMessage = (event) => {
 // Auth actions
 export const login = async (username, password) => {
 	const response = await fetcher.post(ENDPOINTS.login, { username, password });
-	console.log(response);
 	if (response.token) {
-		setAuthToken(response.token);
-		setIsAuthenticated(true);
+		setAuthState(response.token);
 	}
 };
 
 export const register = async (username, password, email) => {
 	const response = await fetcher.post(ENDPOINTS.register, { username, password, email });
-	if (response.ok) {
-		setAuthToken(response.token);
-		setCurrentUser(response.user);
-		setIsAuthenticated(true);
+	if (response.token) {
+		setAuthState(response.token);
 	}
 };
 
 export const logout = () => {
-	setAuthToken(null);
-	setCurrentUser(null);
-	setIsAuthenticated(false);
-	localStorage.removeItem('auth_token');
+	setAuthState(null);
 };
 
 // Check for existing auth token on startup
@@ -54,13 +57,5 @@ export const initAuth = async () => {
 	const token = localStorage.getItem('auth_token');
 	if (token) {
 		setAuthToken(token);
-		await verifyAuth();
-	}
-};
-
-export const verifyAuth = async () => {
-	const response = await fetcher.get(ENDPOINTS.verify);
-	if (!response.ok) {
-		logout();
 	}
 };

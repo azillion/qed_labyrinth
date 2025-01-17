@@ -6,5 +6,4 @@ export const API_URL = "http://localhost:3030";
 export const ENDPOINTS = {
 	login: "/auth/login",
 	register: "/auth/register",
-	verify: "/auth/verify"
 };

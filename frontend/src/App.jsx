@@ -14,7 +14,7 @@ const App = () => {
 	createEffect(() => {
 		if (authToken())
 			initializeWebSocket();
-	}, [authToken()]);
+	}, [authToken]);
 
 	setCurrentTheme("red");
 
