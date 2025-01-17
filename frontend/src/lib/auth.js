@@ -7,7 +7,7 @@ export const [isAuthenticated, setIsAuthenticated] = createSignal(false);
 export const [authToken, setAuthToken] = createSignal(null);
 export const [authError, setAuthError] = createSignal(null);
 
-const setAuthState = (token) => {
+export const setAuthState = (token) => {
 	setAuthToken(token);
 	if (token) {
 		localStorage.setItem('auth_token', token);

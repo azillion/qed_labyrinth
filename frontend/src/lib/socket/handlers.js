@@ -1,5 +1,11 @@
+import { setAuthState } from "../auth";
+
 export const handleMessage = (event, handlers) => {
 	try {
+		if (event.data === 'Connection terminated') {
+			setAuthState(null);
+			return;
+		}
 		const data = JSON.parse(event.data);
 		const [type, payload] = Array.isArray(data) ? data : [Object.keys(data)[0], data[Object.keys(data)[0]]];
 
