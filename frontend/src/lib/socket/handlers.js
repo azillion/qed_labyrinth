@@ -1,4 +1,5 @@
 import { setAuthState } from "@features/auth/stores/auth";
+import { characterHandlers } from "@features/auth/stores/character";
 
 export const handleMessage = (event, handlers) => {
 	try {
@@ -14,7 +15,12 @@ export const handleMessage = (event, handlers) => {
 		}
 
 		// Route message to appropriate handlers
-		if (type.startsWith('Game')) {
+		if (type.startsWith('Character')) {
+			const handler = characterHandlers.handlers[type];
+			if (handler) {
+			  handler(payload);
+			}
+		  } else if (type.startsWith('Game')) {
 			handlers.game.forEach(handler => handler(type, payload));
 		} else if (type.startsWith('Chat')) {
 			handlers.chat.forEach(handler => handler(type, payload));

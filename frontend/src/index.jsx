@@ -4,6 +4,7 @@ import { Router, Route } from "@solidjs/router";
 
 import "./index.css";
 import "./styles/base.css";
+import { messageHandlers } from "@lib/socket";
 import App from "./App";
 
 import GamePage from "@pages/game";

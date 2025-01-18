@@ -5,6 +5,8 @@ import { initializeWebSocket } from "@lib/socket";
 import { ConnectionStatus } from "@components/shared/ConnectionStatus";
 import { initAuth, authToken } from "@features/auth/stores/auth";
 import LoginPage from "@pages/auth";
+import CharacterPage from "@pages/character";
+import { isCharacterSelected } from "@features/auth/stores/character";
 
 const App = (props) => {
 	onMount(async () => {
