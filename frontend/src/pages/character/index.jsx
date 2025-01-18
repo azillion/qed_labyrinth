@@ -3,6 +3,7 @@ import { TerminalText } from "@components/ui/TerminalText";
 import { TerminalOption } from "@components/shared/TerminalOption";
 import { theme } from "@stores/themeStore";
 import CharacterSelectPage from "./select";
+import CharacterCreatePage from "./creation";
 
 const CharacterPage = () => {
     const [step, setStep] = createSignal('select');

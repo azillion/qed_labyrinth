@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, onMount, createEffect } from "solid-js";
 import { TerminalText } from "@components/ui/TerminalText";
 import { TerminalInput } from "@components/ui/TerminalInput";
 import { TerminalOption } from "@components/shared/TerminalOption";
@@ -14,6 +14,27 @@ const LoginPage = () => {
 	const [password, setPassword] = createSignal("");
 	const [email, setEmail] = createSignal("");
 	const [error, setError] = createSignal("");
+
+	let containerRef;
+    let inputRef;
+
+	const focusInput = () => {
+        if (["username", "password", "email"].includes(step())) {
+            inputRef?.focus();
+        } else {
+            containerRef?.focus();
+        }
+    };
+
+	onMount(() => {
+        containerRef?.focus();
+    });
+
+    // Focus after step changes
+    createEffect(() => {
+        const _currentStep = step();
+        focusInput();
+    });
 
 	const handleKeyDown = (e) => {
 		if (e.key === "Escape") {
@@ -67,6 +88,7 @@ const LoginPage = () => {
 			class="fixed inset-0 flex items-center justify-center bg-black focus:outline-none"
 			onKeyDown={handleKeyDown}
 			tabIndex={0}
+			ref={containerRef}
 		>
 			<div
 				class={`bg-black p-8 w-full max-w-2xl font-mono 
@@ -120,6 +142,7 @@ const LoginPage = () => {
 							<div class="ml-2 flex-1">
 								<TerminalInput
 									id="username"
+									ref={inputRef}
 									value={username()}
 									onInput={setUsername}
 									placeholder="Enter username"
@@ -137,6 +160,7 @@ const LoginPage = () => {
 							<div class="ml-2 flex-1">
 								<TerminalInput
 									type="password"
+									ref={inputRef}
 									value={password()}
 									onInput={setPassword}
 									placeholder="Enter password"
@@ -154,6 +178,7 @@ const LoginPage = () => {
 							<div class="ml-2 flex-1">
 								<TerminalInput
 									id="email"
+									ref={inputRef}
 									value={email()}
 									onInput={setEmail}
 									placeholder="Enter email"

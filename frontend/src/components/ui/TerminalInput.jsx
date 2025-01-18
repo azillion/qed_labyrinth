@@ -2,6 +2,7 @@ import { theme } from "../../stores/themeStore";
 
 export const TerminalInput = (props) => (
   <input
+    ref={props.ref}
     type={props.type || "text"}
     value={props.value}
     onInput={(e) => props.onInput(e.currentTarget.value)}

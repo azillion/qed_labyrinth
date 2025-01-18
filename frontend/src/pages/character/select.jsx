@@ -1,4 +1,4 @@
-import { createSignal, Show, For, onMount } from "solid-js";
+import { createSignal, Show, For, onMount, createEffect } from "solid-js";
 import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { 
@@ -11,6 +11,24 @@ import {
 const CharacterSelectPage = () => {
     const [selectedIndex, setSelectedIndex] = createSignal(0);
     const [error, setError] = createSignal("");
+    
+    let containerRef;
+
+    const focusContainer = () => {
+        containerRef?.focus();
+    };
+
+    onMount(() => {
+        focusContainer();
+    });
+
+    // Focus after characters load
+    createEffect(() => {
+        const isLoading = loadingCharacters();
+        if (!isLoading) {
+            focusContainer();
+        }
+    });
 
     onMount(async () => {
         try {
@@ -71,6 +89,7 @@ const CharacterSelectPage = () => {
             class="fixed inset-0 flex items-center justify-center bg-black focus:outline-none"
             onKeyDown={handleKeyDown}
             tabIndex={0}
+            ref={containerRef}
         >
             <div class={`bg-black p-8 w-full max-w-2xl font-mono ${theme().textBase} ${theme().border} ${theme().shadow}`}>
                 <div class="mb-8">
