@@ -1,4 +1,4 @@
-import { setAuthState } from "../auth";
+import { setAuthState } from "@features/auth/stores/auth";
 
 export const handleMessage = (event, handlers) => {
 	try {

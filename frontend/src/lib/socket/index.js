@@ -2,7 +2,7 @@ import { createSignal } from 'solid-js';
 import { handleConnection, handleDisconnect } from './connection';
 import { handleMessage } from './handlers';
 import { SOCKET_URL } from '../constants';
-import { authToken } from '../auth';
+import { authToken } from '@features/auth/stores/auth';
 
 export const [socket, setSocket] = createSignal(null);
 export const [connectionStatus, setConnectionStatus] = createSignal('disconnected');
@@ -50,6 +50,7 @@ export const initializeWebSocket = () => {
 	} catch (error) {
 		console.error('Error initializing WebSocket:', error);
 		setConnectionStatus('error');
+		setAuthToken(null);
 	}
 };
 

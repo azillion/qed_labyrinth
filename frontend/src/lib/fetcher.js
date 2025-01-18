@@ -1,4 +1,4 @@
-import { authToken } from './auth';
+import { authToken } from '@features/auth/stores/auth';
 import { API_URL } from './constants';
 
 const BASE_URL = API_URL;

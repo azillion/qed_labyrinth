@@ -2,12 +2,12 @@ import { createSignal } from 'solid-js';
 import { setConnectionStatus } from './index';
 import { DEBUG } from '../constants';
 import { initializeWebSocket } from './index';
-import { setIsAuthenticated } from '../auth';
+import { setAuthState, setIsAuthenticated } from '@features/auth/stores/auth';
 
 const INITIAL_RETRY_DELAY = 1000;
 const MAX_RETRY_DELAY = 30000;
 const BACKOFF_FACTOR = 1.5;
-const MAX_RETRIES = 10;
+const MAX_RETRIES = 5;
 
 export const [retryCount, setRetryCount] = createSignal(0);
 export const [retryDelay, setRetryDelay] = createSignal(INITIAL_RETRY_DELAY);
@@ -42,6 +42,7 @@ export const handleDisconnect = (event) => {
 	if (currentRetryCount >= MAX_RETRIES) {
 		console.error('Max reconnection attempts reached');
 		setConnectionStatus('failed');
+		setAuthState(null);
 		return;
 	}
 

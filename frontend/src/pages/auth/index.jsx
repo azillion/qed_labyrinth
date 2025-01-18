@@ -1,13 +1,13 @@
-import { createSignal, Show, onMount, onCleanup } from "solid-js";
-import { TerminalText } from "../atoms/TerminalText";
-import { TerminalInput } from "../atoms/TerminalInput";
-import { TerminalOption } from "../molecules/TerminalOption";
-import { GAME_NAME } from "../../lib/constants";
-import { theme } from "../../stores/themeStore";
-import { authError } from '../../lib/auth';
-import { login, register } from '../../lib/auth';
+import { createSignal, Show } from "solid-js";
+import { TerminalText } from "@components/ui/TerminalText";
+import { TerminalInput } from "@components/ui/TerminalInput";
+import { TerminalOption } from "@components/shared/TerminalOption";
+import { GAME_NAME } from "@lib/constants";
+import { theme } from "@stores/themeStore";
+import { authError } from '@features/auth/stores/auth';
+import { login, register } from '@features/auth/stores/auth';
 
-export const AuthFrame = () => {
+const LoginPage = () => {
 	const [step, setStep] = createSignal("select");
 	const [mode, setMode] = createSignal(null);
 	const [username, setUsername] = createSignal("");
@@ -179,3 +179,5 @@ export const AuthFrame = () => {
 		</div>
 	);
 };
+
+export default LoginPage;

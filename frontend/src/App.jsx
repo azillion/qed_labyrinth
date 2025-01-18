@@ -1,12 +1,12 @@
-import { GameLayout } from "./components/templates/GameLayout";
-import { setCurrentTheme } from "./stores/themeStore";
-import { onMount, createEffect } from "solid-js";
-import { initializeWebSocket } from "./lib/socket";
-import { ConnectionStatus } from "./components/molecules/ConnectionStatus";
-import { initAuth, authToken } from "./lib/auth";
+import { onMount, createEffect, Show } from "solid-js";
 
+import { setCurrentTheme } from "@stores/themeStore";
+import { initializeWebSocket } from "@lib/socket";
+import { ConnectionStatus } from "@components/shared/ConnectionStatus";
+import { initAuth, authToken } from "@features/auth/stores/auth";
+import LoginPage from "@pages/auth";
 
-const App = () => {
+const App = (props) => {
 	onMount(async () => {
 		await initAuth();
 	});
@@ -20,7 +20,11 @@ const App = () => {
 
 	return (
 		<>
-			<GameLayout />
+			<Show when={authToken()} fallback={<LoginPage />}>
+				<Show when={isCharacterSelected()} fallback={<CharacterPage />}>
+					<props.children />
+				</Show>
+			</Show>
 			<ConnectionStatus />
 		</>
 	);

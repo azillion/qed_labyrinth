@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
-import fetcher from './fetcher';
-import { ENDPOINTS } from './constants';
+import fetcher from '@lib/fetcher';
+import { ENDPOINTS } from '@lib/constants';
 
 // Auth state management
 export const [isAuthenticated, setIsAuthenticated] = createSignal(false);

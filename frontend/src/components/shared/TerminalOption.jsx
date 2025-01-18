@@ -1,4 +1,4 @@
-import { TerminalText } from "../atoms/TerminalText";
+import { TerminalText } from "../ui/TerminalText";
 
 export const TerminalOption = (props) => (
   <TerminalText class={`${props.selected ? "text-blue-400" : ""}`}>
