@@ -3,7 +3,7 @@
  (public_name qed_labyrinth)
  (preprocess (pps lwt_ppx ppx_yojson_conv))
  (libraries
-  qed_labyrinth.core
   qed_labyrinth.server
+  qed_labyrinth.infra
   uuidm
   dream))

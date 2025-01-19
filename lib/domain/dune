@@ -1,0 +1,30 @@
+(library
+ (name qed_domain)
+ (public_name qed_labyrinth.domain)
+ (libraries
+  base
+  yojson
+  ppx_deriving_yojson.runtime
+  ppx_deriving.runtime
+  qed_labyrinth.infra
+  digestif
+  jose
+  ptime
+  ptime.clock
+  dream
+  lwt
+  caqti
+  caqti-lwt
+  lwt.unix
+  caqti-lwt.unix
+  caqti-driver-postgresql
+  uri
+  uuidm
+  unix)
+ (preprocess
+  (pps
+   ppx_jane
+   ppx_let
+   lwt_ppx
+   ppx_deriving.show
+   ppx_deriving_yojson)))

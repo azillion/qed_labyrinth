@@ -1,5 +1,5 @@
 open Base
-open Qed_labyrinth_core
+open Infra
 
 let () =
   let config = Config.Database.create () in

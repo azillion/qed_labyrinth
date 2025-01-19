@@ -1,11 +1,10 @@
 open Base
-open Qed_labyrinth_core
-open Model.User
+open Qed_domain
 
 let auth_error_to_string = function
-  | Model.User.UserNotFound -> "User not found"
+  | User.UserNotFound -> "User not found"
   | InvalidPassword -> "Invalid password"
-  | Model.User.EmailTaken -> "Email already taken"
+  | User.EmailTaken -> "Email already taken"
   | UsernameTaken -> "Username already taken"
   | DatabaseError msg -> "Database error occurred" ^ msg
 
@@ -22,7 +21,7 @@ let handler state websocket =
   let rec process_messages () =
     match%lwt Dream.receive websocket with
     | Some msg -> (
-        let open Protocol in
+        let open Api.Protocol in
         let yojson_msg = Yojson.Safe.from_string msg in
         let message = client_message_of_yojson yojson_msg in
         match message with

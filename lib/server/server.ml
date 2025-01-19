@@ -6,13 +6,14 @@ let error_response ?(status = `Bad_Request) message =
     (Yojson.Safe.to_string (`Assoc [ ("error", `String message) ]))
 
 let is_valid_token request : (unit, Dream.response) Lwt_result.t =
+let open Qed_domain in
   let open Lwt.Syntax in
   match Dream.query request "token" with
   | Some token -> (
-      let verify_result = Qed_labyrinth_core.Jwt.verify_token token in
+      let verify_result = Jwt.verify_token token in
       match verify_result with
       | Ok user_id -> (
-          let* user_result = Model.User.find_by_id user_id in
+          let* user_result = User.find_by_id user_id in
           match user_result with
           | Ok user -> (
               let now = Ptime_clock.now () in
@@ -25,7 +26,7 @@ let is_valid_token request : (unit, Dream.response) Lwt_result.t =
                   Lwt.return_error
                     (error_response ~status:`Unauthorized
                        "Token invalid or expired"))
-          | Error Model.User.UserNotFound ->
+          | Error User.UserNotFound ->
               Lwt.return_error
                 (error_response ~status:`Unauthorized "User not found")
           | Error _ ->
@@ -69,8 +70,9 @@ let start () =
   let open Http_handlers in
   let connection_manager = Connection_manager.create () in
   let app_state = State.create ~connection_manager in
+let open Qed_domain in
   (* Start game loop *)
-  Lwt.async (fun () -> Game.Loop.run ());
+  Lwt.async (fun () -> Loop.run ());
 
   (* Configure web server *)
   Lwt.return

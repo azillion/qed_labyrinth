@@ -1,5 +1,5 @@
 open Lwt.Syntax
-open Qed_labyrinth_core
+open Infra
 
 type t = {
   id : string;

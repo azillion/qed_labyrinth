@@ -1,6 +1,6 @@
 (library
- (name qed_labyrinth_core)
- (public_name qed_labyrinth.core)
+ (name api)
+ (public_name qed_labyrinth.api)
  (libraries
   base
   yojson
