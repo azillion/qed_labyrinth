@@ -6,7 +6,7 @@ let error_response ?(status = `Bad_Request) message =
     (Yojson.Safe.to_string (`Assoc [ ("error", `String message) ]))
 
 let is_valid_token request : (unit, Dream.response) Lwt_result.t =
-let open Qed_domain in
+  let open Qed_domain in
   let open Lwt.Syntax in
   match Dream.query request "token" with
   | Some token -> (
@@ -70,7 +70,7 @@ let start () =
   let open Http_handlers in
   let connection_manager = Connection_manager.create () in
   let app_state = State.create ~connection_manager in
-let open Qed_domain in
+  let open Qed_domain in
   (* Start game loop *)
   Lwt.async (fun () -> Loop.run ());
 

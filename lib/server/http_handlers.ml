@@ -33,8 +33,8 @@ let handle_login body =
                 |> Option.value_exn
               in
               let* token_result =
-                User.update_token ~user_id:user.User.id
-                  ~token:(Some token) ~expires_at:(Some expires_at)
+                User.update_token ~user_id:user.User.id ~token:(Some token)
+                  ~expires_at:(Some expires_at)
               in
               match token_result with
               | Ok () -> user_response ~token
@@ -112,7 +112,8 @@ let handle_logout request (app_state : State.t) =
           match user_result with
           | Ok _ ->
               let* _ =
-                Qed_domain.User.update_token ~user_id ~token:None ~expires_at:None
+                Qed_domain.User.update_token ~user_id ~token:None
+                  ~expires_at:None
               in
               let () =
                 Connection_manager.remove_client app_state.connection_manager
