@@ -12,7 +12,8 @@ const [characterError, setCharacterError] = createSignal(null);
 // Export handlers that will be registered later
 export const characterHandlers = {
   'CharacterList': (payload) => {
-    setCharacters(payload);
+    console.log('CharacterList', payload);
+    setCharacters(payload.characters);
     setLoadingCharacters(false);
   },
   'CharacterSelect': (payload) => {

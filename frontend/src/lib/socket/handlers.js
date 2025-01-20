@@ -1,5 +1,6 @@
 import { setAuthState } from "@features/auth/stores/auth";
 import { characterHandlers } from "@features/auth/stores/character";
+import { DEBUG } from "../constants";
 
 export const handleMessage = (event, handlers) => {
 	try {
@@ -16,7 +17,7 @@ export const handleMessage = (event, handlers) => {
 
 		// Route message to appropriate handlers
 		if (type.startsWith('Character')) {
-			const handler = characterHandlers.handlers[type];
+			const handler = characterHandlers[type];
 			if (handler) {
 			  handler(payload);
 			}
