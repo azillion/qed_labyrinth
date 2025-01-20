@@ -78,7 +78,7 @@ export const messageHandlers = {
 	},
 	character: {
         subscribe: (handler) => onMessage('character', handler),
-        select: (characterId) => sendMessage('SelectCharacter', { characterId }),
+        select: (characterId) => sendMessage('SelectCharacter', { character_id: characterId }),
         list: () => sendMessage('ListCharacters'),
         create: (characterData) => sendMessage('CreateCharacter', characterData)
     }

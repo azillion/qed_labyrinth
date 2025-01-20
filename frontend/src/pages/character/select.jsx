@@ -123,7 +123,7 @@ const CharacterSelectPage = () => {
                                             `border ${theme().border}` : ''}`}
                                     >
                                         <TerminalText>
-                                            [{index() + 1}] {character.name} - Level {character.level} {character.class}
+                                            [{index() + 1}] {character.name}
                                         </TerminalText>
                                     </div>
                                 )}

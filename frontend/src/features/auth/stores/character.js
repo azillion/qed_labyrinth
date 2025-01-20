@@ -3,6 +3,7 @@ import { createSignal } from "solid-js";
 
 const [character, setCharacter] = createStore({
   id: null,
+  name: null,
 });
 
 const [characters, setCharacters] = createStore([]);
@@ -16,14 +17,26 @@ export const characterHandlers = {
     setCharacters(payload.characters);
     setLoadingCharacters(false);
   },
-  'CharacterSelect': (payload) => {
+  'CharacterSelected': (payload) => {
+    console.log('CharacterSelected', payload);
+    setCharacter(payload.character);
+  },
+  'CharacterSelectionFailed': (payload) => {
+    setCharacterError(payload.message);
+  },
+  'CharacterListFailed': (payload) => {
+    setCharacterError(payload.message);
+  },
+  'CharacterCreated': (payload) => {
+    console.log('CharacterCreated', payload);
     setCharacter(payload);
   },
-  'CharacterUpdate': (payload) => {
-    setCharacter(c => ({ ...c, ...payload }));
-  },
-  'CharacterError': (payload) => {
-    setCharacterError(payload.message);
+  'CharacterCreationFailed': (payload) => {
+    if (payload.error && payload.error[0] == 'NameTaken') {
+        setCharacterError('Name already taken');
+    } else {
+        setCharacterError('Failed to create character');
+    }
   }
 };
 
@@ -36,6 +49,7 @@ export const initializeCharacterActions = (messageHandlers) => {
       try {
         await messageHandlers.select(characterId);
         setCharacter('id', characterId);
+        setCharacterError(null);
       } catch (error) {
         setCharacterError(error.message);
         throw error;
@@ -46,6 +60,7 @@ export const initializeCharacterActions = (messageHandlers) => {
       setLoadingCharacters(true);
       try {
         await messageHandlers.list();
+        setCharacterError(null);
       } catch (error) {
         setCharacterError(error.message);
         setLoadingCharacters(false);
@@ -56,6 +71,7 @@ export const initializeCharacterActions = (messageHandlers) => {
     create: async (characterData) => {
       try {
         await messageHandlers.create(characterData);
+        setCharacterError(null);
       } catch (error) {
         setCharacterError(error.message);
         throw error;

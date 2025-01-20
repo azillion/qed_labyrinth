@@ -24,6 +24,7 @@ type server_message =
   | CharacterCreated of Yojson.Safe.t
   | CharacterCreationFailed of error_response
   | CharacterSelected of { character : Types.character }
+  | CharacterSelectionFailed of error_response
   | Error of error_response
 [@@deriving yojson]
 
