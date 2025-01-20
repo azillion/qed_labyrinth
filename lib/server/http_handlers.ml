@@ -9,13 +9,9 @@ let user_response ~token =
   Dream.json (Yojson.Safe.to_string (`Assoc [ ("token", `String token) ]))
 
 let is_valid_username username = String.length username >= 3
-let is_valid_password password = String.length password >= 8
+let is_valid_password password = String.length password >= 6
 
-let is_valid_email email =
-  let email_regex =
-    Str.regexp "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
-  in
-  Str.string_match email_regex email 0
+let is_valid_email _email = true
 
 let handle_login body =
   let open Qed_domain in

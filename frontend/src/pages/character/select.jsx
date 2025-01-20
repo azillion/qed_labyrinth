@@ -32,7 +32,6 @@ const CharacterSelectPage = () => {
 
     onMount(async () => {
         try {
-            // Wait for characterActions to be initialized
             if (characterActions) {
                 await characterActions.list();
             } else {

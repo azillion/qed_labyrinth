@@ -43,6 +43,15 @@ let is_valid_token request : (unit, Dream.response) Lwt_result.t =
       Lwt.return_error
         (error_response ~status:`Unauthorized "No authorization token")
 
+let get_user_id_from_token request : string =
+  match Dream.query request "token" with
+  | Some token -> (
+      let verify_result = Jwt.verify_token token in
+      match verify_result with
+      | Ok user_id -> user_id
+      | Error _ -> failwith "Invalid token")
+  | None -> failwith "No token found"
+
 let cors_middleware inner_handler request =
   match Dream.method_ request with
   | `OPTIONS ->
@@ -110,10 +119,7 @@ let start () =
                handle_logout request app_state);
            Dream.get "/websocket"
              (auth_middleware (fun request ->
-                  let%lwt auth_result = is_valid_token request in
-                  match auth_result with
-                  | Ok () ->
-                      Dream.websocket
-                        (Websocket_handler.handler app_state.connection_manager)
-                  | Error response -> Lwt.return response));
+                  let user_id = get_user_id_from_token request in
+                  Dream.websocket (fun websocket ->
+                    Websocket_handler.handler app_state user_id websocket)))
          ])

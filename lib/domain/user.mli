@@ -1,8 +1,10 @@
 type t = {
   id : string;
   username : string;
+  password_hash : string;
   email : string;
   created_at : Ptime.t;
+  deleted_at : Ptime.t option;
   token : string option;
   token_expires_at : Ptime.t option;
 }
@@ -38,3 +40,13 @@ val update_token :
   token:string option ->
   expires_at:Ptime.t option ->
   (unit, error) result Lwt.t
+
+val soft_delete :
+  user_id:string ->
+  (unit, error) result Lwt.t
+
+
+  module Q : sig
+    val find_by_id : (string, t, [ `Zero | `One ]) Caqti_request.t
+    (* Maybe other queries if needed *)
+  end

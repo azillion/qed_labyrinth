@@ -4,32 +4,13 @@ open Infra
 type t = {
   id : string;
   username : string;
-  email : string;
-  created_at : Ptime.t;
-  token : string option;
-  token_expires_at : Ptime.t option;
-}
-
-(* Private type for internal use *)
-type internal = {
-  id : string;
-  username : string;
   password_hash : string;
   email : string;
   created_at : Ptime.t;
+  deleted_at : Ptime.t option;
   token : string option;
   token_expires_at : Ptime.t option;
 }
-
-let to_public (user : internal) =
-  { 
-    id = user.id;
-    username = user.username;
-    email = user.email;
-    created_at = user.created_at;
-    token = user.token;
-    token_expires_at = user.token_expires_at;
-  }
 
 type error =
   | UserNotFound
@@ -37,6 +18,7 @@ type error =
   | UsernameTaken
   | EmailTaken
   | DatabaseError of string
+[@@deriving yojson]
 
 let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 
@@ -47,42 +29,51 @@ let create ~username ~password ~email =
   let id = Uuidm.to_string (uuid ()) in
   let password_hash = hash_password password in
   let created_at = Ptime_clock.now () in
-  { id; username; password_hash; email; created_at; token = None; token_expires_at = None }
+  { id; username; password_hash; email; created_at; deleted_at = None; token = None; token_expires_at = None }
 
 module Q = struct
   open Caqti_request.Infix
   open Caqti_type.Std
 
   let user_type =
-    let encode { id; username; password_hash; email; created_at; token; token_expires_at } =
-      Ok (id, username, password_hash, email, created_at, token, token_expires_at)
+    let encode { id; username; password_hash; email; created_at; deleted_at; token; token_expires_at } =
+      Ok (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at)
     in
-    let decode (id, username, password_hash, email, created_at, token, token_expires_at) =
-      Ok { id; username; password_hash; email; created_at; token; token_expires_at }
+    let decode (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at) =
+      Ok { id; username; password_hash; email; created_at; deleted_at; token; token_expires_at }
     in
-    let rep = t7 string string string string ptime (option string) (option ptime) in
+    let rep = t8 string string string string ptime (option ptime) (option string) (option ptime) in
     custom ~encode ~decode rep
 
   let insert =
     (user_type ->. unit)
-      {| INSERT INTO users (id, username, password_hash, email, created_at, token, token_expires_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?) |}
+      {| INSERT INTO users (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?) |}
 
-  let find_by_id = (string ->? user_type) "SELECT * FROM users WHERE id = ?"
+  let find_by_id = 
+    (string ->? user_type) 
+      "SELECT * FROM users WHERE id = ? AND deleted_at IS NULL"
 
   let find_by_username =
-    (string ->? user_type) "SELECT * FROM users WHERE username = ?"
+    (string ->? user_type) 
+      "SELECT * FROM users WHERE username = ? AND deleted_at IS NULL"
 
   let find_by_email =
-    (string ->? user_type) "SELECT * FROM users WHERE email = ?"
+    (string ->? user_type) 
+      "SELECT * FROM users WHERE email = ? AND deleted_at IS NULL"
 
   let update_token =
     (t3 (option string) (option ptime) string ->. unit)
       {| UPDATE users 
          SET token = ?, token_expires_at = ?
-         WHERE id = ? |}
-end
+         WHERE id = ? AND deleted_at IS NULL |}
 
+  let soft_delete =
+    (t2 ptime string ->. unit)
+      {| UPDATE users 
+         SET deleted_at = ?
+         WHERE id = ? AND deleted_at IS NULL |}
+end
 
 let register ~username ~password ~email =
   let open Base in
@@ -101,7 +92,7 @@ let register ~username ~password ~email =
                 let user = create ~username ~password ~email in
                 match%lwt Db.exec Q.insert user with
                 | Error e -> Lwt_result.fail e
-                | Ok () -> Lwt_result.return (`Success (to_public user))
+                | Ok () -> Lwt_result.return (`Success user)
       in
       let* result = Database.Pool.use db_operation in
       match result with
@@ -120,7 +111,7 @@ let authenticate ~username ~password =
        | Ok (Some user) -> 
             let password_hash = hash_password password in
             if String.equal user.password_hash password_hash then
-              Lwt_result.return (`Success (to_public user))
+              Lwt_result.return (`Success user)
             else
               Lwt_result.return (`InvalidPassword)
     in
@@ -142,9 +133,8 @@ let find_by_id id =
       let* result = Database.Pool.use db_operation in
       match result with
       | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
-      | Ok (Some user) -> Lwt.return_ok (to_public user)
+      | Ok (Some user) -> Lwt.return_ok user
       | Ok None -> Lwt.return_error UserNotFound
-
 
 let find_by_username username =
   let open Base in
@@ -157,13 +147,26 @@ let find_by_username username =
       let* result = Database.Pool.use db_operation in
       match result with
       | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
-      | Ok (Some user) -> Lwt.return_ok (to_public user)
+      | Ok (Some user) -> Lwt.return_ok user
       | Ok None -> Lwt.return_error UserNotFound
 
 let update_token ~user_id ~token ~expires_at =
   let open Base in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     match%lwt Db.exec Q.update_token (token, expires_at, user_id) with
+    | Ok () -> Lwt_result.return ()
+    | Error e -> Lwt_result.fail e
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Ok () -> Lwt.return_ok ()
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+
+let soft_delete ~user_id =
+  let open Base in
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let now = Ptime_clock.now () in
+    match%lwt Db.exec Q.soft_delete (now, user_id) with
     | Ok () -> Lwt_result.return ()
     | Error e -> Lwt_result.fail e
   in

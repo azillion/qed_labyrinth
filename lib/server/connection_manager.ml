@@ -21,7 +21,7 @@ let drop_connection t client_id =
   | Some client ->
       (* Send close message and remove from clients *)
       Lwt.async (fun () ->
-          let* _ = client.send termination_message in
+          let* _ = client.send (Api.Protocol.Error (Api.Protocol.error_response_of_string termination_message)) in
           match client.websocket with
           | Some websocket -> Dream.close_websocket websocket
           | None -> Lwt.return_unit);
@@ -37,7 +37,7 @@ let drop_user_connections t user_id =
       | Authenticated { user_id = uid; _ } ->
           if String.equal uid user_id then (
             Lwt.async (fun () ->
-                let* _ = client.send termination_message in
+                let* _ = client.send (Api.Protocol.Error (Api.Protocol.error_response_of_string termination_message)) in
                 match client.websocket with
                 | Some websocket -> Dream.close_websocket websocket
                 | None -> Lwt.return_unit);

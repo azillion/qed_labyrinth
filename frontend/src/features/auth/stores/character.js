@@ -33,7 +33,7 @@ export const initializeCharacterActions = (messageHandlers) => {
   characterActions = {
     select: async (characterId) => {
       try {
-        await messageHandlers.send('CharacterSelect', { characterId });
+        await messageHandlers.select(characterId);
         setCharacter('id', characterId);
       } catch (error) {
         setCharacterError(error.message);
@@ -44,7 +44,7 @@ export const initializeCharacterActions = (messageHandlers) => {
     list: async () => {
       setLoadingCharacters(true);
       try {
-        await messageHandlers.send('CharacterList', {});
+        await messageHandlers.list();
       } catch (error) {
         setCharacterError(error.message);
         setLoadingCharacters(false);
@@ -54,7 +54,7 @@ export const initializeCharacterActions = (messageHandlers) => {
 
     create: async (characterData) => {
       try {
-        await messageHandlers.send('CharacterCreate', characterData);
+        await messageHandlers.create(characterData);
       } catch (error) {
         setCharacterError(error.message);
         throw error;

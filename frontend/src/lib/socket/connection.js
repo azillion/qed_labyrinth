@@ -1,8 +1,9 @@
 import { createSignal } from 'solid-js';
-import { setConnectionStatus } from './index';
+import { messageHandlers, setConnectionStatus } from './index';
 import { DEBUG } from '../constants';
 import { initializeWebSocket } from './index';
 import { setAuthState, setIsAuthenticated } from '@features/auth/stores/auth';
+import { initializeCharacterActions } from '../../features/auth/stores/character';
 
 const INITIAL_RETRY_DELAY = 1000;
 const MAX_RETRY_DELAY = 30000;
@@ -29,6 +30,8 @@ export const handleConnection = (ws) => {
 	setRetryCount(0);
 	setRetryDelay(INITIAL_RETRY_DELAY);
 	setIsAuthenticated(true);
+
+   initializeCharacterActions(messageHandlers.character);
 };
 
 export const handleDisconnect = (event) => {
