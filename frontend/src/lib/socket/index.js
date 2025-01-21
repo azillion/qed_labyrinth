@@ -72,7 +72,6 @@ export const messageHandlers = {
 	},
 
 	chat: {
-		subscribe: (handler) => onMessage('chat', handler),
 		send: (message) =>
 			sendMessage('ChatMessage', { message })
 	},
@@ -81,5 +80,8 @@ export const messageHandlers = {
         select: (characterId) => sendMessage('SelectCharacter', { character_id: characterId }),
         list: () => sendMessage('ListCharacters'),
         create: (characterData) => sendMessage('CreateCharacter', characterData)
-    }
+    },
+	area: {
+		move: (direction) => sendMessage('Move', { direction })
+	}
 };

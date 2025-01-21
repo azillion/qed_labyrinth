@@ -4,6 +4,7 @@ import { DEBUG } from '../constants';
 import { initializeWebSocket } from './index';
 import { setAuthState, setIsAuthenticated } from '@features/auth/stores/auth';
 import { initializeCharacterActions } from '../../features/auth/stores/character';
+import { initializeAreaActions } from '../../features/game/stores/area';
 
 const INITIAL_RETRY_DELAY = 1000;
 const MAX_RETRY_DELAY = 30000;
@@ -31,7 +32,8 @@ export const handleConnection = (ws) => {
 	setRetryDelay(INITIAL_RETRY_DELAY);
 	setIsAuthenticated(true);
 
-   initializeCharacterActions(messageHandlers.character);
+	initializeCharacterActions(messageHandlers.character);
+	initializeAreaActions(messageHandlers.area);
 };
 
 export const handleDisconnect = (event) => {
