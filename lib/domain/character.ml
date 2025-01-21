@@ -36,7 +36,7 @@ module Q = struct
   let insert =
     (character_type ->. unit)
       {| INSERT INTO characters (id, user_id, name, location_id, created_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?) |}
+         VALUES (?, ?, ?, ?, ?, ?) |}
 
   let find_by_id =
     (string ->? character_type)

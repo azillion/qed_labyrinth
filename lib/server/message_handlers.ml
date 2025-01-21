@@ -4,13 +4,21 @@ let handle_character_creation (_state : State.t) (client : Client.t) (name : str
   | Authenticated { user_id; _ } ->
       (let%lwt result = Qed_domain.Character.create ~user_id ~name in
       match result with
-      | Ok character ->
+      | Ok character -> (
           let () = Client.set_character client character.id in
           let character' = Api.Types.character_of_model character in
           let character_json = Api.Types.character_to_yojson character' in
           let%lwt () = client.send (Api.Protocol.CharacterCreated character_json) in
           (* TODO: Send Area message *)
-          Lwt.return_unit
+          match%lwt Qed_domain.Area.find_by_id character.location_id with
+          | Error _ -> Lwt.return_unit
+          | Ok area -> (
+              match%lwt Qed_domain.Area.get_exits area with
+              | Error _ -> Lwt.return_unit
+              | Ok exits -> (
+                  let area' = Api.Types.area_of_model area exits in
+                  let%lwt () = client.send (Api.Protocol.Area { area = area' }) in
+                  Lwt.return_unit)))
       | Error error ->
           let error_json = Qed_domain.Character.error_to_yojson error in
           let%lwt () = client.send (Api.Protocol.CharacterCreationFailed { error = error_json }) in

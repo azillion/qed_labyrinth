@@ -81,7 +81,8 @@ module Schema = struct
   let create_starting_area_entry =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| INSERT INTO areas (id, name, description, x, y, z)
-         SELECT '00000000-0000-0000-0000-000000000000', 'Grassy Plains', 'A grassy plain with a few trees and a few rocks.', 0, 0, 0
+         SELECT '00000000-0000-0000-0000-000000000000', 'The Ancient Oak Meadow', 'An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree''s vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.
+The meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass. Misty mountains rise to the east, their peaks shrouded in clouds. Well-worn paths lead north and south along the hillside, while the western path curves down toward a valley.', 0, 0, 0
          WHERE NOT EXISTS (
            SELECT 1 FROM areas WHERE id = '00000000-0000-0000-0000-000000000000'
          ) |}
