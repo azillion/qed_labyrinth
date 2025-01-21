@@ -80,12 +80,38 @@ module Schema = struct
   (* make sure there is a starting area entry, if not, create it *)
   let create_starting_area_entry =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      {| INSERT INTO areas (id, name, description, x, y, z)
+      {| WITH area_inserts AS (
+         INSERT INTO areas (id, name, description, x, y, z)
          SELECT '00000000-0000-0000-0000-000000000000', 'The Ancient Oak Meadow', 'An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree''s vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.
 The meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass. Misty mountains rise to the east, their peaks shrouded in clouds. Well-worn paths lead north and south along the hillside, while the western path curves down toward a valley.', 0, 0, 0
          WHERE NOT EXISTS (
            SELECT 1 FROM areas WHERE id = '00000000-0000-0000-0000-000000000000'
-         ) |}
+         )
+         RETURNING id
+       ),
+       second_area AS (
+         INSERT INTO areas (id, name, description, x, y, z)
+         SELECT '11111111-1111-1111-1111-111111111111', 'The Mountain Path', 'The ground rises steadily toward the mountains, the grass giving way to loose shale and hardy mountain flowers. Mist clings to the higher elevations, swirling in slow eddies around the rocky outcrops.
+The ancient oak remains visible to the west, while the path splits around weathered boulders. The northern fork climbs steeply into the mountains, while the southern route descends into a sheltered vale.', 1, 0, 0
+         WHERE NOT EXISTS (
+           SELECT 1 FROM areas WHERE id = '11111111-1111-1111-1111-111111111111'
+         )
+         RETURNING id
+       )
+       INSERT INTO exits (from_area_id, to_area_id, direction, description)
+       SELECT a1.id, a2.id, 'east', 'The path leads east toward the mountains.'
+       FROM (SELECT id FROM areas WHERE id = '00000000-0000-0000-0000-000000000000') a1,
+            (SELECT id FROM areas WHERE id = '11111111-1111-1111-1111-111111111111') a2
+       WHERE NOT EXISTS (
+         SELECT 1 FROM exits WHERE from_area_id = a1.id AND direction = 'east'
+       )
+       UNION ALL
+       SELECT a2.id, a1.id, 'west', 'The path leads west back to the ancient oak.'
+       FROM (SELECT id FROM areas WHERE id = '00000000-0000-0000-0000-000000000000') a1,
+            (SELECT id FROM areas WHERE id = '11111111-1111-1111-1111-111111111111') a2
+       WHERE NOT EXISTS (
+         SELECT 1 FROM exits WHERE from_area_id = a2.id AND direction = 'west'
+       ) |}
 
   (* Helper to run a list of statements in sequence *)
   let exec_statements (module C : Caqti_lwt.CONNECTION) statements =
@@ -113,10 +139,6 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
             match areas_result with
             | Error e -> Lwt.return_error e
             | Ok () ->
-                let%lwt starting_area_result = C.exec create_starting_area_entry () in
-                match starting_area_result with
-                | Error e -> Lwt.return_error e
-                | Ok () ->
                 let%lwt areas_indexes_result = exec_statements (module C) create_areas_indexes in
                 match areas_indexes_result with
                 | Error e -> Lwt.return_error e
@@ -128,7 +150,15 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
                         let%lwt chars_result = C.exec create_characters_table () in
                         match chars_result with
                         | Error e -> Lwt.return_error e
-                        | Ok () -> exec_statements (module C) create_characters_indexes
+                        | Ok () ->
+                            let%lwt chars_indexes_result = exec_statements (module C) create_characters_indexes in
+                            match chars_indexes_result with
+                            | Error e -> Lwt.return_error e
+                            | Ok () ->
+                                let%lwt starting_area_result = C.exec create_starting_area_entry () in
+                                match starting_area_result with
+                                | Error e -> Lwt.return_error e
+                                | Ok () -> Lwt.return_ok ()
 end
 
 module Pool = struct
