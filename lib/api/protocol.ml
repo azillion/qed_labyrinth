@@ -25,6 +25,7 @@ type server_message =
   | CharacterCreationFailed of error_response
   | CharacterSelected of { character : Types.character }
   | CharacterSelectionFailed of error_response
+  | Area of { area : Types.area }
   | Error of error_response
 [@@deriving yojson]
 

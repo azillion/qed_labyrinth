@@ -24,12 +24,44 @@ module Schema = struct
       "CREATE INDEX IF NOT EXISTS users_email_idx ON users(email) WHERE deleted_at IS NULL";
   ]
 
+  let create_areas_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS areas (
+           id UUID PRIMARY KEY,
+           name VARCHAR(255) NOT NULL,
+           description TEXT NOT NULL,
+           x INT,
+           y INT,
+           z INT,
+           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+         ) |}
+
+  let create_areas_indexes = [
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      "CREATE INDEX IF NOT EXISTS areas_coords_idx ON areas(x, y, z)";
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      "CREATE UNIQUE INDEX IF NOT EXISTS areas_unique_coords_idx ON areas(x, y, z) WHERE x IS NOT NULL";
+  ]
+
+  let create_exits_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS exits (
+           from_area_id UUID NOT NULL REFERENCES areas(id),
+           to_area_id UUID NOT NULL REFERENCES areas(id),
+           direction VARCHAR(10) CHECK (direction IN ('north', 'south', 'east', 'west', 'up', 'down')),
+           description TEXT,
+           hidden BOOLEAN NOT NULL DEFAULT FALSE,
+           locked BOOLEAN NOT NULL DEFAULT FALSE,
+           PRIMARY KEY (from_area_id, direction)
+         ) |}
+
   let create_characters_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS characters (
            id UUID PRIMARY KEY,
            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
            name VARCHAR(255) NOT NULL,
+           location_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000' REFERENCES areas(id),
            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
            deleted_at TIMESTAMP WITH TIME ZONE,
            UNIQUE(user_id, name),
@@ -41,7 +73,18 @@ module Schema = struct
       "CREATE INDEX IF NOT EXISTS characters_user_id_idx ON characters(user_id) WHERE deleted_at IS NULL";
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       "CREATE INDEX IF NOT EXISTS characters_name_idx ON characters(name) WHERE deleted_at IS NULL";
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      "CREATE INDEX IF NOT EXISTS characters_location_idx ON characters(location_id) WHERE deleted_at IS NULL";
   ]
+
+  (* make sure there is a starting area entry, if not, create it *)
+  let create_starting_area_entry =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| INSERT INTO areas (id, name, description, x, y, z)
+         SELECT '00000000-0000-0000-0000-000000000000', 'Grassy Plains', 'A grassy plain with a few trees and a few rocks.', 0, 0, 0
+         WHERE NOT EXISTS (
+           SELECT 1 FROM areas WHERE id = '00000000-0000-0000-0000-000000000000'
+         ) |}
 
   (* Helper to run a list of statements in sequence *)
   let exec_statements (module C : Caqti_lwt.CONNECTION) statements =
@@ -61,14 +104,30 @@ module Schema = struct
     match users_result with
     | Error e -> Lwt.return_error e
     | Ok () ->
-        let%lwt indexes_result = exec_statements (module C) create_users_indexes in
-        match indexes_result with
+        let%lwt users_indexes_result = exec_statements (module C) create_users_indexes in
+        match users_indexes_result with
         | Error e -> Lwt.return_error e
         | Ok () ->
-            let%lwt chars_result = C.exec create_characters_table () in
-            match chars_result with
+            let%lwt areas_result = C.exec create_areas_table () in
+            match areas_result with
             | Error e -> Lwt.return_error e
-            | Ok () -> exec_statements (module C) create_characters_indexes
+            | Ok () ->
+                let%lwt starting_area_result = C.exec create_starting_area_entry () in
+                match starting_area_result with
+                | Error e -> Lwt.return_error e
+                | Ok () ->
+                let%lwt areas_indexes_result = exec_statements (module C) create_areas_indexes in
+                match areas_indexes_result with
+                | Error e -> Lwt.return_error e
+                | Ok () ->
+                    let%lwt exits_result = C.exec create_exits_table () in
+                    match exits_result with
+                    | Error e -> Lwt.return_error e
+                    | Ok () ->
+                        let%lwt chars_result = C.exec create_characters_table () in
+                        match chars_result with
+                        | Error e -> Lwt.return_error e
+                        | Ok () -> exec_statements (module C) create_characters_indexes
 end
 
 module Pool = struct

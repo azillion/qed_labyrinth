@@ -2,6 +2,7 @@ type t = {
   id : string;
   user_id : string;
   name : string;
+  location_id : string;
   created_at : Ptime.t;
   deleted_at : Ptime.t option;
 }
@@ -33,4 +34,9 @@ val find_all_by_user :
 
 val soft_delete :
   character_id:string ->
+  (unit, error) result Lwt.t
+
+val move :
+  character_id:string ->
+  direction:Area.direction ->
   (unit, error) result Lwt.t

@@ -5,6 +5,7 @@ type t = {
   id : string;
   user_id : string;
   name : string;
+  location_id : string;
   created_at : Ptime.t;
   deleted_at : Ptime.t option;
 }
@@ -23,18 +24,18 @@ module Q = struct
   open Caqti_type.Std
 
   let character_type =
-    let encode { id; user_id; name; created_at; deleted_at } =
-      Ok (id, user_id, name, created_at, deleted_at)
+    let encode { id; user_id; name; location_id; created_at; deleted_at } =
+      Ok (id, user_id, name, location_id, created_at, deleted_at)
     in
-    let decode (id, user_id, name, created_at, deleted_at) =
-      Ok { id; user_id; name; created_at; deleted_at }
+    let decode (id, user_id, name, location_id, created_at, deleted_at) =
+      Ok { id; user_id; name; location_id; created_at; deleted_at }
     in
-    let rep = t5 string string string ptime (option ptime) in
+    let rep = t6 string string string string ptime (option ptime) in
     custom ~encode ~decode rep
 
   let insert =
     (character_type ->. unit)
-      {| INSERT INTO characters (id, user_id, name, created_at, deleted_at)
+      {| INSERT INTO characters (id, user_id, name, location_id, created_at, deleted_at)
          VALUES (?, ?, ?, ?, ?) |}
 
   let find_by_id =
@@ -43,16 +44,24 @@ module Q = struct
 
   let find_by_user_and_name =
     (t2 string string ->? character_type)
-      "SELECT * FROM characters WHERE user_id = ? AND name = ? AND deleted_at IS NULL"
+      "SELECT * FROM characters WHERE user_id = ? AND name = ? AND deleted_at \
+       IS NULL"
 
   let find_all_by_user =
     (string ->* character_type)
-      "SELECT * FROM characters WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at"
+      "SELECT * FROM characters WHERE user_id = ? AND deleted_at IS NULL ORDER \
+       BY created_at"
 
   let soft_delete =
     (t2 ptime string ->. unit)
       {| UPDATE characters 
          SET deleted_at = ?
+         WHERE id = ? AND deleted_at IS NULL |}
+
+  let move =
+    (t2 string string ->. unit)
+      {| UPDATE characters 
+         SET location_id = ?
          WHERE id = ? AND deleted_at IS NULL |}
 end
 
@@ -63,24 +72,29 @@ let create ~user_id ~name =
     let* user_exists = Db.find_opt User.Q.find_by_id user_id in
     match user_exists with
     | Error e -> Lwt_result.fail e
-    | Ok None -> Lwt_result.return (`UserNotFound : [ `UserNotFound | `NameTaken | `Success of t ])
-    | Ok (Some _) ->
+    | Ok None ->
+        Lwt_result.return
+          (`UserNotFound : [ `UserNotFound | `NameTaken | `Success of t ])
+    | Ok (Some _) -> (
         (* Then check for name uniqueness *)
         let* existing = Db.find_opt Q.find_by_user_and_name (user_id, name) in
         match existing with
         | Error e -> Lwt_result.fail e
-        | Ok (Some _) -> Lwt_result.return (`NameTaken)
-        | Ok None ->
-            let character = {
-              id = Uuidm.to_string (uuid ());
-              user_id;
-              name;
-              created_at = Ptime_clock.now ();
-              deleted_at = None;
-            } in
+        | Ok (Some _) -> Lwt_result.return `NameTaken
+        | Ok None -> (
+            let character =
+              {
+                id = Uuidm.to_string (uuid ());
+                user_id;
+                name;
+                location_id = "00000000-0000-0000-0000-000000000000";
+                created_at = Ptime_clock.now ();
+                deleted_at = None;
+              }
+            in
             match%lwt Db.exec Q.insert character with
             | Error e -> Lwt_result.fail e
-            | Ok () -> Lwt_result.return (`Success character)
+            | Ok () -> Lwt_result.return (`Success character)))
   in
   let* result = Database.Pool.use db_operation in
   match result with
@@ -141,4 +155,44 @@ let soft_delete ~character_id =
   let* result = Database.Pool.use db_operation in
   match result with
   | Ok () -> Lwt.return_ok ()
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+
+let move ~character_id ~(direction : Area.direction) =
+  let open Base in
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    (* First find the character *)
+    let* character_result = Db.find_opt Q.find_by_id character_id in
+    match character_result with
+    | Error e -> Lwt_result.fail e
+    | Ok None ->
+        Lwt_result.return
+          (`CharacterNotFound
+            : [ `CharacterNotFound | `ExitBlocked | `NoExit | `Success ])
+    | Ok (Some character) -> (
+        (* Look up exit by direction *)
+        let* exit_result =
+          Db.find_opt Area.Q.find_exit_by_direction
+            (character.location_id, direction)
+        in
+        match exit_result with
+        | Error e -> Lwt_result.fail e
+        | Ok None -> Lwt_result.return `NoExit
+        | Ok (Some exit) -> (
+            match exit with
+            | Some exit -> (
+                if exit.hidden || exit.locked then
+                  Lwt_result.return `ExitBlocked
+                else
+                  (* Update character location *)
+                  match%lwt Db.exec Q.move (exit.to_area_id, character_id) with
+                  | Ok () -> Lwt_result.return `Success
+                  | Error e -> Lwt_result.fail e)
+            | None -> Lwt_result.return `NoExit))
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Ok `Success -> Lwt.return_ok ()
+  | Ok `CharacterNotFound -> Lwt.return_error CharacterNotFound
+  | Ok `ExitBlocked -> Lwt.return_error (DatabaseError "Exit is blocked")
+  | Ok `NoExit -> Lwt.return_error (DatabaseError "No exit in that direction")
   | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
