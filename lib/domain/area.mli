@@ -16,6 +16,7 @@ type direction = North | South | East | West | Up | Down
 [@@deriving yojson]
 
 val direction_to_string : direction -> string
+
 type exit = {
   from_area_id : string;
   to_area_id : string;

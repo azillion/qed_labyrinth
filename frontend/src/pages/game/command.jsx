@@ -1,37 +1,35 @@
 import { createSignal } from "solid-js";
 import { theme } from "@stores/themeStore";
-import { areaActions } from "@features/game/stores/area";
+import { messageHandlers } from "@lib/socket";
 
 export const CommandInput = () => {
     const [commandInput, setCommandInput] = createSignal("");
     const [commandHistory, setCommandHistory] = createSignal([]);
     const [historyIndex, setHistoryIndex] = createSignal(-1);
 
-    const addToHistory = (command) => {
-        setCommandHistory(prev => [...prev, command]);
+    const addToHistory = (input) => {
+        setCommandHistory(prev => [...prev, input]);
         setHistoryIndex(-1);
     };
 
-    const handleCommand = async (e) => {
+    const handleInput = async (e) => {
         if (e.key !== "Enter" || !commandInput().trim()) return;
 
-        const command = commandInput().trim().toLowerCase();
-        addToHistory(command);
+        const input = commandInput().trim();
+        addToHistory(input);
 
-        // Basic movement commands
-        if (command.startsWith("go ")) {
-            const direction = command.split(" ")[1];
+        // Route to appropriate handler based on prefix
+        if (input.startsWith('/')) {
             try {
-                await areaActions.move(direction);
+                await messageHandlers.game.command(input);
             } catch (err) {
-                console.error("Movement failed:", err);
+                console.error("Command failed:", err);
             }
-        } else if (command.startsWith("look ")) {
-            const target = command.split(" ")[1];
+        } else {
             try {
-                await areaActions.examine(target);
+                await messageHandlers.chat.send(input);
             } catch (err) {
-                console.error("Examination failed:", err);
+                console.error("Chat failed:", err);
             }
         }
 
@@ -67,11 +65,11 @@ export const CommandInput = () => {
                 value={commandInput()}
                 onInput={(e) => setCommandInput(e.currentTarget.value)}
                 onKeyDown={handleKeyDown}
-                onKeyPress={handleCommand}
+                onKeyPress={handleInput}
                 class={`w-full bg-gray-900/95 border ${theme().border} backdrop-blur-sm 
                        rounded-lg px-4 py-2 font-mono ${theme().textBase}
                        focus:outline-none focus:ring-1 focus:${theme().border}`}
-                placeholder="Enter command (e.g., 'go north', 'look around')..."
+                placeholder="Type /help for commands or just chat..."
             />
         </div>
     );

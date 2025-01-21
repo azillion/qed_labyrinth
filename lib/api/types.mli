@@ -19,3 +19,10 @@ type area = {
 
 val area_of_model : Qed_domain.Area.t -> Qed_domain.Area.exit list -> area
 
+type command =
+  | Move of { direction : Qed_domain.Area.direction }
+  | Help
+  | Unknown of string
+[@@deriving yojson]
+
+val parse_command : string -> command

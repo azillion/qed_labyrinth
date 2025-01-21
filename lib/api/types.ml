@@ -30,3 +30,20 @@ let area_of_model (area_model : Qed_domain.Area.t) (exits : Qed_domain.Area.exit
     description = area_model.description;
     exits = List.map exit_of_model exits;
   }
+
+type command =
+  | Move of { direction : Qed_domain.Area.direction }
+  | Help
+  | Unknown of string
+[@@deriving yojson]
+
+let parse_command command =
+  match command with
+  | "/n" | "/north" -> Move { direction = Qed_domain.Area.North }
+  | "/s" | "/south" -> Move { direction = Qed_domain.Area.South }
+  | "/e" | "/east" -> Move { direction = Qed_domain.Area.East }
+  | "/w" | "/west" -> Move { direction = Qed_domain.Area.West }
+  | "/u" | "/up" -> Move { direction = Qed_domain.Area.Up }
+  | "/d" | "/down" -> Move { direction = Qed_domain.Area.Down }
+  | "/help" -> Help
+  | _ -> Unknown command

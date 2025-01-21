@@ -39,4 +39,4 @@ val soft_delete :
 val move :
   character_id:string ->
   direction:Area.direction ->
-  (unit, error) result Lwt.t
+  (string, error) result Lwt.t

@@ -65,10 +65,8 @@ export const initializeWebSocket = () => {
 export const messageHandlers = {
 	game: {
 		subscribe: (handler) => onMessage('game', handler),
-		move: (direction) =>
-			sendMessage('Move', { direction }),
-		action: (type, target) =>
-			sendMessage('Action', { type, target })
+		command: (command) =>
+			sendMessage('Command', { command })
 	},
 
 	chat: {

@@ -8,6 +8,7 @@ type client_message =
   | CreateCharacter of { name : string }
   | SelectCharacter of { character_id : string }
   | ListCharacters
+  | Command of { command : string }
 [@@deriving yojson]
 
 type error_response = {
@@ -27,5 +28,7 @@ type server_message =
   | CharacterSelectionFailed of error_response
   | Area of { area : Types.area }
   | Error of error_response
+  | CommandSuccess of { message : string }
+  | CommandFailed of { error: string }
 [@@deriving yojson]
 
