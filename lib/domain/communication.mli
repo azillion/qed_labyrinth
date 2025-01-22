@@ -10,7 +10,7 @@ type t = {
   sender_id : string option;
   content : string;
   area_id : string option;
-  timestamp : float;
+  timestamp : Ptime.t;
 }
 
 type error =
@@ -19,6 +19,7 @@ type error =
   | InvalidContent
   | InvalidAreaId
   | DatabaseError of string
+  [@@deriving yojson]
 
 val create :
   message_type:message_type ->

@@ -8,7 +8,7 @@ type t = {
   sender_id : string option;
   content : string;
   area_id : string option;
-  timestamp : float;
+  timestamp : Ptime.t;
 }
 
 type error =
@@ -17,6 +17,7 @@ type error =
   | InvalidContent
   | InvalidAreaId
   | DatabaseError of string
+  [@@deriving yojson]
 
 module Q = struct
   open Caqti_request.Infix
@@ -44,17 +45,17 @@ module Q = struct
       Ok { id; message_type; sender_id; content; area_id; timestamp }
     in
     custom ~encode ~decode
-      (t6 string message_type_t (option string) string (option string) float)
+      (t6 string message_type_t (option string) string (option string) ptime)
 
   let insert =
     (message_t ->. unit)
-      {| INSERT INTO messages (id, message_type, sender_id, content, area_id, timestamp)
+      {| INSERT INTO communications (id, message_type, sender_id, content, area_id, timestamp)
          VALUES (?, ?, ?, ?, ?, ?) |}
 
   let find_by_area_id =
     (string ->* message_t)
       {| SELECT id, message_type, sender_id, content, area_id, timestamp
-         FROM messages 
+         FROM communications 
          WHERE area_id = ?
          ORDER BY timestamp DESC
          LIMIT 50 |}
@@ -81,7 +82,7 @@ let create ~message_type ~sender_id ~content ~area_id =
           sender_id;
           content;
           area_id;
-          timestamp = Unix.time ();
+          timestamp = Ptime_clock.now ();
         }
       in
       let db_operation (module Db : Caqti_lwt.CONNECTION) =
@@ -92,7 +93,10 @@ let create ~message_type ~sender_id ~content ~area_id =
       let* result = Database.Pool.use db_operation in
       match result with
       | Ok message -> Lwt.return_ok message
-      | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e)))
+      | Error e -> 
+          let error_string = Printf.sprintf "Error: %s" (Error.to_string_hum e) in
+          ignore(Stdio.printf "%s\n" error_string);
+          Lwt.return_error (DatabaseError error_string))
 
 let find_by_area_id area_id =
   let open Base in

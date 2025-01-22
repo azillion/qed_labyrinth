@@ -34,3 +34,5 @@ type chat_message = {
   timestamp : float;
   area_id : string option;
 } [@@deriving yojson]
+
+val chat_message_of_model : Qed_domain.Communication.t -> chat_message

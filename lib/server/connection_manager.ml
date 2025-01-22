@@ -1,47 +1,74 @@
 open Base
 
-type t = { clients : (string, Client.t) Hashtbl.t }
+type t = {
+  clients: (string, Client.t) Hashtbl.t;
+  rooms: (string, string list) Hashtbl.t;  (* room_id -> client_ids *)
+  client_rooms: (string, string) Hashtbl.t; (* client_id -> room_id *)
+}
 
-let termination_message = "Connection terminated"
-let create () = { clients = Hashtbl.create (module String) }
+let create () = {
+  clients = Hashtbl.create (module String);
+  rooms = Hashtbl.create (module String);
+  client_rooms = Hashtbl.create (module String);
+}
 
+(* Core client management *)
 let add_client t client =
   Hashtbl.set t.clients ~key:client.Client.id ~data:client
 
-let remove_client t client_id = Hashtbl.remove t.clients client_id
+let remove_client t client_id =
+  (* First remove from any room they're in *)
+  match Hashtbl.find t.client_rooms client_id with
+  | Some room_id ->
+      let room_clients = Hashtbl.find_exn t.rooms room_id in
+      Hashtbl.set t.rooms ~key:room_id 
+        ~data:(List.filter room_clients ~f:(fun id -> not (String.equal id client_id)));
+      Hashtbl.remove t.client_rooms client_id
+  | None -> ();
+  Hashtbl.remove t.clients client_id
 
-let broadcast t message =
-  Hashtbl.iter t.clients ~f:(fun client ->
-      Lwt.async (fun () -> client.send message))
+(* Room management *)
+let add_to_room t ~client_id ~room_id =
+  (* First remove from any existing room *)
+  begin match Hashtbl.find t.client_rooms client_id with
+  | Some old_room_id when not (String.equal old_room_id room_id) ->
+      let old_room_clients = Hashtbl.find_exn t.rooms old_room_id in
+      Hashtbl.set t.rooms ~key:old_room_id
+        ~data:(List.filter old_room_clients ~f:(fun id -> 
+          not (String.equal id client_id)))
+  | _ -> ()
+  end;
+  
+  (* Add to new room *)
+  let room_clients = Option.value (Hashtbl.find t.rooms room_id) ~default:[] in
+  Hashtbl.set t.rooms ~key:room_id ~data:(client_id :: room_clients);
+  Hashtbl.set t.client_rooms ~key:client_id ~data:room_id
 
-(* Drop a specific client's connection *)
-let drop_connection t client_id =
-  let open Lwt.Syntax in
-  match Hashtbl.find t.clients client_id with
-  | Some client ->
-      (* Send close message and remove from clients *)
-      Lwt.async (fun () ->
-          let* _ = client.send (Api.Protocol.Error (Api.Protocol.error_response_of_string termination_message)) in
-          match client.websocket with
-          | Some websocket -> Dream.close_websocket websocket
-          | None -> Lwt.return_unit);
-      remove_client t client_id
+let remove_from_room t client_id =
+  match Hashtbl.find t.client_rooms client_id with
+  | Some room_id ->
+      let room_clients = Hashtbl.find_exn t.rooms room_id in
+      Hashtbl.set t.rooms ~key:room_id
+        ~data:(List.filter room_clients ~f:(fun id -> 
+          not (String.equal id client_id)));
+      Hashtbl.remove t.client_rooms client_id
   | None -> ()
 
-(* Drop all connections for a user *)
-let drop_user_connections t user_id =
-  let open Lwt.Syntax in
-  Hashtbl.filter_inplace t.clients ~f:(fun client ->
-      match client.Client.auth_state with
-      | Anonymous -> true (* Keep anonymous connections *)
-      | Authenticated { user_id = uid; _ } ->
-          if String.equal uid user_id then (
-            Lwt.async (fun () ->
-                let* _ = client.send (Api.Protocol.Error (Api.Protocol.error_response_of_string termination_message)) in
-                match client.websocket with
-                | Some websocket -> Dream.close_websocket websocket
-                | None -> Lwt.return_unit);
-            false (* Remove this connection *))
-          else
-            true
-      (* Keep other users' connections *))
+(* Broadcasting *)
+let broadcast_to_room t room_id message =
+  match Hashtbl.find t.rooms room_id with
+  | Some client_ids ->
+      List.iter client_ids ~f:(fun client_id ->
+        match Hashtbl.find t.clients client_id with
+        | Some client -> 
+            Lwt.async (fun () -> client.send message)
+        | None -> ())
+  | None -> ()
+
+let broadcast t message =
+  Hashtbl.iteri t.clients ~f:(fun ~key:_ ~data:client ->
+    Lwt.async (fun () -> client.send message))
+
+(* Room transitions *)
+let move_client t ~client_id ~new_room_id =
+  add_to_room t ~client_id ~room_id:new_room_id

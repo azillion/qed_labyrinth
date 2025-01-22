@@ -2,6 +2,7 @@ import { setAuthState } from "@features/auth/stores/auth";
 import { characterHandlers } from "@features/auth/stores/character";
 import { DEBUG } from "../constants";
 import { areaHandlers } from "../../features/game/stores/area";
+import { chatHandlers } from "../../features/game/stores/chat";
 
 export const handleMessage = (event, handlers) => {
 	try {
@@ -30,7 +31,10 @@ export const handleMessage = (event, handlers) => {
 		  } else if (type.startsWith('Game')) {
 			handlers.game.forEach(handler => handler(type, payload));
 		} else if (type.startsWith('Chat')) {
-			handlers.chat.forEach(handler => handler(type, payload));
+			const handler = chatHandlers[type];
+			if (handler) {
+			  handler(payload);
+			}
 		} else if (type === 'Error') {
 			handlers.error.forEach(handler => handler(type, payload));
 		}

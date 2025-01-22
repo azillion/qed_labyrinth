@@ -48,8 +48,6 @@ let parse_command command =
   | "/help" -> Help
   | _ -> Unknown command
 
-
-
 type chat_message = {
   sender_id : string option;
   message_type : Qed_domain.Communication.message_type;
@@ -57,3 +55,12 @@ type chat_message = {
   timestamp : float;
   area_id : string option;
 } [@@deriving yojson]
+
+let chat_message_of_model (message_model : Qed_domain.Communication.t) : chat_message =
+  {
+    sender_id = message_model.sender_id;
+    message_type = message_model.message_type;
+    content = message_model.content;
+    timestamp = Ptime.to_float_s message_model.timestamp;
+    area_id = message_model.area_id;
+  }

@@ -33,7 +33,7 @@ type server_message =
   | Error of error_response
   | CommandSuccess of { message : string }
   | CommandFailed of { error: string }
-  | ChatHistory of { messages : string list }
+  | ChatHistory of { messages : Types.chat_message list }
   | ChatMessage of { message : Types.chat_message }
 [@@deriving yojson]
 
