@@ -47,3 +47,13 @@ let parse_command command =
   | "/d" | "/down" -> Move { direction = Qed_domain.Area.Down }
   | "/help" -> Help
   | _ -> Unknown command
+
+
+
+type chat_message = {
+  sender_id : string option;
+  message_type : Qed_domain.Communication.message_type;
+  content : string;
+  timestamp : float;
+  area_id : string option;
+} [@@deriving yojson]

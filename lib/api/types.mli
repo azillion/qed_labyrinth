@@ -26,3 +26,11 @@ type command =
 [@@deriving yojson]
 
 val parse_command : string -> command
+
+type chat_message = {
+  sender_id : string option;
+  message_type : Qed_domain.Communication.message_type;
+  content : string;
+  timestamp : float;
+  area_id : string option;
+} [@@deriving yojson]

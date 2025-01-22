@@ -113,6 +113,17 @@ The ancient oak remains visible to the west, while the path splits around weathe
          SELECT 1 FROM exits WHERE from_area_id = a2.id AND direction = 'west'
        ) |}
 
+       let create_comm_table =
+        Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+          {| CREATE TABLE IF NOT EXISTS communications (
+               id UUID PRIMARY KEY,
+               message_type VARCHAR(20) NOT NULL,
+               sender_id UUID REFERENCES characters(id),
+               content TEXT NOT NULL,
+               area_id UUID REFERENCES areas(id),
+               timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+             ) |}
+
   (* Helper to run a list of statements in sequence *)
   let exec_statements (module C : Caqti_lwt.CONNECTION) statements =
     let rec run_all = function
@@ -158,7 +169,11 @@ The ancient oak remains visible to the west, while the path splits around weathe
                                 let%lwt starting_area_result = C.exec create_starting_area_entry () in
                                 match starting_area_result with
                                 | Error e -> Lwt.return_error e
-                                | Ok () -> Lwt.return_ok ()
+                                | Ok () -> 
+                                    let%lwt comm_result = C.exec create_comm_table () in
+                                    match comm_result with
+                                    | Error e -> Lwt.return_error e
+                                    | Ok () -> Lwt.return_ok ()
 end
 
 module Pool = struct

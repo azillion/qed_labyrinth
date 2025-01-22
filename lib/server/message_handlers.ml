@@ -142,3 +142,6 @@ let handle_message (state : State.t) (client : Client.t)
       handle_character_select state client character_id
   | ListCharacters -> handle_character_list state client
   | Command { command } -> handle_command state client command
+  | SendChat { message = _ } -> Lwt.return_unit
+  | SendEmote { message = _ } -> Lwt.return_unit
+  | SendSystem { message = _ } -> Lwt.return_unit

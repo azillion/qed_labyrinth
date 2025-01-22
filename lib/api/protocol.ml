@@ -9,6 +9,9 @@ type client_message =
   | SelectCharacter of { character_id : string }
   | ListCharacters
   | Command of { command : string }
+  | SendChat of { message : string }
+  | SendEmote of { message : string }
+  | SendSystem of { message : string }
 [@@deriving yojson]
 
 type error_response = {
@@ -30,5 +33,7 @@ type server_message =
   | Error of error_response
   | CommandSuccess of { message : string }
   | CommandFailed of { error: string }
+  | ChatHistory of { messages : string list }
+  | ChatMessage of { message : Types.chat_message }
 [@@deriving yojson]
 
