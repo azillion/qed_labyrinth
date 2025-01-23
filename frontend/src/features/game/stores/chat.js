@@ -15,7 +15,7 @@ export const chatHandlers = {
         console.log('ChatMessage', payload);
         const { message } = payload;
         // Only add message if it's for current room
-            setMessages(msgs => [message, ...msgs]);
+        setMessages(msgs => [...msgs, message]);
     },
     'ChatHistory': (payload) => {
         console.log('ChatHistory', payload);

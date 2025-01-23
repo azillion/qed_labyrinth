@@ -47,32 +47,34 @@ export const ChatFrame = () => {
             
             <div 
                 ref={chatContainerRef}
-                class="flex-1 overflow-y-auto space-y-2"
+                class="flex-1 overflow-y-auto flex flex-col-reverse"
             >
-                <Show 
-                    when={!isLoading()} 
-                    fallback={<TerminalText>Loading messages...</TerminalText>}
-                >
-                    <For each={messages}>
-                        {(message) => (
-                            <TerminalText class={getMessageClass(message.message_type)}>
-                                {formatMessage(message)}
-                            </TerminalText>
-                        )}
-                    </For>
-                </Show>
+                <div class="space-y-2">
+                    <Show 
+                        when={!isLoading()} 
+                        fallback={<TerminalText>Loading messages...</TerminalText>}
+                    >
+                        <For each={messages}>
+                            {(message) => (
+                                <TerminalText class={getMessageClass(message.message_type)}>
+                                    {formatMessage(message)}
+                                </TerminalText>
+                            )}
+                        </For>
+                    </Show>
 
-                <Show when={error()}>
-                    <TerminalText class="text-red-500">
-                        {error()}
-                    </TerminalText>
-                </Show>
+                    <Show when={error()}>
+                        <TerminalText class="text-red-500">
+                            {error()}
+                        </TerminalText>
+                    </Show>
 
-                <Show when={!isLoading() && messages.length === 0}>
-                    <TerminalText class={theme().textDim}>
-                        No messages yet...
-                    </TerminalText>
-                </Show>
+                    <Show when={!isLoading() && messages.length === 0}>
+                        <TerminalText class={theme().textDim}>
+                            No messages yet...
+                        </TerminalText>
+                    </Show>
+                </div>
             </div>
         </div>
     );

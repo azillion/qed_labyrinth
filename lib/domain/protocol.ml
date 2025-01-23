@@ -12,6 +12,7 @@ type client_message =
   | SendChat of { message : string }
   | SendEmote of { message : string }
   | SendSystem of { message : string }
+  | RequestChatHistory
 [@@deriving yojson]
 
 type error_response = {

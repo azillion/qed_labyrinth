@@ -1,4 +1,4 @@
-type t = { mutable last_tick : float; message_queue: Queue.t; }
+type t = { mutable last_tick : float; message_queue: Queue.t; connection_manager: Connection_manager.t; }
 
 val create : unit -> t
 

@@ -77,11 +77,10 @@ let auth_middleware inner_handler request =
 
 let start () =
   let open Http_handlers in
-  let connection_manager = Connection_manager.create () in
-  let app_state = State.create ~connection_manager in
   let open Qed_domain in
+  let app_state = State.create () in
   (* Start game loop *)
-  Lwt.async (fun () -> Loop.run ());
+  Lwt.async (fun () -> Loop.run app_state);
 
   (* Configure web server *)
   Lwt.return

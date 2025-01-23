@@ -52,13 +52,14 @@ module Q = struct
       {| INSERT INTO communications (id, message_type, sender_id, content, area_id, timestamp)
          VALUES (?, ?, ?, ?, ?, ?) |}
 
+  (* find messages by area_id and timestamp less than 10 minutes ago *)
   let find_by_area_id =
     (string ->* message_t)
       {| SELECT id, message_type, sender_id, content, area_id, timestamp
          FROM communications 
-         WHERE area_id = ?
-         ORDER BY timestamp DESC
-         LIMIT 50 |}
+         WHERE area_id = ? AND timestamp >= NOW() - INTERVAL '10 minutes'
+         ORDER BY timestamp ASC
+     |}
 end
 
 let uuid = Uuidm.v4_gen (Random.State.make_self_init ())

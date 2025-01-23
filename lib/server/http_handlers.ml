@@ -97,7 +97,7 @@ let handle_register body =
         | Error _ -> error_response ~status:`Bad_Request "Registration failed")
   | _ -> error_response ~status:`Bad_Request "Invalid request format"
 
-let handle_logout request (app_state : State.t) =
+let handle_logout request (app_state : Qed_domain.State.t) =
   match Dream.header request "Authorization" with
   | Some auth_header when String.is_prefix auth_header ~prefix:"Bearer " -> (
       let token = String.drop_prefix auth_header 7 in
@@ -112,8 +112,8 @@ let handle_logout request (app_state : State.t) =
                   ~expires_at:None
               in
               let () =
-                Connection_manager.remove_client app_state.connection_manager
-                  user_id
+                Qed_domain.Connection_manager.remove_client
+                  app_state.connection_manager user_id
               in
               Dream.json ~status:`No_Content ""
           | Error _ -> error_response ~status:`Unauthorized "User not found")
