@@ -3,7 +3,6 @@ import { createSignal } from "solid-js";
 
 // Core chat state 
 const [messages, setMessages] = createStore([]);
-const [currentRoom, setCurrentRoom] = createSignal(null);
 
 // Loading and error states
 const [isLoading, setIsLoading] = createSignal(false);
@@ -50,6 +49,23 @@ export const initializeChatActions = (messageHandlers) => {
             try {
                 setError(null);
                 await messageHandlers.chat.emote(content);
+            } catch (error) {
+                setError(error.message);
+                throw error;
+            }
+        },
+        sendSystemMessage: async (content) => {
+            try {
+                setError(null);
+                await messageHandlers.chat.system(content);
+            } catch (error) {
+                setError(error.message);
+                throw error;
+            }
+        },
+        requestChatHistory: async () => {
+            try {
+                await messageHandlers.chat.requestChatHistory();
             } catch (error) {
                 setError(error.message);
                 throw error;

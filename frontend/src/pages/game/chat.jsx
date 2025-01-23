@@ -6,9 +6,8 @@ import {
     isLoading,
     error,
     formatMessage,
-    setRoom
 } from "@features/game/stores/chat";
-import { area } from "@features/game/stores/area";
+import { messageHandlers } from "../../lib/socket";
 
 const getMessageClass = (messageType) => {
     switch (messageType) {
@@ -24,17 +23,16 @@ const getMessageClass = (messageType) => {
 export const ChatFrame = () => {
     let chatContainerRef;
 
+    onMount(() => {
+        setInterval(() => {
+           messageHandlers.chat.requestChatHistory();
+        }, 15000);
+    });
+
     // Auto-scroll to bottom when new messages arrive
     createEffect(() => {
         if (messages.length && chatContainerRef) {
             chatContainerRef.scrollTop = chatContainerRef.scrollHeight;
-        }
-    });
-
-    // Update room when area changes
-    createEffect(() => {
-        if (area.id) {
-            setRoom(area.id);
         }
     });
 

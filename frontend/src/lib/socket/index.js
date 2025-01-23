@@ -75,7 +75,9 @@ export const messageHandlers = {
 		emote: (message) =>
 			sendMessage('SendEmote', { message }),
 		system: (message) =>
-			sendMessage('SendSystem', { message })
+			sendMessage('SendSystem', { message }),
+		requestChatHistory: () =>
+			sendMessage('RequestChatHistory')
 	},
 	character: {
         subscribe: (handler) => onMessage('character', handler),
