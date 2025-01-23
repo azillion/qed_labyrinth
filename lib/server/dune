@@ -6,8 +6,8 @@
   yojson
   ppx_deriving_yojson.runtime
   ppx_deriving.runtime
+  qed_labyrinth.infra
   qed_labyrinth.domain
-  qed_labyrinth.api
   digestif
   jose
   ptime

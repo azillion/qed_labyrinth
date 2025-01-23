@@ -13,7 +13,7 @@ let handler (state : State.t) user_id websocket =
   let rec process_messages () =
     match%lwt Dream.receive websocket with
     | Some msg -> (
-        let open Api.Protocol in
+        let open Qed_domain.Protocol in
         let yojson_msg = Yojson.Safe.from_string msg in
         let message = client_message_of_yojson yojson_msg in
         match message with

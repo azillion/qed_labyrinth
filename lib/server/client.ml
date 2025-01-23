@@ -2,7 +2,7 @@ open Base
 
 type t = {
   id : string;
-  send : Api.Protocol.server_message -> unit Lwt.t;
+  send : Qed_domain.Protocol.server_message -> unit Lwt.t;
   mutable websocket : Dream.websocket option;
   mutable auth_state : auth_state;
 }
@@ -13,7 +13,7 @@ and auth_state =
 
 let create client_id send_raw websocket =
   let send msg = 
-    let json = Api.Protocol.server_message_to_yojson msg in
+    let json = Qed_domain.Protocol.server_message_to_yojson msg in
     send_raw (Yojson.Safe.to_string json)
   in
   { id = client_id; send; websocket; auth_state = Anonymous }

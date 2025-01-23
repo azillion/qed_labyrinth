@@ -7,14 +7,14 @@ let get_area_by_id_opt (area_id : string) =
       match%lwt Qed_domain.Area.get_exits area with
       | Error _ -> Lwt.return_none
       | Ok exits ->
-          let area' = Api.Types.area_of_model area exits in
+          let area' = Qed_domain.Types.area_of_model area exits in
           Lwt.return_some area')
 
 let broadcast_area_update (state : State.t) (area_id : string) =
   match%lwt get_area_by_id_opt area_id with
   | None -> Lwt.return_unit
   | Some area ->
-      let update = Api.Protocol.Area { area } in
+      let update = Qed_domain.Protocol.Area { area } in
       Connection_manager.broadcast_to_room state.connection_manager area_id update;
       Lwt.return_unit
 
@@ -53,16 +53,16 @@ let handle_character_movement (state : State.t) (client : Client.t) old_area_id 
               ignore(Stdio.print_endline (Yojson.Safe.to_string (Qed_domain.Communication.error_to_yojson e)));
               Lwt.return_unit
           | Ok departure_msg, Ok arrival_msg ->
-              let departure_msg' = Api.Types.chat_message_of_model departure_msg in
-              let arrival_msg' = Api.Types.chat_message_of_model arrival_msg in
+              let departure_msg' = Qed_domain.Types.chat_message_of_model departure_msg in
+              let arrival_msg' = Qed_domain.Types.chat_message_of_model arrival_msg in
               Connection_manager.broadcast_to_room state.connection_manager old_area_id 
-                (Api.Protocol.ChatMessage { message = departure_msg' });
+                (Qed_domain.Protocol.ChatMessage { message = departure_msg' });
               Connection_manager.broadcast_to_room state.connection_manager new_area_id 
-                (Api.Protocol.ChatMessage { message = arrival_msg' });
+                (Qed_domain.Protocol.ChatMessage { message = arrival_msg' });
               match%lwt Qed_domain.Communication.find_by_area_id new_area_id with
               | Ok messages ->
-                  let messages' = List.map ~f:Api.Types.chat_message_of_model messages in
-                  let%lwt () = client.send (Api.Protocol.ChatHistory { messages = messages' }) in
+                  let messages' = List.map ~f:Qed_domain.Types.chat_message_of_model messages in
+                  let%lwt () = client.send (Qed_domain.Protocol.ChatHistory { messages = messages' }) in
                   Lwt.return_unit
               | Error _ -> Lwt.return_unit
 
@@ -75,10 +75,10 @@ let handle_character_creation (state : State.t) (client : Client.t)
       match result with
       | Ok character -> (
           let () = Client.set_character client character.id in
-          let character' = Api.Types.character_of_model character in
-          let character_json = Api.Types.character_to_yojson character' in
+          let character' = Qed_domain.Types.character_of_model character in
+          let character_json = Qed_domain.Types.character_to_yojson character' in
           let%lwt () =
-            client.send (Api.Protocol.CharacterCreated character_json)
+            client.send (Qed_domain.Protocol.CharacterCreated character_json)
           in
           (* Add to starting room *)
           Connection_manager.add_to_room 
@@ -89,18 +89,18 @@ let handle_character_creation (state : State.t) (client : Client.t)
           match%lwt get_area_by_id_opt character.location_id with
           | None -> Lwt.return_unit
           | Some area ->
-              let%lwt () = client.send (Api.Protocol.Area { area }) in
+              let%lwt () = client.send (Qed_domain.Protocol.Area { area }) in
               match%lwt Qed_domain.Communication.find_by_area_id character.location_id with
               | Ok messages ->
-              let messages' = List.map ~f:Api.Types.chat_message_of_model messages in
-              let%lwt () = client.send (Api.Protocol.ChatHistory { messages = messages' }) in
+              let messages' = List.map ~f:Qed_domain.Types.chat_message_of_model messages in
+              let%lwt () = client.send (Qed_domain.Protocol.ChatHistory { messages = messages' }) in
               Lwt.return_unit
               | Error _ -> Lwt.return_unit)
       | Error error ->
           let error_json = Qed_domain.Character.error_to_yojson error in
           let%lwt () =
             client.send
-              (Api.Protocol.CharacterCreationFailed { error = error_json })
+              (Qed_domain.Protocol.CharacterCreationFailed { error = error_json })
           in
           Lwt.return_unit)
 
@@ -110,17 +110,17 @@ let handle_character_list (_state : State.t) (client : Client.t) =
   | Authenticated { user_id; _ } -> (
       match%lwt Qed_domain.Character.find_all_by_user ~user_id with
       | Ok characters ->
-          let characters' = List.map ~f:Api.Types.character_of_model characters in
+          let characters' = List.map ~f:Qed_domain.Types.character_of_model characters in
           let%lwt () =
             client.send
-              (Api.Protocol.CharacterList { characters = characters' })
+              (Qed_domain.Protocol.CharacterList { characters = characters' })
           in
           Lwt.return_unit
       | Error error ->
           let error_json = Qed_domain.Character.error_to_yojson error in
           let%lwt () =
             client.send
-              (Api.Protocol.CharacterListFailed { error = error_json })
+              (Qed_domain.Protocol.CharacterListFailed { error = error_json })
           in
           Lwt.return_unit)
 
@@ -132,10 +132,10 @@ let handle_character_select (state : State.t) (client : Client.t)
       match%lwt Qed_domain.Character.find_by_id character_id with
       | Ok character -> (
           let () = Client.set_character client character.id in
-          let character' = Api.Types.character_of_model character in
+          let character' = Qed_domain.Types.character_of_model character in
           let%lwt () =
             client.send
-              (Api.Protocol.CharacterSelected { character = character' })
+              (Qed_domain.Protocol.CharacterSelected { character = character' })
           in
           (* Add to character's current room *)
           Connection_manager.add_to_room
@@ -146,12 +146,12 @@ let handle_character_select (state : State.t) (client : Client.t)
           match%lwt get_area_by_id_opt character.location_id with
           | None -> Lwt.return_unit
           | Some area ->
-              let%lwt () = client.send (Api.Protocol.Area { area }) in
+              let%lwt () = client.send (Qed_domain.Protocol.Area { area }) in
               (* Send arrival message to room *)
               match%lwt Qed_domain.Communication.find_by_area_id character.location_id with
               | Ok messages ->
-                  let messages' = List.map ~f:Api.Types.chat_message_of_model messages in
-                  let%lwt () = client.send (Api.Protocol.ChatHistory { messages = messages' }) in
+                  let messages' = List.map ~f:Qed_domain.Types.chat_message_of_model messages in
+                  let%lwt () = client.send (Qed_domain.Protocol.ChatHistory { messages = messages' }) in
                   Lwt.return_unit
               | Error e ->
                 let error_json = Qed_domain.Communication.error_to_yojson e in
@@ -161,7 +161,7 @@ let handle_character_select (state : State.t) (client : Client.t)
           let error_json = Qed_domain.Character.error_to_yojson error in
           let%lwt () =
             client.send
-              (Api.Protocol.CharacterSelectionFailed { error = error_json })
+              (Qed_domain.Protocol.CharacterSelectionFailed { error = error_json })
           in
           Lwt.return_unit)
 
@@ -171,12 +171,12 @@ let handle_command (state : State.t) (client : Client.t) (command_str : string) 
   | Authenticated { character_id = None; _ } ->
       let%lwt () =
         client.send
-          (Api.Protocol.CommandFailed
+          (Qed_domain.Protocol.CommandFailed
              { error = "You must select a character first" })
       in
       Lwt.return_unit
   | Authenticated { character_id = Some character_id; _ } -> (
-      let open Api.Types in
+      let open Qed_domain.Types in
       match parse_command command_str with
       | Move { direction } -> (
           match%lwt Qed_domain.Character.find_by_id character_id with
@@ -186,7 +186,7 @@ let handle_command (state : State.t) (client : Client.t) (command_str : string) 
               | Error _ ->
                   let%lwt () =
                     client.send
-                      (Api.Protocol.CommandFailed
+                      (Qed_domain.Protocol.CommandFailed
                          { error = "Cannot move in that direction" })
                   in
                   Lwt.return_unit
@@ -195,13 +195,13 @@ let handle_command (state : State.t) (client : Client.t) (command_str : string) 
                   match%lwt get_area_by_id_opt new_location with
                   | None -> Lwt.return_unit
                   | Some area ->
-                      let%lwt () = client.send (Api.Protocol.Area { area }) in
+                      let%lwt () = client.send (Qed_domain.Protocol.Area { area }) in
                       Lwt.return_unit)
           | Error _ -> Lwt.return_unit)
       | Help ->
           let%lwt () =
             client.send
-              (Api.Protocol.CommandSuccess
+              (Qed_domain.Protocol.CommandSuccess
                  {
                    message =
                      "Available commands:\n\
@@ -216,7 +216,7 @@ let handle_command (state : State.t) (client : Client.t) (command_str : string) 
       | Unknown cmd ->
           let%lwt () =
             client.send
-              (Api.Protocol.CommandFailed { error = "Unknown command: " ^ cmd })
+              (Qed_domain.Protocol.CommandFailed { error = "Unknown command: " ^ cmd })
           in
           Lwt.return_unit)
 
@@ -226,7 +226,7 @@ let handle_chat (state : State.t) (client : Client.t) message message_type =
   | Authenticated { character_id = None; _ } ->
       let%lwt () =
         client.send
-          (Api.Protocol.CommandFailed
+          (Qed_domain.Protocol.CommandFailed
              { error = "You must select a character first" })
       in
       Lwt.return_unit
@@ -240,7 +240,7 @@ let handle_chat (state : State.t) (client : Client.t) message message_type =
             ~area_id:(Some character.location_id) in
           begin match message_result with
           | Ok msg ->
-              let chat_message = Api.Protocol.ChatMessage {
+              let chat_message = Qed_domain.Protocol.ChatMessage {
                 message = {
                   sender_id = Some character_id;
                   message_type;
@@ -259,7 +259,7 @@ let handle_chat (state : State.t) (client : Client.t) message message_type =
       | Error _ -> Lwt.return_unit)
 
 let handle_message (state : State.t) (client : Client.t)
-    (message : Api.Protocol.client_message) =
+    (message : Qed_domain.Protocol.client_message) =
   match message with
   | CreateCharacter { name } -> handle_character_creation state client name
   | SelectCharacter { character_id } -> handle_character_select state client character_id

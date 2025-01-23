@@ -3,7 +3,7 @@ type character = {
   name : string;
 } [@@deriving yojson]
 
-let character_of_model (character_model : Qed_domain.Character.t) : character =
+let character_of_model (character_model : Character.t) : character =
   {
     id = character_model.id;
     name = character_model.name;
@@ -19,12 +19,12 @@ type area = {
   exits : exit list;
 } [@@deriving yojson]
 
-let exit_of_model (exit_model : Qed_domain.Area.exit) : exit =
+let exit_of_model (exit_model : Area.exit) : exit =
   {
-    direction = Qed_domain.Area.direction_to_string exit_model.direction;
+    direction = Area.direction_to_string exit_model.direction;
   }
 
-let area_of_model (area_model : Qed_domain.Area.t) (exits : Qed_domain.Area.exit list) : area =
+let area_of_model (area_model : Area.t) (exits : Area.exit list) : area =
   {
     name = area_model.name;
     description = area_model.description;
@@ -32,31 +32,31 @@ let area_of_model (area_model : Qed_domain.Area.t) (exits : Qed_domain.Area.exit
   }
 
 type command =
-  | Move of { direction : Qed_domain.Area.direction }
+  | Move of { direction : Area.direction }
   | Help
   | Unknown of string
 [@@deriving yojson]
 
 let parse_command command =
   match command with
-  | "/n" | "/north" -> Move { direction = Qed_domain.Area.North }
-  | "/s" | "/south" -> Move { direction = Qed_domain.Area.South }
-  | "/e" | "/east" -> Move { direction = Qed_domain.Area.East }
-  | "/w" | "/west" -> Move { direction = Qed_domain.Area.West }
-  | "/u" | "/up" -> Move { direction = Qed_domain.Area.Up }
-  | "/d" | "/down" -> Move { direction = Qed_domain.Area.Down }
+  | "/n" | "/north" -> Move { direction = Area.North }
+  | "/s" | "/south" -> Move { direction = Area.South }
+  | "/e" | "/east" -> Move { direction = Area.East }
+  | "/w" | "/west" -> Move { direction = Area.West }
+  | "/u" | "/up" -> Move { direction = Area.Up }
+  | "/d" | "/down" -> Move { direction = Area.Down }
   | "/help" -> Help
   | _ -> Unknown command
 
 type chat_message = {
   sender_id : string option;
-  message_type : Qed_domain.Communication.message_type;
+  message_type : Communication.message_type;
   content : string;
   timestamp : float;
   area_id : string option;
 } [@@deriving yojson]
 
-let chat_message_of_model (message_model : Qed_domain.Communication.t) : chat_message =
+let chat_message_of_model (message_model : Communication.t) : chat_message =
   {
     sender_id = message_model.sender_id;
     message_type = message_model.message_type;

@@ -1,3 +1,26 @@
 (library
  (name qed_labyrinth)
- (public_name qed_labyrinth))
+ (public_name qed_labyrinth)
+ (libraries
+  base
+  yojson
+  ppx_deriving_yojson.runtime
+  ppx_deriving.runtime
+  qed_labyrinth.api
+  qed_labyrinth.infra
+  qed_labyrinth.domain
+  digestif
+  jose
+  ptime
+  ptime.clock
+  dream
+  lwt
+  caqti
+  caqti-lwt
+  lwt.unix
+  caqti-lwt.unix
+  caqti-driver-postgresql
+  uri
+  uuidm
+  unix)
+ (modules :standard))
