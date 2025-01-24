@@ -29,20 +29,68 @@ let create ~username ~password ~email =
   let id = Uuidm.to_string (uuid ()) in
   let password_hash = hash_password password in
   let created_at = Ptime_clock.now () in
-  { id; username; password_hash; email; created_at; deleted_at = None; token = None; token_expires_at = None }
+  {
+    id;
+    username;
+    password_hash;
+    email;
+    created_at;
+    deleted_at = None;
+    token = None;
+    token_expires_at = None;
+  }
 
 module Q = struct
   open Caqti_request.Infix
   open Caqti_type.Std
 
   let user_type =
-    let encode { id; username; password_hash; email; created_at; deleted_at; token; token_expires_at } =
-      Ok (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at)
+    let encode
+        {
+          id;
+          username;
+          password_hash;
+          email;
+          created_at;
+          deleted_at;
+          token;
+          token_expires_at;
+        } =
+      Ok
+        ( id,
+          username,
+          password_hash,
+          email,
+          created_at,
+          deleted_at,
+          token,
+          token_expires_at )
     in
-    let decode (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at) =
-      Ok { id; username; password_hash; email; created_at; deleted_at; token; token_expires_at }
+    let decode
+        ( id,
+          username,
+          password_hash,
+          email,
+          created_at,
+          deleted_at,
+          token,
+          token_expires_at ) =
+      Ok
+        {
+          id;
+          username;
+          password_hash;
+          email;
+          created_at;
+          deleted_at;
+          token;
+          token_expires_at;
+        }
     in
-    let rep = t8 string string string string ptime (option ptime) (option string) (option ptime) in
+    let rep =
+      t8 string string string string ptime (option ptime) (option string)
+        (option ptime)
+    in
     custom ~encode ~decode rep
 
   let insert =
@@ -50,16 +98,16 @@ module Q = struct
       {| INSERT INTO users (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?) |}
 
-  let find_by_id = 
-    (string ->? user_type) 
+  let find_by_id =
+    (string ->? user_type)
       "SELECT * FROM users WHERE id = ? AND deleted_at IS NULL"
 
   let find_by_username =
-    (string ->? user_type) 
+    (string ->? user_type)
       "SELECT * FROM users WHERE username = ? AND deleted_at IS NULL"
 
   let find_by_email =
-    (string ->? user_type) 
+    (string ->? user_type)
       "SELECT * FROM users WHERE email = ? AND deleted_at IS NULL"
 
   let update_token =
@@ -77,78 +125,81 @@ end
 
 let register ~username ~password ~email =
   let open Base in
-      let db_operation (module Db : Caqti_lwt.CONNECTION) =
-        let* existing_user = Db.find_opt Q.find_by_username username in
-        match existing_user with
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let* existing_user = Db.find_opt Q.find_by_username username in
+    match existing_user with
+    | Error e -> Lwt_result.fail e
+    | Ok (Some _) ->
+        Lwt_result.return
+          (`UsernameTaken : [ `UsernameTaken | `EmailTaken | `Success of t ])
+    | Ok None -> (
+        let* existing_email = Db.find_opt Q.find_by_email email in
+        match existing_email with
         | Error e -> Lwt_result.fail e
-        | Ok (Some _) -> Lwt_result.return (`UsernameTaken : [ `UsernameTaken | `EmailTaken | `Success of t ])
-
-        | Ok None -> 
-            let* existing_email = Db.find_opt Q.find_by_email email in
-            match existing_email with
-            | Error e -> Lwt_result.fail e 
-            | Ok (Some _) -> Lwt_result.return (`EmailTaken)
-            | Ok None ->
-                let user = create ~username ~password ~email in
-                match%lwt Db.exec Q.insert user with
-                | Error e -> Lwt_result.fail e
-                | Ok () -> Lwt_result.return (`Success user)
-      in
-      let* result = Database.Pool.use db_operation in
-      match result with
-      | Ok (`Success user) -> Lwt.return_ok user
-      | Ok `UsernameTaken -> Lwt.return_error UsernameTaken
-      | Ok `EmailTaken -> Lwt.return_error EmailTaken
-      | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+        | Ok (Some _) -> Lwt_result.return `EmailTaken
+        | Ok None -> (
+            let user = create ~username ~password ~email in
+            match%lwt Db.exec Q.insert user with
+            | Error e -> Lwt_result.fail e
+            | Ok () -> Lwt_result.return (`Success user)))
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Ok (`Success user) -> Lwt.return_ok user
+  | Ok `UsernameTaken -> Lwt.return_error UsernameTaken
+  | Ok `EmailTaken -> Lwt.return_error EmailTaken
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
 
 let authenticate ~username ~password =
   let open Base in
-    let db_operation (module Db : Caqti_lwt.CONNECTION) =
-       let* user_result = Db.find_opt Q.find_by_username username in
-       match user_result with
-       | Error e -> Lwt_result.fail e
-       | Ok None -> Lwt_result.return (`UserNotFound : [ `UserNotFound | `Success of t | `InvalidPassword ])
-       | Ok (Some user) -> 
-            let password_hash = hash_password password in
-            if String.equal user.password_hash password_hash then
-              Lwt_result.return (`Success user)
-            else
-              Lwt_result.return (`InvalidPassword)
-    in
-    let* result = Database.Pool.use db_operation in
-    match result with
-    | Ok (`Success user) -> Lwt.return_ok user
-    | Ok `UserNotFound -> Lwt.return_error UserNotFound
-    | Ok `InvalidPassword -> Lwt.return_error InvalidPassword
-    | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let* user_result = Db.find_opt Q.find_by_username username in
+    match user_result with
+    | Error e -> Lwt_result.fail e
+    | Ok None ->
+        Lwt_result.return
+          (`UserNotFound : [ `UserNotFound | `Success of t | `InvalidPassword ])
+    | Ok (Some user) ->
+        let password_hash = hash_password password in
+        if String.equal user.password_hash password_hash then
+          Lwt_result.return (`Success user)
+        else
+          Lwt_result.return `InvalidPassword
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Ok (`Success user) -> Lwt.return_ok user
+  | Ok `UserNotFound -> Lwt.return_error UserNotFound
+  | Ok `InvalidPassword -> Lwt.return_error InvalidPassword
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
 
 let find_by_id id =
   let open Base in
-      let db_operation (module Db : Caqti_lwt.CONNECTION) =
-        let* user_result = Db.find_opt Q.find_by_id id in
-        match user_result with
-        | Error e -> Lwt_result.fail e
-        | Ok result -> Lwt_result.return result
-      in
-      let* result = Database.Pool.use db_operation in
-      match result with
-      | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
-      | Ok (Some user) -> Lwt.return_ok user
-      | Ok None -> Lwt.return_error UserNotFound
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let* user_result = Db.find_opt Q.find_by_id id in
+    match user_result with
+    | Error e -> Lwt_result.fail e
+    | Ok result -> Lwt_result.return result
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+  | Ok (Some user) -> Lwt.return_ok user
+  | Ok None -> Lwt.return_error UserNotFound
 
 let find_by_username username =
   let open Base in
-      let db_operation (module Db : Caqti_lwt.CONNECTION) =
-        let* user_result = Db.find_opt Q.find_by_username username in
-        match user_result with
-        | Error e -> Lwt_result.fail e
-        | Ok result -> Lwt_result.return result
-      in
-      let* result = Database.Pool.use db_operation in
-      match result with
-      | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
-      | Ok (Some user) -> Lwt.return_ok user
-      | Ok None -> Lwt.return_error UserNotFound
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let* user_result = Db.find_opt Q.find_by_username username in
+    match user_result with
+    | Error e -> Lwt_result.fail e
+    | Ok result -> Lwt_result.return result
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+  | Ok (Some user) -> Lwt.return_ok user
+  | Ok None -> Lwt.return_error UserNotFound
 
 let update_token ~user_id ~token ~expires_at =
   let open Base in

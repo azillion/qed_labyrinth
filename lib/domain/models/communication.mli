@@ -1,8 +1,4 @@
-  type message_type =
-  | Chat
-  | Emote
-  | System
-[@@deriving yojson]
+type message_type = Chat | Emote | System [@@deriving yojson]
 
 type t = {
   id : string;
@@ -19,7 +15,7 @@ type error =
   | InvalidContent
   | InvalidAreaId
   | DatabaseError of string
-  [@@deriving yojson]
+[@@deriving yojson]
 
 val create :
   message_type:message_type ->
@@ -28,6 +24,4 @@ val create :
   area_id:string option ->
   (t, error) result Lwt.t
 
-val find_by_area_id :
-  string ->
-  (t list, error) result Lwt.t
+val find_by_area_id : string -> (t list, error) result Lwt.t

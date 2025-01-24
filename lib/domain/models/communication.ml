@@ -17,7 +17,7 @@ type error =
   | InvalidContent
   | InvalidAreaId
   | DatabaseError of string
-  [@@deriving yojson]
+[@@deriving yojson]
 
 module Q = struct
   open Caqti_request.Infix
@@ -94,9 +94,11 @@ let create ~message_type ~sender_id ~content ~area_id =
       let* result = Database.Pool.use db_operation in
       match result with
       | Ok message -> Lwt.return_ok message
-      | Error e -> 
-          let error_string = Printf.sprintf "Error: %s" (Error.to_string_hum e) in
-          ignore(Stdio.printf "%s\n" error_string);
+      | Error e ->
+          let error_string =
+            Printf.sprintf "Error: %s" (Error.to_string_hum e)
+          in
+          ignore (Stdio.printf "%s\n" error_string);
           Lwt.return_error (DatabaseError error_string))
 
 let find_by_area_id area_id =

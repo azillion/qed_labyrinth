@@ -7,13 +7,8 @@ type t = {
   z : int;
 }
 
-type error =
-  | AreaNotFound
-  | DatabaseError of string
-[@@deriving yojson]
-
-type direction = North | South | East | West | Up | Down
-[@@deriving yojson]
+type error = AreaNotFound | DatabaseError of string [@@deriving yojson]
+type direction = North | South | East | West | Up | Down [@@deriving yojson]
 
 val direction_to_string : direction -> string
 
@@ -34,13 +29,8 @@ val create :
   z:int ->
   (t, error) result Lwt.t
 
-val find_by_id :
-  string ->
-  (t, error) result Lwt.t
-
-val get_exits :
-  t ->
-  (exit list, error) result Lwt.t
+val find_by_id : string -> (t, error) result Lwt.t
+val get_exits : t -> (exit list, error) result Lwt.t
 
 val create_exit :
   from_area_id:string ->
@@ -51,12 +41,10 @@ val create_exit :
   locked:bool ->
   (exit, error) result Lwt.t
 
-val find_exits :
-  area_id:string ->
-  (exit list, error) result Lwt.t
-
+val find_exits : area_id:string -> (exit list, error) result Lwt.t
 val direction_equal : direction -> direction -> bool
 
 module Q : sig
-  val find_exit_by_direction : (string * direction, exit option, [ `Zero | `One ]) Caqti_request.t
+  val find_exit_by_direction :
+    (string * direction, exit option, [ `Zero | `One ]) Caqti_request.t
 end

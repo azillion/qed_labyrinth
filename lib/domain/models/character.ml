@@ -167,7 +167,10 @@ let move ~character_id ~(direction : Area.direction) =
     | Ok None ->
         Lwt_result.return
           (`CharacterNotFound
-            : [ `CharacterNotFound | `ExitBlocked | `NoExit | `Success of string ])
+            : [ `CharacterNotFound
+              | `ExitBlocked
+              | `NoExit
+              | `Success of string ])
     | Ok (Some character) -> (
         (* Look up exit by direction *)
         let* exit_result =
@@ -191,7 +194,7 @@ let move ~character_id ~(direction : Area.direction) =
   in
   let* result = Database.Pool.use db_operation in
   match result with
-  | Ok `Success area_id -> Lwt.return_ok area_id
+  | Ok (`Success area_id) -> Lwt.return_ok area_id
   | Ok `CharacterNotFound -> Lwt.return_error CharacterNotFound
   | Ok `ExitBlocked -> Lwt.return_error (DatabaseError "Exit is blocked")
   | Ok `NoExit -> Lwt.return_error (DatabaseError "No exit in that direction")

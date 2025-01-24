@@ -1,16 +1,15 @@
 open Lwt.Syntax
 
-let process_client_message state client msg =
-  Lwt_list.iter_s
-    (fun (module H : Client_handler.S) -> H.handle state client msg)
-    Handlers.all_client_handlers
-
 let process_client_messages (state : State.t) =
   let rec process_all () =
     match%lwt Queue.pop_opt state.message_queue with
     | None -> Lwt.return_unit
     | Some { message; client } ->
-        let%lwt () = process_client_message state client message in
+        let* () =
+          Lwt_list.iter_s
+            (fun (module H : Client_handler.S) -> H.handle state client message)
+            Handlers.all_client_handlers
+        in
         process_all ()
   in
   process_all ()
