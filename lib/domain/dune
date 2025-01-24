@@ -28,3 +28,5 @@
    lwt_ppx
    ppx_deriving.show
    ppx_deriving_yojson)))
+
+(include_subdirs unqualified)

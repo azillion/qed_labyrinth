@@ -12,7 +12,7 @@ and auth_state =
   | Authenticated of { user_id : string; character_id : string option }
 
 let create client_id send_raw websocket =
-  let send msg = 
+  let send msg =
     let json = Protocol.server_message_to_yojson msg in
     send_raw (Yojson.Safe.to_string json)
   in

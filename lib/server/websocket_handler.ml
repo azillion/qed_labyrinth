@@ -18,9 +18,15 @@ let handler (state : Qed_domain.State.t) user_id websocket =
         let yojson_msg = Yojson.Safe.from_string msg in
         let message = client_message_of_yojson yojson_msg in
         match message with
-        | Ok message ->
-            let%lwt () = Queue.push state.message_queue message client in
-            process_messages ()
+        | Ok message -> (
+            match message with
+            | Command { command } ->
+                let message' = Qed_domain.Protocol.parse_command command in
+                let%lwt () = Queue.push state.message_queue message' client in
+                process_messages ()
+            | _ ->
+                let%lwt () = Queue.push state.message_queue message client in
+                process_messages ())
         | Error err ->
             ignore (Stdio.print_endline ("Parse error: " ^ err));
             process_messages ())

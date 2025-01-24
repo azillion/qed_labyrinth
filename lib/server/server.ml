@@ -120,5 +120,5 @@ let start () =
              (auth_middleware (fun request ->
                   let user_id = get_user_id_from_token request in
                   Dream.websocket (fun websocket ->
-                    Websocket_handler.handler app_state user_id websocket)))
+                      Websocket_handler.handler app_state user_id websocket)));
          ])

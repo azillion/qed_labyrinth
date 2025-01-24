@@ -19,14 +19,6 @@ type area = {
 
 val area_of_model : Area.t -> Area.exit list -> area
 
-type command =
-  | Move of { direction : Area.direction }
-  | Help
-  | Unknown of string
-[@@deriving yojson]
-
-val parse_command : string -> command
-
 type chat_message = {
   sender_id : string option;
   message_type : Communication.message_type;

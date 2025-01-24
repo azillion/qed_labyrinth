@@ -8,16 +8,28 @@ type client_message =
   | CreateCharacter of { name : string }
   | SelectCharacter of { character_id : string }
   | ListCharacters
-  | Command of { command : string }
   | SendChat of { message : string }
   | SendEmote of { message : string }
   | SendSystem of { message : string }
   | RequestChatHistory
+  | Command of { command : string }
+  | Move of { direction : Area.direction }
+  | Help
+  | Unknown of string
 [@@deriving yojson]
 
-type error_response = {
-  error: Yojson.Safe.t
-} [@@deriving yojson]
+let parse_command command =
+  match command with
+  | "/n" | "/north" -> Move { direction = Area.North }
+  | "/s" | "/south" -> Move { direction = Area.South }
+  | "/e" | "/east" -> Move { direction = Area.East }
+  | "/w" | "/west" -> Move { direction = Area.West }
+  | "/u" | "/up" -> Move { direction = Area.Up }
+  | "/d" | "/down" -> Move { direction = Area.Down }
+  | "/help" -> Help
+  | _ -> Unknown command
+
+type error_response = { error : Yojson.Safe.t } [@@deriving yojson]
 
 let error_response_of_string str =
   let json = Yojson.Safe.from_string str in
@@ -33,8 +45,7 @@ type server_message =
   | Area of { area : Types.area }
   | Error of error_response
   | CommandSuccess of { message : string }
-  | CommandFailed of { error: string }
+  | CommandFailed of { error : string }
   | ChatHistory of { messages : Types.chat_message list }
   | ChatMessage of { message : Types.chat_message }
 [@@deriving yojson]
-

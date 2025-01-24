@@ -10,7 +10,6 @@ let user_response ~token =
 
 let is_valid_username username = String.length username >= 3
 let is_valid_password password = String.length password >= 6
-
 let is_valid_email _email = true
 
 let handle_login body =

@@ -31,23 +31,6 @@ let area_of_model (area_model : Area.t) (exits : Area.exit list) : area =
     exits = List.map exit_of_model exits;
   }
 
-type command =
-  | Move of { direction : Area.direction }
-  | Help
-  | Unknown of string
-[@@deriving yojson]
-
-let parse_command command =
-  match command with
-  | "/n" | "/north" -> Move { direction = Area.North }
-  | "/s" | "/south" -> Move { direction = Area.South }
-  | "/e" | "/east" -> Move { direction = Area.East }
-  | "/w" | "/west" -> Move { direction = Area.West }
-  | "/u" | "/up" -> Move { direction = Area.Up }
-  | "/d" | "/down" -> Move { direction = Area.Down }
-  | "/help" -> Help
-  | _ -> Unknown command
-
 type chat_message = {
   sender_id : string option;
   message_type : Communication.message_type;
