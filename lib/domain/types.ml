@@ -9,6 +9,12 @@ let character_of_model (character_model : Character.t) : character =
     name = character_model.name;
   }
 
+type coordinate = {
+  x : int;
+  y : int;
+  z : int;
+} [@@deriving yojson]
+
 type exit = {
   direction : string;
 } [@@deriving yojson]
@@ -16,6 +22,7 @@ type exit = {
 type area = {
   name : string;
   description : string;
+  coordinate : coordinate option;
   exits : exit list;
 } [@@deriving yojson]
 
@@ -28,6 +35,7 @@ let area_of_model (area_model : Area.t) (exits : Area.exit list) : area =
   {
     name = area_model.name;
     description = area_model.description;
+    coordinate = Some { x = area_model.x; y = area_model.y; z = area_model.z };
     exits = List.map exit_of_model exits;
   }
 
@@ -47,12 +55,6 @@ let chat_message_of_model (message_model : Communication.t) : chat_message =
     timestamp = Ptime.to_float_s message_model.timestamp;
     area_id = message_model.area_id;
   }
-
-type coordinate = {
-  x : float;
-  y : float;
-  z : float;
-} [@@deriving yojson]
 
 type connection = {
   from : coordinate;

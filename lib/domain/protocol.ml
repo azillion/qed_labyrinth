@@ -15,6 +15,7 @@ type client_message =
   | Command of { command : string }
   | Move of { direction : Area.direction }
   | RequestAdminMap
+  | RequestWorldGeneration
   | Help
   | Unknown of string
 [@@deriving yojson]

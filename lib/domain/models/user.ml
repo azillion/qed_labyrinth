@@ -1,6 +1,22 @@
 open Lwt.Syntax
 open Infra
 
+type role =
+  | Player
+  | Admin
+  | SuperAdmin
+
+let role_of_string = function
+  | "player" -> Player
+  | "admin" -> Admin
+  | "super admin" -> SuperAdmin
+  | _ -> failwith "Invalid role"
+
+let string_of_role = function
+  | Player -> "player"
+  | Admin -> "admin"
+  | SuperAdmin -> "super admin"
+
 type t = {
   id : string;
   username : string;
@@ -10,6 +26,7 @@ type t = {
   deleted_at : Ptime.t option;
   token : string option;
   token_expires_at : Ptime.t option;
+  role : role;
 }
 
 type error =
@@ -25,7 +42,7 @@ let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 let hash_password password =
   Digestif.SHA256.digest_string password |> Digestif.SHA256.to_hex
 
-let create ~username ~password ~email =
+let create ~username ~password ~email ~role =
   let id = Uuidm.to_string (uuid ()) in
   let password_hash = hash_password password in
   let created_at = Ptime_clock.now () in
@@ -38,6 +55,7 @@ let create ~username ~password ~email =
     deleted_at = None;
     token = None;
     token_expires_at = None;
+    role;
   }
 
 module Q = struct
@@ -55,6 +73,7 @@ module Q = struct
           deleted_at;
           token;
           token_expires_at;
+          role;
         } =
       Ok
         ( id,
@@ -64,7 +83,8 @@ module Q = struct
           created_at,
           deleted_at,
           token,
-          token_expires_at )
+          token_expires_at,
+          string_of_role role )
     in
     let decode
         ( id,
@@ -74,29 +94,34 @@ module Q = struct
           created_at,
           deleted_at,
           token,
-          token_expires_at ) =
-      Ok
-        {
-          id;
-          username;
-          password_hash;
-          email;
-          created_at;
-          deleted_at;
-          token;
-          token_expires_at;
-        }
+          token_expires_at,
+          role_str ) =
+      match role_of_string role_str with
+      | exception _ -> Error "Invalid role"
+      | role ->
+          Ok
+            {
+              id;
+              username;
+              password_hash;
+              email;
+              created_at;
+              deleted_at;
+              token;
+              token_expires_at;
+              role;
+            }
     in
     let rep =
-      t8 string string string string ptime (option ptime) (option string)
-        (option ptime)
+      t9 string string string string ptime (option ptime) (option string)
+        (option ptime) string
     in
     custom ~encode ~decode rep
 
   let insert =
     (user_type ->. unit)
-      {| INSERT INTO users (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?) |}
+      {| INSERT INTO users (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at, role)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) |}
 
   let find_by_id =
     (string ->? user_type)
@@ -138,7 +163,7 @@ let register ~username ~password ~email =
         | Error e -> Lwt_result.fail e
         | Ok (Some _) -> Lwt_result.return `EmailTaken
         | Ok None -> (
-            let user = create ~username ~password ~email in
+            let user = create ~username ~password ~email ~role:Player in
             match%lwt Db.exec Q.insert user with
             | Error e -> Lwt_result.fail e
             | Ok () -> Lwt_result.return (`Success user)))

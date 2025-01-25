@@ -12,6 +12,7 @@ module Schema = struct
            deleted_at TIMESTAMP WITH TIME ZONE,
            token TEXT,
            token_expires_at TIMESTAMP WITH TIME ZONE,
+           role VARCHAR(10) NOT NULL DEFAULT 'player' CHECK (role IN ('player', 'admin', 'super admin')),
            CONSTRAINT users_deleted_after_created CHECK (deleted_at IS NULL OR deleted_at > created_at)
          ) |}
 

@@ -1,3 +1,11 @@
+type role =
+  | Player
+  | Admin
+  | SuperAdmin
+
+val role_of_string : string -> role
+val string_of_role : role -> string
+
 type t = {
   id : string;
   username : string;
@@ -7,6 +15,7 @@ type t = {
   deleted_at : Ptime.t option;
   token : string option;
   token_expires_at : Ptime.t option;
+  role : role;
 }
 
 type error =

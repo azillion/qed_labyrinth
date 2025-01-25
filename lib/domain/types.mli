@@ -5,6 +5,13 @@ type character = {
 
 val character_of_model : Character.t -> character
 
+(* area types *)
+type coordinate = {
+  x : int;
+  y : int;
+  z : int;
+} [@@deriving yojson]
+
 type exit = {
   direction : string;
 } [@@deriving yojson]
@@ -14,11 +21,13 @@ val exit_of_model : Area.exit -> exit
 type area = {
   name : string;
   description : string;
+  coordinate : coordinate option;
   exits : exit list;
 } [@@deriving yojson]
 
 val area_of_model : Area.t -> Area.exit list -> area
 
+(* chat types *)
 type chat_message = {
   sender_id : string option;
   message_type : Communication.message_type;
@@ -29,12 +38,7 @@ type chat_message = {
 
 val chat_message_of_model : Communication.t -> chat_message
 
-type coordinate = {
-  x : float;
-  y : float;
-  z : float;
-} [@@deriving yojson]
-
+(* map types *)
 type connection = {
   from : coordinate;
   to_ : coordinate;  (* using to_ since 'to' is a keyword in OCaml *)
