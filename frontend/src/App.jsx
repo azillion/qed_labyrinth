@@ -1,4 +1,8 @@
 import { onMount, createEffect, Show } from "solid-js";
+import { Router, Route } from "@solidjs/router";
+
+import GamePage from "@pages/game";
+import MapPage from "@pages/map";
 
 import { setCurrentTheme } from "@stores/themeStore";
 import { initializeWebSocket } from "@lib/socket";
@@ -24,7 +28,10 @@ const App = (props) => {
 		<>
 			<Show when={authToken()} fallback={<LoginPage />}>
 				<Show when={isCharacterSelected()} fallback={<CharacterPage />}>
-					<props.children />
+				<Router>
+        <Route path="/" component={GamePage} />
+        <Route path="/map" component={MapPage} />
+      </Router>	
 				</Show>
 			</Show>
 			<ConnectionStatus />

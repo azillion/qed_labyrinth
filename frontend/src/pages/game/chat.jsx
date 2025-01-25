@@ -1,4 +1,4 @@
-import { For, Show, createEffect, onMount } from "solid-js";
+import { For, Show, createEffect, onMount, onCleanup } from "solid-js";
 import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import {
@@ -7,7 +7,7 @@ import {
     error,
     formatMessage,
 } from "@features/game/stores/chat";
-import { messageHandlers } from "../../lib/socket";
+import { socketActions } from "../../lib/socket";
 
 const getMessageClass = (messageType) => {
     switch (messageType) {
@@ -24,9 +24,11 @@ export const ChatFrame = () => {
     let chatContainerRef;
 
     onMount(() => {
-        setInterval(() => {
-           messageHandlers.chat.requestChatHistory();
+        const intervalId = setInterval(() => {
+           socketActions.chat.requestChatHistory();
         }, 15000);
+
+        onCleanup(() => clearInterval(intervalId));
     });
 
     // Auto-scroll to bottom when new messages arrive

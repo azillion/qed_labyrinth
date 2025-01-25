@@ -47,3 +47,20 @@ let chat_message_of_model (message_model : Communication.t) : chat_message =
     timestamp = Ptime.to_float_s message_model.timestamp;
     area_id = message_model.area_id;
   }
+
+type coordinate = {
+  x : float;
+  y : float;
+  z : float;
+} [@@deriving yojson]
+
+type connection = {
+  from : coordinate;
+  to_ : coordinate;  (* using to_ since 'to' is a keyword in OCaml *)
+} [@@deriving yojson]
+
+type world = {
+  rooms : area list;
+  connections : connection list;
+  current_location : string;
+} [@@deriving yojson]

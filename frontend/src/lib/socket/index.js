@@ -7,22 +7,6 @@ import { authToken } from '@features/auth/stores/auth';
 export const [socket, setSocket] = createSignal(null);
 export const [connectionStatus, setConnectionStatus] = createSignal('disconnected');
 
-// Message handler registry
-export const handlers = {
-	game: new Set(),
-	chat: new Set(),
-	error: new Set()
-};
-
-// Subscribe to specific message types
-export const onMessage = (type, handler) => {
-	if (handlers[type]) {
-		handlers[type].add(handler);
-		return () => handlers[type].delete(handler);
-	}
-	return () => { };
-};
-
 // Send a message through the WebSocket
 export const sendMessage = (type, payload) => {
 	const ws = socket();
@@ -47,7 +31,7 @@ export const initializeWebSocket = () => {
 
 		ws.onopen = () => handleConnection(ws);
 		ws.onclose = handleDisconnect;
-		ws.onmessage = (event) => handleMessage(event, handlers);
+		ws.onmessage = (event) => handleMessage(event);
 		ws.onerror = (error) => {
 			console.error('WebSocket error:', error);
 			setConnectionStatus('error');
@@ -61,14 +45,11 @@ export const initializeWebSocket = () => {
 	}
 };
 
-// Message handler categories
-export const messageHandlers = {
+export const socketActions = {
 	game: {
-		subscribe: (handler) => onMessage('game', handler),
 		command: (command) =>
 			sendMessage('Command', { command })
 	},
-
 	chat: {
 		send: (message) =>
 			sendMessage('SendChat', { message }),
@@ -80,11 +61,10 @@ export const messageHandlers = {
 			sendMessage('RequestChatHistory')
 	},
 	character: {
-        subscribe: (handler) => onMessage('character', handler),
-        select: (characterId) => sendMessage('SelectCharacter', { character_id: characterId }),
-        list: () => sendMessage('ListCharacters'),
-        create: (characterData) => sendMessage('CreateCharacter', characterData)
-    },
+		select: (characterId) => sendMessage('SelectCharacter', { character_id: characterId }),
+		list: () => sendMessage('ListCharacters'),
+		create: (characterData) => sendMessage('CreateCharacter', characterData)
+	},
 	area: {
 		move: (direction) => sendMessage('Move', { direction })
 	}

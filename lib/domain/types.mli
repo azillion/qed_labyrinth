@@ -28,3 +28,20 @@ type chat_message = {
 } [@@deriving yojson]
 
 val chat_message_of_model : Communication.t -> chat_message
+
+type coordinate = {
+  x : float;
+  y : float;
+  z : float;
+} [@@deriving yojson]
+
+type connection = {
+  from : coordinate;
+  to_ : coordinate;  (* using to_ since 'to' is a keyword in OCaml *)
+} [@@deriving yojson]
+
+type world = {
+  rooms : area list;
+  connections : connection list;
+  current_location : string;
+} [@@deriving yojson]

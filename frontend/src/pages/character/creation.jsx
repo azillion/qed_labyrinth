@@ -1,4 +1,4 @@
-import { createSignal, Show, onMount, createEffect } from "solid-js";
+import { createSignal, Show, onMount } from "solid-js";
 import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { characterActions, characterError } from "@features/auth/stores/character";

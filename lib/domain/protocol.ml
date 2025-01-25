@@ -14,6 +14,7 @@ type client_message =
   | RequestChatHistory
   | Command of { command : string }
   | Move of { direction : Area.direction }
+  | RequestAdminMap
   | Help
   | Unknown of string
 [@@deriving yojson]
@@ -48,4 +49,5 @@ type server_message =
   | CommandFailed of { error : string }
   | ChatHistory of { messages : Types.chat_message list }
   | ChatMessage of { message : Types.chat_message }
+  | AdminMap of { world : Types.world }
 [@@deriving yojson]

@@ -4,7 +4,7 @@ import { DEBUG } from "../constants";
 import { areaHandlers } from "../../features/game/stores/area";
 import { chatHandlers } from "../../features/game/stores/chat";
 
-export const handleMessage = (event, handlers) => {
+export const handleMessage = (event) => {
 	try {
 		if (event.data === 'Connection terminated') {
 			setAuthState(null);
@@ -21,27 +21,22 @@ export const handleMessage = (event, handlers) => {
 		if (type.startsWith('Character')) {
 			const handler = characterHandlers[type];
 			if (handler) {
-			  handler(payload);
+				handler(payload);
 			}
 		} else if (type.startsWith('Area')) {
 			const handler = areaHandlers[type];
 			if (handler) {
-			  handler(payload);
+				handler(payload);
 			}
-		  } else if (type.startsWith('Game')) {
-			handlers.game.forEach(handler => handler(type, payload));
 		} else if (type.startsWith('Chat')) {
 			const handler = chatHandlers[type];
 			if (handler) {
-			  handler(payload);
+				handler(payload);
 			}
 		} else if (type === 'Error') {
-			handlers.error.forEach(handler => handler(type, payload));
+			console.error('Error:', payload);
 		}
 	} catch (err) {
 		console.error('Error handling message:', err);
-		handlers.error.forEach(handler =>
-			handler('ParseError', { message: err.message })
-		);
 	}
 };

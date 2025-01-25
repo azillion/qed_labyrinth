@@ -84,8 +84,6 @@ export const initializeCharacterActions = (messageHandlers) => {
 export const isCharacterSelected = () => character.id !== null;
 
 export {
-  character,
-  setCharacter,
   characters,
   setCharacters,
   loadingCharacters,
