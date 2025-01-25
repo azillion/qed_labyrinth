@@ -25,6 +25,10 @@ export const chatHandlers = {
     'ChatError': (payload) => {
         setError(payload.error);
         setIsLoading(false);
+    },
+    'CommandSuccess': (payload) => {
+        console.log('CommandSuccess', payload);
+        setMessages(msgs => [...msgs, payload.message]);
     }
 };
 
