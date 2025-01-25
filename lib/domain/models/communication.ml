@@ -1,6 +1,6 @@
 open Infra
 
-type message_type = Chat | Emote | System [@@deriving yojson]
+type message_type = Chat | Emote | System | CommandSuccess [@@deriving yojson]
 
 type t = {
   id : string;
@@ -28,11 +28,13 @@ module Q = struct
       | Chat -> Ok "chat"
       | Emote -> Ok "emote"
       | System -> Ok "system"
+      | CommandSuccess -> Ok "command_success"
     in
     let decode = function
       | "chat" -> Ok Chat
       | "emote" -> Ok Emote
       | "system" -> Ok System
+      | "command_success" -> Ok CommandSuccess
       | _ -> Error "Invalid message type"
     in
     custom ~encode ~decode string

@@ -28,6 +28,7 @@ let parse_command command =
   | "/w" | "/west" -> Move { direction = Area.West }
   | "/u" | "/up" -> Move { direction = Area.Up }
   | "/d" | "/down" -> Move { direction = Area.Down }
+  | "/world generate" -> RequestWorldGeneration
   | "/help" -> Help
   | _ -> Unknown command
 
@@ -46,7 +47,7 @@ type server_message =
   | CharacterSelectionFailed of error_response
   | Area of { area : Types.area }
   | Error of error_response
-  | CommandSuccess of { message : string }
+  | CommandSuccess of { message : Types.chat_message }
   | CommandFailed of { error : string }
   | ChatHistory of { messages : Types.chat_message list }
   | ChatMessage of { message : Types.chat_message }

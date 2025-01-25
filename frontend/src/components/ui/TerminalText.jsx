@@ -1,5 +1,11 @@
-export const TerminalText = (props) => (
-  <div class={`font-mono text-gray-100 ${props.class || ""}`}>
-    {props.children}
-  </div>
-);
+export const TerminalText = ({ children, class: className, setInnerHTML = false }) => {
+  console.log(children);
+  return (
+    setInnerHTML ? (
+      <div class={`font-mono text-gray-100 ${className || ""}`} innerHTML={children} />
+    ) : (
+    <div class={`font-mono text-gray-100 ${className || ""}`}>
+      {children}
+    </div>
+  ))
+};

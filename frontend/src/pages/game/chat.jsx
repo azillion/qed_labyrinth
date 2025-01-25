@@ -5,31 +5,58 @@ import {
     messages,
     isLoading,
     error,
-    formatMessage,
 } from "@features/game/stores/chat";
-import { chatActions } from "@features/game/stores/chat";
 
 const getMessageClass = (messageType) => {
-    switch (messageType) {
+    switch (messageType[0]) {
         case 'System':
             return theme().textDim;
         case 'Emote':
             return theme().textDimmer;
+        case 'CommandSuccess':
+            return theme().textSuccess;
         default:
             return theme().textBase;
     }
 };
 
+const formatLinesInMessage = (message) => {
+    if (message.includes('\n')) {
+        const lines = message.split('\n');
+        return lines.map(line => `<p>${line}</p>`).join('');
+    }
+    return message;
+};
+
+// Message formatting helpers
+export const formatMessage = (message) => {
+    const formattedContent = formatLinesInMessage(message.content);
+    
+    switch (message.message_type) {
+        case 'Chat':
+            return `${message.sender_name}: ${formattedContent}`;
+        case 'Emote':
+            return `* ${message.sender_name} ${formattedContent}`;
+        case 'System':
+            return formattedContent;
+        case 'CommandSuccess':
+            return formattedContent;
+        default:
+            return formattedContent;
+    }
+};
+
+
 export const ChatFrame = () => {
     let chatContainerRef;
 
-    onMount(() => {
-        const intervalId = setInterval(() => {
-           chatActions.requestChatHistory();
-        }, 15000);
+    // onMount(() => {
+    //     const intervalId = setInterval(() => {
+    //        chatActions.requestChatHistory();
+    //     }, 15000);
 
-        onCleanup(() => clearInterval(intervalId));
-    });
+    //     onCleanup(() => clearInterval(intervalId));
+    // });
 
     // Auto-scroll to bottom when new messages arrive
     createEffect(() => {
@@ -56,7 +83,9 @@ export const ChatFrame = () => {
                     >
                         <For each={messages}>
                             {(message) => (
-                                <TerminalText class={getMessageClass(message.message_type)}>
+                                <TerminalText class={getMessageClass(message.message_type)} 
+                                    setInnerHTML={true}
+                                >
                                     {formatMessage(message)}
                                 </TerminalText>
                             )}

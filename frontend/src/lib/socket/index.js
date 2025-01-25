@@ -1,4 +1,5 @@
 import { SocketManager } from './SocketManager';
+import { adminHandlers } from '@features/game/stores/admin';
 import { areaHandlers } from '@features/game/stores/area';
 import { chatHandlers } from '@features/game/stores/chat';
 import { characterHandlers } from '@features/auth/stores/character';
@@ -19,6 +20,11 @@ export function registerCoreHandlers() {
 
   // Character handlers
   Object.entries(characterHandlers).forEach(([type, handler]) => {
+    socketManager.registerHandler(type, handler);
+  });
+
+  // Admin handlers
+  Object.entries(adminHandlers).forEach(([type, handler]) => {
     socketManager.registerHandler(type, handler);
   });
 

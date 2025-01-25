@@ -27,8 +27,7 @@ export const chatHandlers = {
         setIsLoading(false);
     },
     'CommandSuccess': (payload) => {
-        console.log('CommandSuccess', payload);
-        setMessages(msgs => [...msgs, payload.message]);
+        setMessages(msgs => [...msgs, payload]);
     }
 };
 
@@ -83,18 +82,4 @@ export const chatActions = {
 export const setRoom = (roomId) => {
     setCurrentRoom(roomId);
     setMessages([]); // Clear messages when changing rooms
-};
-
-// Message formatting helpers
-export const formatMessage = (message) => {
-    switch (message.message_type) {
-        case 'Chat':
-            return `${message.sender_name}: ${message.content}`;
-        case 'Emote':
-            return `* ${message.sender_name} ${message.content}`;
-        case 'System':
-            return message.content;
-        default:
-            return message.content;
-    }
 };
