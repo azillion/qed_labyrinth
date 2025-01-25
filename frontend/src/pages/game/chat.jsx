@@ -7,7 +7,7 @@ import {
     error,
     formatMessage,
 } from "@features/game/stores/chat";
-import { socketActions } from "../../lib/socket";
+import { chatActions } from "@features/game/stores/chat";
 
 const getMessageClass = (messageType) => {
     switch (messageType) {
@@ -25,7 +25,7 @@ export const ChatFrame = () => {
 
     onMount(() => {
         const intervalId = setInterval(() => {
-           socketActions.chat.requestChatHistory();
+           chatActions.requestChatHistory();
         }, 15000);
 
         onCleanup(() => clearInterval(intervalId));

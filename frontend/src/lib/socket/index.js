@@ -1,71 +1,32 @@
-import { createSignal } from 'solid-js';
-import { handleConnection, handleDisconnect } from './connection';
-import { handleMessage } from './handlers';
-import { DEBUG, SOCKET_URL } from '../constants';
-import { authToken } from '@features/auth/stores/auth';
+import { SocketManager } from './SocketManager';
+import { areaHandlers } from '@features/game/stores/area';
+import { chatHandlers } from '@features/game/stores/chat';
+import { characterHandlers } from '@features/auth/stores/character';
 
-export const [socket, setSocket] = createSignal(null);
-export const [connectionStatus, setConnectionStatus] = createSignal('disconnected');
+export const socketManager = new SocketManager();
 
-// Send a message through the WebSocket
-export const sendMessage = (type, payload) => {
-	const ws = socket();
-	if (ws?.readyState === WebSocket.OPEN) {
-		if (DEBUG) {
-			console.log('Sending message:', type, payload);
-		}
-		if (payload) {
-			ws.send(JSON.stringify([type, payload]));
-		} else {
-			ws.send(JSON.stringify([type]));
-		}
-	} else {
-		console.error('WebSocket is not connected');
-	}
-};
+// Register core handlers
+export function registerCoreHandlers() {
+  // Area handlers
+  Object.entries(areaHandlers).forEach(([type, handler]) => {
+    socketManager.registerHandler(type, handler);
+  });
 
-// Initialize WebSocket connection
-export const initializeWebSocket = () => {
-	try {
-		const ws = new WebSocket(`${SOCKET_URL}?token=${authToken()}`);
+  // Chat handlers
+  Object.entries(chatHandlers).forEach(([type, handler]) => {
+    socketManager.registerHandler(type, handler);
+  });
 
-		ws.onopen = () => handleConnection(ws);
-		ws.onclose = handleDisconnect;
-		ws.onmessage = (event) => handleMessage(event);
-		ws.onerror = (error) => {
-			console.error('WebSocket error:', error);
-			setConnectionStatus('error');
-		};
+  // Character handlers
+  Object.entries(characterHandlers).forEach(([type, handler]) => {
+    socketManager.registerHandler(type, handler);
+  });
 
-		setSocket(ws);
-	} catch (error) {
-		console.error('Error initializing WebSocket:', error);
-		setConnectionStatus('error');
-		setAuthToken(null);
-	}
-};
+  socketManager.registerHandler('Error', (payload) => {
+    console.error('Server error:', payload);
+  });
+}
 
-export const socketActions = {
-	game: {
-		command: (command) =>
-			sendMessage('Command', { command })
-	},
-	chat: {
-		send: (message) =>
-			sendMessage('SendChat', { message }),
-		emote: (message) =>
-			sendMessage('SendEmote', { message }),
-		system: (message) =>
-			sendMessage('SendSystem', { message }),
-		requestChatHistory: () =>
-			sendMessage('RequestChatHistory')
-	},
-	character: {
-		select: (characterId) => sendMessage('SelectCharacter', { character_id: characterId }),
-		list: () => sendMessage('ListCharacters'),
-		create: (characterData) => sendMessage('CreateCharacter', characterData)
-	},
-	area: {
-		move: (direction) => sendMessage('Move', { direction })
-	}
-};
+// Export simplified interface
+export const send = socketManager.send.bind(socketManager);
+export const connectionStatus = socketManager.connectionStatus[0];

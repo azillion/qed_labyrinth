@@ -1,6 +1,5 @@
-import { createSignal, createEffect } from 'solid-js';
-import { connectionStatus } from '../../lib/socket';
-import { isReconnecting, retryCount } from '../../lib/socket/connection';
+import { createSignal, createEffect, Show } from 'solid-js';
+import { socketManager } from '@lib/socket';
 import { theme } from '../../stores/themeStore';
 
 export const ConnectionStatus = () => {
@@ -20,14 +19,12 @@ export const ConnectionStatus = () => {
 		failed: 'bg-red-500',
 	};
 
-	const [status, setStatus] = createSignal(connectionStatus());
 	const [visible, setVisible] = createSignal(false);
+	const [status] = socketManager.connectionStatus;
 
 	createEffect(() => {
-		// monitor changes in connection status
-		const newStatus = connectionStatus();
-		if (newStatus !== status()) {
-			setStatus(newStatus);
+		const currentStatus = status();
+		if (currentStatus && currentStatus !== 'connected') {
 			setVisible(true);
 			setTimeout(() => setVisible(false), 5000);
 		}
@@ -42,7 +39,7 @@ export const ConnectionStatus = () => {
 					<div class={`w-2 h-2 rounded-full ${statusStyles[status()]}`} />
 					<span class={`text-sm ${theme().textBase}`}>
 						{statusMessages[status()]}
-						{isReconnecting() && ` (Attempt ${retryCount()})`}
+						{socketManager.isReconnecting && ` (Attempt ${socketManager.retryCount})`}
 					</span>
 				</div>
 			</div>

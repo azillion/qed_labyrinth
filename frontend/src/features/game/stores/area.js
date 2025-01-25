@@ -1,25 +1,29 @@
 import { createStore } from "solid-js/store";
 import { createSignal } from "solid-js";
+import { socketManager } from '@lib/socket';
 
 // Core area state
-const [area, setArea] = createStore({
+export const [area, setArea] = createStore({
     name: null,
     description: null,
+    coordinates: null,
     exits: [],
     objects: [], // For future implementation
     characters: [] // For future implementation
 });
 
 // Loading and error states
-const [isLoading, setIsLoading] = createSignal(false);
-const [error, setError] = createSignal(null);
+export const [isLoading, setIsLoading] = createSignal(false);
+export const [error, setError] = createSignal(null);
 
 // Message handlers that will be registered with WebSocket system
 export const areaHandlers = {
     'Area': (payload) => {
+        console.log('coordinate', payload.area.coordinate);
         setArea({
             name: payload.area.name,
             description: payload.area.description,
+            coordinate: payload.area.coordinate,
             exits: payload.area.exits
         });
         setIsLoading(false);
@@ -32,33 +36,12 @@ export const areaHandlers = {
 };
 
 // Area actions that will be initialized with messageHandlers
-export let areaActions = null;
-
-export const initializeAreaActions = (messageHandlers) => {
-    areaActions = {
-        move: async (direction) => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                await messageHandlers.game.move(direction);
-            } catch (error) {
-                setError(error.message);
-                setIsLoading(false);
-                throw error;
-            }
-        },
-
-        examine: async (target) => {
-            try {
-                setError(null);
-                await messageHandlers.game.action('examine', target);
-            } catch (error) {
-                setError(error.message);
-                throw error;
-            }
-        }
-    };
-};
+export const areaActions = {
+    move: (direction) => {
+      setIsLoading(true);
+      socketManager.send('Move', { direction });
+    }
+  };
 
 // Helper functions
 export const hasExit = (direction) => {
@@ -67,11 +50,4 @@ export const hasExit = (direction) => {
 
 export const getAvailableExits = () => {
     return area.exits.map(exit => exit.direction);
-};
-
-export {
-    area,
-    setArea,
-    isLoading,
-    error
 };

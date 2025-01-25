@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js';
 import fetcher from '@lib/fetcher';
 import { ENDPOINTS } from '@lib/constants';
+import { socketManager } from '@lib/socket';
 
 // Auth state management
 export const [isAuthenticated, setIsAuthenticated] = createSignal(false);
@@ -8,28 +9,19 @@ export const [authToken, setAuthToken] = createSignal(null);
 export const [authError, setAuthError] = createSignal(null);
 
 export const setAuthState = (token) => {
+	if (token && typeof token !== 'string') {
+		console.error('Invalid token type');
+		return;
+	}
+	
 	setAuthToken(token);
+	setIsAuthenticated(!!token);
+	
 	if (token) {
 		localStorage.setItem('auth_token', token);
 	} else {
 		localStorage.removeItem('auth_token');
-	}
-	setIsAuthenticated(!!token);
-};
-
-// Handle incoming WebSocket messages
-export const handleAuthMessage = (event) => {
-	try {
-		const data = JSON.parse(event.data);
-		// Get the message type (first element) and payload (second element)
-		const [type, payload] = Array.isArray(data) ? data : [Object.keys(data)[0], data[Object.keys(data)[0]]];
-
-		const handler = messageHandlers[type];
-		if (handler) {
-			handler(payload);
-		}
-	} catch (err) {
-		console.error('Error handling auth message:', err);
+		socketManager.disconnect();
 	}
 };
 
@@ -42,9 +34,17 @@ export const login = async (username, password) => {
 };
 
 export const register = async (username, password, email) => {
-	const response = await fetcher.post(ENDPOINTS.register, { username, password, email });
-	if (response.token) {
-		setAuthState(response.token);
+	try {
+		const response = await fetcher.post(ENDPOINTS.register, { username, password, email });
+		if (response?.token && typeof response.token === 'string') {
+			setAuthState(response.token);
+			setAuthError(null); // Clear any previous errors
+		} else {
+			setAuthError('Invalid response from server');
+		}
+	} catch (error) {
+		setAuthError('Registration failed');
+		setAuthState(null);
 	}
 };
 

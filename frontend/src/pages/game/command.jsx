@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
 import { theme } from "@stores/themeStore";
-import { socketActions } from "@lib/socket";
+import { chatActions } from "../../features/game/stores/chat";
 
 export const CommandInput = () => {
     const [commandInput, setCommandInput] = createSignal("");
@@ -21,13 +21,13 @@ export const CommandInput = () => {
         // Route to appropriate handler based on prefix
         if (input.startsWith('/')) {
             try {
-                await socketActions.game.command(input);
+                await chatActions.command(input);
             } catch (err) {
                 console.error("Command failed:", err);
             }
         } else {
             try {
-                await socketActions.chat.send(input);
+                await chatActions.sendMessage(input);
             } catch (err) {
                 console.error("Chat failed:", err);
             }
