@@ -34,6 +34,9 @@ module Schema = struct
            x INT,
            y INT,
            z INT,
+           climate_elevation FLOAT,
+           climate_temperature FLOAT,
+           climate_moisture FLOAT,
            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
          ) |}
 
@@ -167,10 +170,10 @@ The ancient oak remains visible to the west, while the path splits around weathe
                             match chars_indexes_result with
                             | Error e -> Lwt.return_error e
                             | Ok () ->
-                                let%lwt starting_area_result = C.exec create_starting_area_entry () in
+                                (* let%lwt starting_area_result = C.exec create_starting_area_entry () in
                                 match starting_area_result with
                                 | Error e -> Lwt.return_error e
-                                | Ok () -> 
+                                | Ok () ->  *)
                                     let%lwt comm_result = C.exec create_comm_table () in
                                     match comm_result with
                                     | Error e -> Lwt.return_error e
