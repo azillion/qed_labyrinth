@@ -29,6 +29,16 @@ export const chatHandlers = {
     'CommandSuccess': (payload) => {
         const { message } = payload;
         setMessages(msgs => [...msgs, message]);
+    },
+    'CommandFailed': (payload) => {
+        const { error } = payload;
+        setMessages(msgs => [...msgs, {
+            sender_id: null,
+            message_type: 'CommandFailed',
+            content: error,
+            timestamp: Date.now(),
+            area_id: null
+        }]);
     }
 };
 

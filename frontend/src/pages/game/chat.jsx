@@ -15,6 +15,8 @@ const getMessageClass = (messageType) => {
             return theme().textDimmer;
         case 'CommandSuccess':
             return theme().textSuccess;
+        case 'CommandFailed':
+            return theme().textError;
         default:
             return theme().textBase;
     }
@@ -46,6 +48,8 @@ export const formatMessage = (message) => {
         case 'System':
             return formattedContent;
         case 'CommandSuccess':
+            return formattedContent;
+        case 'CommandFailed':
             return formattedContent;
         default:
             return formattedContent;

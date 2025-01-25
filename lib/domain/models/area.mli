@@ -85,6 +85,8 @@ val create_exit :
 val find_exits : area_id:string -> (exit list, error) result Lwt.t
 val direction_equal : direction -> direction -> bool
 
+val delete_all_except_starting_area : string -> (unit, error) result Lwt.t
+
 module Q : sig
   val find_exit_by_direction :
     (string * direction, exit option, [ `Zero | `One ]) Caqti_request.t

@@ -1,4 +1,4 @@
-type message_type = Chat | Emote | System | CommandSuccess [@@deriving yojson]
+type message_type = Chat | Emote | System | CommandSuccess | CommandFailed [@@deriving yojson]
 
 type t = {
   id : string;

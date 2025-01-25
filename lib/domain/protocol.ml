@@ -16,6 +16,7 @@ type client_message =
   | Move of { direction : Area.direction }
   | RequestAdminMap
   | RequestWorldGeneration
+  | RequestWorldDeletion
   | Help
   | Unknown of string
 [@@deriving yojson]
@@ -29,6 +30,7 @@ let parse_command command =
   | "/u" | "/up" -> Move { direction = Area.Up }
   | "/d" | "/down" -> Move { direction = Area.Down }
   | "/world generate" -> RequestWorldGeneration
+  | "/world delete" -> RequestWorldDeletion
   | "/help" -> Help
   | _ -> Unknown command
 

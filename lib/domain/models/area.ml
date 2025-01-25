@@ -140,6 +140,14 @@ module Q = struct
          climate_elevation, climate_temperature, climate_moisture
          FROM areas WHERE x = ? AND y = ? AND z = ? |}
 
+  let delete_all_except_starting_area =
+    (string ->. unit)
+      {| DELETE FROM areas WHERE id <> ? |}
+    
+  let delete_all_exits =
+    (unit ->. unit)
+      {| DELETE FROM exits |}
+
   let direction_type =
     let encode d = Ok (direction_to_string d) in
     let decode s =
@@ -357,3 +365,16 @@ let direction_equal a b =
       | Ok _ -> Lwt.return_ok true
       | Error AreaNotFound -> Lwt.return_ok false
       | Error e -> Lwt.return_error e
+
+let delete_all_except_starting_area starting_area_id =
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    (* Delete all exits not connected to the starting area *)
+    let* _ = Db.exec Q.delete_all_exits () in
+    (* Delete all areas except the starting area *)
+    let* _ = Db.exec Q.delete_all_except_starting_area starting_area_id in
+    Lwt_result.return ()
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Ok () -> Lwt.return_ok ()
+  | Error e -> Lwt.return_error (DatabaseError (Base.Error.to_string_hum e))
