@@ -81,52 +81,27 @@ module Schema = struct
       "CREATE INDEX IF NOT EXISTS characters_location_idx ON characters(location_id) WHERE deleted_at IS NULL";
   ]
 
-  (* make sure there is a starting area entry, if not, create it *)
   let create_starting_area_entry =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      {| WITH area_inserts AS (
-         INSERT INTO areas (id, name, description, x, y, z)
-         SELECT '00000000-0000-0000-0000-000000000000', 'The Ancient Oak Meadow', 'An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree''s vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.
-The meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass. Misty mountains rise to the east, their peaks shrouded in clouds. Well-worn paths lead north and south along the hillside, while the western path curves down toward a valley.', 0, 0, 0
+      {| INSERT INTO areas (id, name, description, x, y, z, climate_elevation, climate_temperature, climate_moisture)
+         SELECT '00000000-0000-0000-0000-000000000000', 'The Ancient Oak Meadow', 
+           'An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree''s vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.
+The meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass.',
+           0, 0, 0, 0.0, 0.0, 0.0
          WHERE NOT EXISTS (
            SELECT 1 FROM areas WHERE id = '00000000-0000-0000-0000-000000000000'
-         )
-         RETURNING id
-       ),
-       second_area AS (
-         INSERT INTO areas (id, name, description, x, y, z)
-         SELECT '11111111-1111-1111-1111-111111111111', 'The Mountain Path', 'The ground rises steadily toward the mountains, the grass giving way to loose shale and hardy mountain flowers. Mist clings to the higher elevations, swirling in slow eddies around the rocky outcrops.
-The ancient oak remains visible to the west, while the path splits around weathered boulders. The northern fork climbs steeply into the mountains, while the southern route descends into a sheltered vale.', 1, 0, 0
-         WHERE NOT EXISTS (
-           SELECT 1 FROM areas WHERE id = '11111111-1111-1111-1111-111111111111'
-         )
-         RETURNING id
-       )
-       INSERT INTO exits (from_area_id, to_area_id, direction, description)
-       SELECT a1.id, a2.id, 'east', 'The path leads east toward the mountains.'
-       FROM (SELECT id FROM areas WHERE id = '00000000-0000-0000-0000-000000000000') a1,
-            (SELECT id FROM areas WHERE id = '11111111-1111-1111-1111-111111111111') a2
-       WHERE NOT EXISTS (
-         SELECT 1 FROM exits WHERE from_area_id = a1.id AND direction = 'east'
-       )
-       UNION ALL
-       SELECT a2.id, a1.id, 'west', 'The path leads west back to the ancient oak.'
-       FROM (SELECT id FROM areas WHERE id = '00000000-0000-0000-0000-000000000000') a1,
-            (SELECT id FROM areas WHERE id = '11111111-1111-1111-1111-111111111111') a2
-       WHERE NOT EXISTS (
-         SELECT 1 FROM exits WHERE from_area_id = a2.id AND direction = 'west'
-       ) |}
+         ) |}
 
-       let create_comm_table =
-        Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-          {| CREATE TABLE IF NOT EXISTS communications (
-               id UUID PRIMARY KEY,
-               message_type VARCHAR(20) NOT NULL,
-               sender_id UUID REFERENCES characters(id),
-               content TEXT NOT NULL,
-               area_id UUID REFERENCES areas(id),
-               timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
-             ) |}
+  let create_comm_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS communications (
+           id UUID PRIMARY KEY,
+           message_type VARCHAR(20) NOT NULL,
+           sender_id UUID REFERENCES characters(id),
+           content TEXT NOT NULL,
+           area_id UUID REFERENCES areas(id),
+           timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+         ) |}
 
   (* Helper to run a list of statements in sequence *)
   let exec_statements (module C : Caqti_lwt.CONNECTION) statements =
@@ -170,10 +145,10 @@ The ancient oak remains visible to the west, while the path splits around weathe
                             match chars_indexes_result with
                             | Error e -> Lwt.return_error e
                             | Ok () ->
-                                (* let%lwt starting_area_result = C.exec create_starting_area_entry () in
+                                let%lwt starting_area_result = C.exec create_starting_area_entry () in
                                 match starting_area_result with
                                 | Error e -> Lwt.return_error e
-                                | Ok () ->  *)
+                                | Ok () ->
                                     let%lwt comm_result = C.exec create_comm_table () in
                                     match comm_result with
                                     | Error e -> Lwt.return_error e

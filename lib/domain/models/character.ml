@@ -157,6 +157,12 @@ let soft_delete ~character_id =
   | Ok () -> Lwt.return_ok ()
   | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
 
+(* TODO:
+  - Add a check to see if the character is in the same area as the exit
+  - Add a check to see if the exit is blocked, hidden, or locked
+  - Add a check to see if the exit is in the same direction as the character
+  - Add a check to see if the room exists in the area being moved to
+*)
 let move ~character_id ~(direction : Area.direction) =
   let open Base in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =

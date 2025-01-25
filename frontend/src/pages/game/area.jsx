@@ -9,7 +9,9 @@ export const AreaFrame = () => {
             <Show when={!isLoading()} fallback={<TerminalText>Loading area...</TerminalText>}>
                 <Show when={area.name} fallback={<TerminalText>No area loaded</TerminalText>}>
                     <TerminalText class="text-xl mb-4">{area.name}</TerminalText>
-                    <TerminalText class="mb-4">{area.description}</TerminalText>
+                    <TerminalText class="mb-4">
+                        <pre innerHTML={area.description} class="whitespace-pre-wrap" />
+                    </TerminalText>
                     <Show when={area.exits.length > 0}>
                         <TerminalText class={`${theme().textDim}`}>
                             Exits: {area.exits.map(exit => exit.direction).join(", ")}
