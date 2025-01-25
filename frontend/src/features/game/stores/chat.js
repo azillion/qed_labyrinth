@@ -27,7 +27,8 @@ export const chatHandlers = {
         setIsLoading(false);
     },
     'CommandSuccess': (payload) => {
-        setMessages(msgs => [...msgs, payload]);
+        const { message } = payload;
+        setMessages(msgs => [...msgs, message]);
     }
 };
 

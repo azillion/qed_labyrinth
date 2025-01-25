@@ -1,6 +1,7 @@
 import { createSignal } from 'solid-js';
 import { DEBUG, SOCKET_URL } from '../constants';
 import { authToken, setAuthState } from '@features/auth/stores/auth';
+import { setCharacter } from '@features/auth/stores/character';
 
 const INITIAL_RETRY_DELAY = 1000;
 const MAX_RETRY_DELAY = 30000;
@@ -20,6 +21,7 @@ export class SocketManager {
 
     initialize() {
         if (this.manuallyDisconnected) return;
+        setCharacter(null);
 
         const token = authToken();
         if (!token) {

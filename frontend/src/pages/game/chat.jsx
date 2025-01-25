@@ -20,7 +20,13 @@ const getMessageClass = (messageType) => {
     }
 };
 
+/**
+ * Format lines in a message
+ * @param {string} message - The message to format
+ * @returns {string} The formatted message
+ */
 const formatLinesInMessage = (message) => {
+    if (message == null || message == undefined) return '';
     if (message.includes('\n')) {
         const lines = message.split('\n');
         return lines.map(line => `<p>${line}</p>`).join('');
