@@ -14,12 +14,12 @@ module Handler : Client_handler.S = struct
         let params =
           {
             World_gen.seed = 42;
-            width = 10;
-            height = 10;
-            depth = 9;
-            elevation_scale = 15.0;
-            temperature_scale = 20.0;
-            moisture_scale = 18.0;
+            width = 21;   (* -10 to 10 *)
+            height = 21;  (* -10 to 10 *)
+            depth = 11;   (* -5 to 5 *)
+            elevation_scale = 8.0;
+            temperature_scale = 10.0;
+            moisture_scale = 12.0;
           }
         in
 

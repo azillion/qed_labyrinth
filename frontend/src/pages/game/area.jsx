@@ -13,11 +13,27 @@ const EXIT_DIRECTION_TO_COMMAND = {
     down: "/down",
 };
 
+const DIRECTION_ORDER = {
+    north: 0,
+    south: 1,
+    east: 2,
+    west: 3,
+    up: 4,
+    down: 5
+};
+
 export const AreaFrame = () => {
     const hasArea = createMemo(() => {
         console.log('Current area name:', area.name);
         return Boolean(area.name);
     });
+    
+    const orderedExits = createMemo(() => {
+        return [...area.exits].sort((a, b) => 
+            DIRECTION_ORDER[a.direction] - DIRECTION_ORDER[b.direction]
+        );
+    });
+
     const hasExits = createMemo(() => {
         console.log('Current area exits:', area.exits);
         return area.exits.length > 0;
@@ -28,24 +44,22 @@ export const AreaFrame = () => {
             <Show when={!isLoading()} fallback={<TerminalText>Loading area...</TerminalText>}>
                 {hasArea() ? (
                     <>
-                        <TerminalText class="text-xl mb-4">
-                            {() => area.name}
-                        </TerminalText>
-                        <TerminalText class="mb-4" setInnerHTML>
-                            {() => area.description}
+                        <TerminalText class="text-xl mb-4">{area.name}</TerminalText>
+                        <TerminalText class="mb-4">
+                            <pre innerHTML={area.description} class="whitespace-pre-wrap max-h-[20vh] overflow-y-auto" />
                         </TerminalText>
                         {hasExits() && (
                             <TerminalText class={`${theme().textDim}`}>
                                 Exits:{" "}
-                                {() => area.exits.map((exit, i) => (
+                                {orderedExits().map((exit, i) => (
                                     <>
                                         <span 
-                                            class="cursor-pointer hover:text-white transition-colors"
+                                            class="cursor-pointer hover:text-white transition-colors select-none"
                                             onClick={() => chatActions.command(EXIT_DIRECTION_TO_COMMAND[exit.direction])}
                                         >
                                             {exit.direction}
                                         </span>
-                                        {i < area.exits.length - 1 ? ", " : ""}
+                                        <span class="text-gray-500 select-none">{i < area.exits.length - 1 ? ", " : ""}</span>
                                     </>
                                 ))}
                             </TerminalText>

@@ -6,10 +6,6 @@ module Handler : Client_handler.S = struct
         let* exits_result = Area.get_all_exits () in
 
         match (areas_result, exits_result) with
-        | Error _, _ | _, Error _ ->
-            client.send
-              (Protocol.CommandFailed
-                 { error = "Error fetching areas or exits" })
         | Ok areas, Ok exits ->
             let rooms =
               List.map
@@ -67,7 +63,26 @@ module Handler : Client_handler.S = struct
                 current_location = character.location_id;
               }
             in
-            client.send (Protocol.AdminMap { world }))
+            client.send (Protocol.AdminMap { world })
+        | Error area_error, Error exit_error ->
+            Printf.printf "Error fetching areas: %s, exits: %s\n"
+              (Area.error_to_string area_error)
+              (Area.error_to_string exit_error);
+            client.send
+              (Protocol.CommandFailed
+                 { error = "Error fetching areas or exits" })
+        | Error area_error, _ ->
+            Printf.printf "Error fetching areas: %s\n"
+              (Area.error_to_string area_error);
+            client.send
+              (Protocol.CommandFailed
+                 { error = "Error fetching areas or exits" })
+        | _, Error exit_error ->
+            Printf.printf "Error fetching exits: %s\n"
+              (Area.error_to_string exit_error);
+            client.send
+              (Protocol.CommandFailed
+                 { error = "Error fetching areas or exits" }))
 
   (* Main message handler *)
   let handle (_state : State.t) (client : Client.t) msg =

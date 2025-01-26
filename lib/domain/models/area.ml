@@ -31,6 +31,10 @@ type t = {
 
 type error = AreaNotFound | DatabaseError of string [@@deriving yojson]
 
+let error_to_string = function
+  | AreaNotFound -> "Area not found"
+  | DatabaseError e -> e
+
 let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 
 type direction = North | South | East | West | Up | Down [@@deriving yojson]

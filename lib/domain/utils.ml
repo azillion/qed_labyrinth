@@ -136,6 +136,7 @@ module PerlinNoise = struct
   (* Convenience functions for 1D and 2D noise *)
   let noise1d t x = noise t x 0.0 0.0
   let noise2d t x y = noise t x y 0.0
+  let noise3d = noise  (* 3D noise is just the base noise function *)
 
   (* Generate octaves of noise for more natural results *)
   let octave_noise t ?(octaves = 1) ?(persistence = 0.5) x y z =

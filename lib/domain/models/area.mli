@@ -27,6 +27,9 @@ type t = {
 }
 
 type error = AreaNotFound | DatabaseError of string [@@deriving yojson]
+
+val error_to_string : error -> string
+
 type direction = North | South | East | West | Up | Down [@@deriving yojson]
 
 val opposite_direction : direction -> direction

@@ -1,6 +1,7 @@
 import { createSignal } from "solid-js";
 import { theme } from "@stores/themeStore";
 import { chatActions } from "../../features/game/stores/chat";
+import { setCurrentFocus } from "../../features/game/stores/game";
 
 export const CommandInput = () => {
     const [commandInput, setCommandInput] = createSignal("");
@@ -66,6 +67,8 @@ export const CommandInput = () => {
                 onInput={(e) => setCommandInput(e.currentTarget.value)}
                 onKeyDown={handleKeyDown}
                 onKeyPress={handleInput}
+                onFocus={() => setCurrentFocus("command")}
+                onBlur={() => setCurrentFocus("area")}
                 class={`w-full bg-gray-900/95 border ${theme().border} backdrop-blur-sm 
                        rounded-lg px-4 py-2 font-mono ${theme().textBase}
                        focus:outline-none focus:ring-1 focus:${theme().border}`}
