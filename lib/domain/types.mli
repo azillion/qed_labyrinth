@@ -24,6 +24,9 @@ type area = {
   description : string;
   coordinate : coordinate option;
   exits : exit list;
+  elevation : float option;
+  temperature : float option;
+  moisture : float option;
 } [@@deriving yojson]
 
 val area_of_model : Area.t -> Area.exit list -> area

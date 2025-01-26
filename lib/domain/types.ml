@@ -25,6 +25,9 @@ type area = {
   description : string;
   coordinate : coordinate option;
   exits : exit list;
+  elevation : float option;
+  temperature : float option;
+  moisture : float option;
 } [@@deriving yojson]
 
 let exit_of_model (exit_model : Area.exit) : exit =
@@ -39,6 +42,9 @@ let area_of_model (area_model : Area.t) (exits : Area.exit list) : area =
     description = area_model.description;
     coordinate = Some { x = area_model.x; y = area_model.y; z = area_model.z };
     exits = List.map exit_of_model exits;
+    elevation = area_model.elevation;
+    temperature = area_model.temperature;
+    moisture = area_model.moisture;
   }
 
 type chat_message = {

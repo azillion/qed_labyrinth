@@ -8,6 +8,9 @@ export const [area, setArea] = createStore({
     description: null,
     coordinates: null,
     exits: [],
+    elevation: null,
+    temperature: null,
+    moisture: null,
     objects: [], // For future implementation
     characters: [] // For future implementation
 });
@@ -26,6 +29,9 @@ export const areaHandlers = {
                 description: payload.area.description,
                 coordinate: payload.area.coordinate,
                 exits: payload.area.exits,
+                elevation: payload.area.elevation,
+                temperature: payload.area.temperature,
+                moisture: payload.area.moisture,
                 objects: [],
                 characters: []
             };

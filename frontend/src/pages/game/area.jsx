@@ -64,6 +64,15 @@ export const AreaFrame = () => {
                                 ))}
                             </TerminalText>
                         )}
+                        <TerminalText class={`${theme().textDim}`}>
+                            Elevation: {area.elevation}
+                        </TerminalText>
+                        <TerminalText class={`${theme().textDim}`}>
+                            Temperature: {area.temperature}
+                        </TerminalText>
+                        <TerminalText class={`${theme().textDim}`}>
+                            Moisture: {area.moisture}
+                        </TerminalText>
                     </>
                 ) : (
                     <TerminalText>No area loaded</TerminalText>

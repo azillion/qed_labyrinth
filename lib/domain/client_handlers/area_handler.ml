@@ -26,6 +26,9 @@ module Handler : Client_handler.S = struct
                               Area.direction_to_string e.direction;
                           })
                         exits;
+                    elevation = area.elevation;
+                    temperature = area.temperature;
+                    moisture = area.moisture;
                   })
                 areas
             in
