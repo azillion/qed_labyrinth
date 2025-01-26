@@ -35,6 +35,14 @@ let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 
 type direction = North | South | East | West | Up | Down [@@deriving yojson]
 
+let opposite_direction = function
+  | North -> South
+  | South -> North
+  | East -> West
+  | West -> East
+  | Up -> Down
+  | Down -> Up
+
 let direction_to_string = function
   | North -> "north"
   | South -> "south"
@@ -162,6 +170,13 @@ module Q = struct
       {| SELECT from_area_id, to_area_id, direction, description, hidden, locked
          FROM exits
          WHERE from_area_id = ? AND direction = ? |}
+  
+
+         let find_all_areas =
+          (unit ->* area_type) "SELECT * FROM areas"
+        
+        let find_all_exits = 
+          (unit ->* exit_type) "SELECT * FROM exits"
 end
 
 let create ~name ~description ~x ~y ~z ?elevation ?temperature ?moisture () =
@@ -378,3 +393,30 @@ let delete_all_except_starting_area starting_area_id =
   match result with
   | Ok () -> Lwt.return_ok ()
   | Error e -> Lwt.return_error (DatabaseError (Base.Error.to_string_hum e))
+
+
+  let get_all_areas () =
+    let open Base in
+    let db_operation (module Db : Caqti_lwt.CONNECTION) =
+      let* result = Db.collect_list Q.find_all_areas () in
+      match result with
+      | Error e -> Lwt_result.fail e
+      | Ok areas -> Lwt_result.return areas
+    in
+    let* result = Database.Pool.use db_operation in
+    match result with
+    | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+    | Ok areas -> Lwt.return_ok areas
+
+let get_all_exits () =
+  let open Base in
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let* result = Db.collect_list Q.find_all_exits () in
+    match result with
+    | Error e -> Lwt_result.fail e
+    | Ok exits -> Lwt_result.return exits
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+  | Ok exits -> Lwt.return_ok exits

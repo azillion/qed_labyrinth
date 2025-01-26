@@ -20,6 +20,7 @@ type exit = {
 } [@@deriving yojson]
 
 type area = {
+  id : string;
   name : string;
   description : string;
   coordinate : coordinate option;
@@ -33,6 +34,7 @@ let exit_of_model (exit_model : Area.exit) : exit =
 
 let area_of_model (area_model : Area.t) (exits : Area.exit list) : area =
   {
+    id = area_model.id;
     name = area_model.name;
     description = area_model.description;
     coordinate = Some { x = area_model.x; y = area_model.y; z = area_model.z };

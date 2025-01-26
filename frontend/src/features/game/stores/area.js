@@ -19,12 +19,17 @@ export const [error, setError] = createSignal(null);
 // Message handlers that will be registered with WebSocket system
 export const areaHandlers = {
     'Area': (payload) => {
-        console.log('coordinate', payload.area.coordinate);
-        setArea({
-            name: payload.area.name,
-            description: payload.area.description,
-            coordinate: payload.area.coordinate,
-            exits: payload.area.exits
+        setArea(prev => {
+            const newState = {
+                ...prev,
+                name: payload.area.name,
+                description: payload.area.description,
+                coordinate: payload.area.coordinate,
+                exits: payload.area.exits,
+                objects: [],
+                characters: []
+            };
+            return newState;
         });
         setIsLoading(false);
         setError(null);

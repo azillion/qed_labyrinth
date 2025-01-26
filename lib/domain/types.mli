@@ -19,6 +19,7 @@ type exit = {
 val exit_of_model : Area.exit -> exit
 
 type area = {
+  id : string;
   name : string;
   description : string;
   coordinate : coordinate option;

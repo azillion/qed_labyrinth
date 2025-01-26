@@ -29,6 +29,7 @@ type t = {
 type error = AreaNotFound | DatabaseError of string [@@deriving yojson]
 type direction = North | South | East | West | Up | Down [@@deriving yojson]
 
+val opposite_direction : direction -> direction
 val direction_to_string : direction -> string
 
 type exit = {
@@ -86,6 +87,9 @@ val find_exits : area_id:string -> (exit list, error) result Lwt.t
 val direction_equal : direction -> direction -> bool
 
 val delete_all_except_starting_area : string -> (unit, error) result Lwt.t
+
+val get_all_areas : unit -> (t list, error) result Lwt.t
+val get_all_exits : unit -> (exit list, error) result Lwt.t
 
 module Q : sig
   val find_exit_by_direction :

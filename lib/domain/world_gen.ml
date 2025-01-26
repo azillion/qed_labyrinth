@@ -1,5 +1,9 @@
 open Utils
 
+let uuid seed =
+  let random_state = Random.State.make [|seed|] in
+  Uuidm.v4_gen random_state ()
+
 module WorldGen = struct
   (* Room environmental characteristics *)
   type climate = {
@@ -94,7 +98,7 @@ module WorldGen = struct
   let generate_room params noise_gens x y z =
     let climate = generate_climate params noise_gens (x, y, z) in
     let room_type = determine_room_type climate in
-    let id = Printf.sprintf "room_%d_%d_%d" x y z in
+    let id = Uuidm.to_string (uuid params.seed) in
     { id; x; y; z; climate; room_type; exits = [] }
 
   (* Connect rooms with appropriate exits *)
@@ -132,8 +136,11 @@ module WorldGen = struct
     for x = 0 to params.width - 1 do
       for y = 0 to params.height - 1 do
         for z = 0 to params.depth - 1 do
-          let room = generate_room params noise_gens x y z in
-          rooms := room :: !rooms
+          if x = 0 && y = 0 && z = 0 then
+            Stdio.printf "Generating starting room\n"
+          else
+            let room = generate_room params noise_gens x y z in
+            rooms := room :: !rooms
         done
       done
     done;
