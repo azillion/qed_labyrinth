@@ -1,23 +1,16 @@
 open Utils
 
-let uuid seed =
-  let random_state = Random.State.make [|seed|] in
-  Uuidm.v4_gen random_state ()
+let uuid seed = Uuidm.v4_gen seed ()
 
 module WorldGen = struct
   (* Room environmental characteristics *)
-  type climate = {
-    elevation: float;   (* -1.0 to 1.0: deep cave to mountain peak *)
-    temperature: float; (* 0.0 to 1.0: freezing to scorching *)
-    moisture: float;    (* 0.0 to 1.0: arid to waterlogged *)
-  }
 
   type room = {
     id: string;
     x: int;
     y: int;
     z: int;
-    climate: climate;
+    climate: Area.climate;
     room_type: room_type;
     exits: exit list;
   }
@@ -55,10 +48,10 @@ module WorldGen = struct
     (base_noise, temp_noise, moisture_noise)
 
   (* Generate climate for a specific coordinate *)
-  let generate_climate params noise_gens (x, y, z) =
+  let generate_climate params noise_gens (x, y, z) : Area.climate =
     let (elevation_noise, temp_noise, moisture_noise) = noise_gens in
-    let scaled_x = float_of_int x /. params.elevation_scale in
-    let scaled_y = float_of_int y /. params.elevation_scale in
+    let scaled_x = float_of_int y /. params.elevation_scale in
+    let scaled_y = float_of_int x /. params.elevation_scale in
     let scaled_z = float_of_int z /. params.elevation_scale in
 
     (* Generate base elevation *)
@@ -67,21 +60,21 @@ module WorldGen = struct
 
     (* Temperature decreases with elevation and varies horizontally *)
     let base_temp = PerlinNoise.noise2d temp_noise 
-      (float_of_int x /. params.temperature_scale)
-      (float_of_int y /. params.temperature_scale) in
+      (float_of_int y /. params.temperature_scale)
+      (float_of_int x /. params.temperature_scale) in
     let temp_with_elevation = base_temp -. (max 0.0 elevation) *. 0.3 in
     let temperature = max 0.0 (min 1.0 temp_with_elevation) in
 
     (* Moisture varies with elevation and temperature *)
     let base_moisture = PerlinNoise.noise2d moisture_noise
-      (float_of_int x /. params.moisture_scale)
-      (float_of_int y /. params.moisture_scale) in
+      (float_of_int y /. params.moisture_scale)
+      (float_of_int x /. params.moisture_scale) in
     let moisture = max 0.0 (min 1.0 base_moisture) in
 
     { elevation; temperature; moisture }
 
   (* Determine room type based on climate *)
-  let determine_room_type climate =
+  let determine_room_type (climate : Area.climate) =
     match climate with
     | { elevation = e; temperature = t; moisture = m } ->
         if e < -0.5 then Cave
@@ -98,7 +91,8 @@ module WorldGen = struct
   let generate_room params noise_gens x y z =
     let climate = generate_climate params noise_gens (x, y, z) in
     let room_type = determine_room_type climate in
-    let id = Uuidm.to_string (uuid params.seed) in
+    let rng = Random.State.make [|params.seed|] in
+    let id = Uuidm.to_string (uuid rng) in
     { id; x; y; z; climate; room_type; exits = [] }
 
   (* Connect rooms with appropriate exits *)
@@ -149,7 +143,7 @@ module WorldGen = struct
     connect_rooms !rooms
 
   (* Helper functions for describing rooms *)
-  let climate_description climate =
+  let climate_description (climate : Area.climate) =
     let elevation_desc =
       if climate.elevation < -0.5 then "deep underground"
       else if climate.elevation < -0.2 then "underground"

@@ -41,7 +41,7 @@ class WorldMap {
 			0.1,
 			1000
 		);
-		this.camera.position.set(20, 20, 10);
+		this.camera.position.set(10, 10, 10);
 		this.camera.lookAt(0, 0, 0);
 	}
 
@@ -85,7 +85,7 @@ class WorldMap {
 		this.textures.add(texture);
 		const labelMaterial = new THREE.SpriteMaterial({ map: texture });
 		const label = new THREE.Sprite(labelMaterial);
-		label.position.z = 1;
+		label.position.y = 1;
 		label.scale.set(2, 0.5, 1);
 		group.add(label);
 
