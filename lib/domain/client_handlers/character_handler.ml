@@ -1,8 +1,4 @@
 module Handler : Client_handler.S = struct
-  (* Helper functions *)
-  let send_error client error =
-    client.Client.send (Protocol.CommandFailed { error })
-
   let send_area_info (client : Client.t) (area_id : string) =
     match%lwt Utils.get_area_by_id_opt area_id with
     | None -> Lwt.return_unit
@@ -17,62 +13,53 @@ module Handler : Client_handler.S = struct
   (* Movement handling *)
   let handle_character_movement (state : State.t) (client : Client.t) direction
       =
-    match client.auth_state with
-    | Anonymous -> Lwt.return_unit
-    | Authenticated { character_id = None; _ } ->
-        send_error client "You must select a character first"
-    | Authenticated { character_id = Some char_id; _ } -> (
-        match%lwt Character.find_by_id char_id with
-        | Error _ -> Lwt.return_unit
-        | Ok character -> (
-            let old_area_id = character.location_id in
-            match%lwt Character.move ~character_id:char_id ~direction with
-            | Error _ -> send_error client "Cannot move in that direction"
-            | Ok new_area_id -> (
-                (* Update room connections *)
-                Connection_manager.remove_from_room state.connection_manager
-                  client.Client.id;
-                Connection_manager.add_to_room state.connection_manager
-                  ~client_id:client.Client.id ~room_id:new_area_id;
+    Client_handler.with_character_check client (fun character ->
+        let old_area_id = character.location_id in
+        match%lwt Character.move ~character_id:character.id ~direction with
+        | Error _ ->
+            Client_handler.send_error client "Cannot move in that direction"
+        | Ok new_area_id -> (
+            (* Update room connections *)
+            Connection_manager.remove_from_room state.connection_manager
+              client.Client.id;
+            Connection_manager.add_to_room state.connection_manager
+              ~client_id:client.Client.id ~room_id:new_area_id;
 
-                (* Create movement messages *)
-                let%lwt departure_result =
-                  Communication.create ~message_type:Communication.System
-                    ~sender_id:None
-                    ~content:(character.name ^ " has left the area.")
-                    ~area_id:(Some old_area_id)
+            (* Create movement messages *)
+            let%lwt departure_result =
+              Communication.create ~message_type:Communication.System
+                ~sender_id:None
+                ~content:(character.name ^ " has left the area.")
+                ~area_id:(Some old_area_id)
+            in
+            let%lwt arrival_result =
+              Communication.create ~message_type:Communication.System
+                ~sender_id:None
+                ~content:(character.name ^ " has arrived.")
+                ~area_id:(Some new_area_id)
+            in
+
+            match (departure_result, arrival_result) with
+            | Error e, _ | _, Error e ->
+                ignore
+                  (Stdio.print_endline
+                     (Yojson.Safe.to_string (Communication.error_to_yojson e)));
+                Lwt.return_unit
+            | Ok departure_msg, Ok arrival_msg ->
+                (* Broadcast movement messages *)
+                let departure_msg' =
+                  Types.chat_message_of_model departure_msg
                 in
-                let%lwt arrival_result =
-                  Communication.create ~message_type:Communication.System
-                    ~sender_id:None
-                    ~content:(character.name ^ " has arrived.")
-                    ~area_id:(Some new_area_id)
-                in
+                let arrival_msg' = Types.chat_message_of_model arrival_msg in
+                Connection_manager.broadcast_to_room state.connection_manager
+                  old_area_id
+                  (Protocol.ChatMessage { message = departure_msg' });
+                Connection_manager.broadcast_to_room state.connection_manager
+                  new_area_id
+                  (Protocol.ChatMessage { message = arrival_msg' });
 
-                match (departure_result, arrival_result) with
-                | Error e, _ | _, Error e ->
-                    ignore
-                      (Stdio.print_endline
-                         (Yojson.Safe.to_string
-                            (Communication.error_to_yojson e)));
-                    Lwt.return_unit
-                | Ok departure_msg, Ok arrival_msg ->
-                    (* Broadcast movement messages *)
-                    let departure_msg' =
-                      Types.chat_message_of_model departure_msg
-                    in
-                    let arrival_msg' =
-                      Types.chat_message_of_model arrival_msg
-                    in
-                    Connection_manager.broadcast_to_room
-                      state.connection_manager old_area_id
-                      (Protocol.ChatMessage { message = departure_msg' });
-                    Connection_manager.broadcast_to_room
-                      state.connection_manager new_area_id
-                      (Protocol.ChatMessage { message = arrival_msg' });
-
-                    (* Send new area info to moving character *)
-                    send_area_info client new_area_id)))
+                (* Send new area info to moving character *)
+                send_area_info client new_area_id))
 
   (* Character creation/selection *)
   let handle_character_creation (state : State.t) (client : Client.t)
