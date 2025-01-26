@@ -77,19 +77,45 @@ let generate_climate params noise_gens (x, y, z) : Area.climate =
 
   { elevation; temperature; moisture }
 
-(* Example usage:
-   let params = {
-     seed = 42;
-     width = 10;
-     height = 10;
-     depth = 5;
-     elevation_scale = 15.0;
-     temperature_scale = 20.0;
-     moisture_scale = 18.0;
-   } in
-   let world = WorldGen.generate_world params in
-   ...
-*)
+(* Generate coordinates for the world grid *)
+let generate_coordinates params =
+  let coords = ref [] in
+  for z = 0 to params.depth - 1 do
+    for y = 0 to params.height - 1 do
+      for x = 0 to params.width - 1 do
+        if not (x = 0 && y = 0 && z = 0) then
+          coords := (x, y, z) :: !coords
+      done
+    done
+  done;
+  !coords
+
+(* Create an area at the given coordinates with generated climate *)
+let create_area_at_coord params noise_gens coord_map (x, y, z) =
+  let climate = generate_climate params noise_gens (x, y, z) in
+  let name = get_room_name climate in
+  let%lwt result =
+    Area.create_with_climate ~name
+      ~description:
+        (Area.get_climate_description
+           {
+             id = "";
+             name = "";
+             description = "";
+             x;
+             y;
+             z;
+             elevation = Some climate.elevation;
+             temperature = Some climate.temperature;
+             moisture = Some climate.moisture;
+           })
+      ~x ~y ~z ~climate ()
+  in
+  match result with
+  | Ok area ->
+      Hashtbl.add coord_map (x, y, z) area.id;
+      Lwt.return_unit
+  | Error _ -> Lwt.return_unit
 
 let generate_and_create_world params =
   let noise_gens = create_generators params.seed in
@@ -97,43 +123,11 @@ let generate_and_create_world params =
     Hashtbl.create (params.width * params.height * params.depth)
   in
 
-  let rec create_areas x y z =
-    if z >= params.depth then
-      Lwt.return_unit
-    else if y >= params.height then
-      create_areas x 0 (z + 1)
-    else if x >= params.width then
-      create_areas 0 (y + 1) z
-    else if x = 0 && y = 0 && z = 0 then
-      (* Skip starting area coordinates *)
-      create_areas (x + 1) y z
-    else
-      let climate = generate_climate params noise_gens (x, y, z) in
-      let name = get_room_name climate in
-      match%lwt
-        Area.create_with_climate ~name
-          ~description:
-            (Area.get_climate_description
-               {
-                 id = "";
-                 name = "";
-                 description = "";
-                 x;
-                 y;
-                 z;
-                 elevation = Some climate.elevation;
-                 temperature = Some climate.temperature;
-                 moisture = Some climate.moisture;
-               })
-          ~x ~y ~z ~climate ()
-      with
-      | Ok area ->
-          Hashtbl.add coord_map (x, y, z) area.id;
-          create_areas (x + 1) y z
-      | Error _ -> create_areas (x + 1) y z
+  (* Generate all areas except starting area *)
+  let%lwt () =
+    generate_coordinates params
+    |> Lwt_list.iter_s (create_area_at_coord params noise_gens coord_map)
   in
-
-  let%lwt () = create_areas 0 0 0 in
 
   (* Add starting area to coord_map *)
   let%lwt () =
@@ -144,38 +138,41 @@ let generate_and_create_world params =
     | Error _ -> Lwt.return_unit
   in
 
-  (* Create exits between areas *)
+  (* Create bidirectional exits between adjacent areas *)
+  let create_exit ~from_id ~to_id ~dir =
+    let%lwt _ =
+      Area.create_exit ~from_area_id:from_id ~to_area_id:to_id
+        ~direction:dir ~description:None ~hidden:false ~locked:false
+    in
+    Area.create_exit ~from_area_id:to_id ~to_area_id:from_id
+      ~direction:(Area.opposite_direction dir)
+      ~description:None ~hidden:false ~locked:false
+  in
+
   let%lwt () =
     Hashtbl.fold
       (fun (x, y, z) area_id acc ->
         let directions =
           [
-            (Area.North, (0, 0, 1));
-            (Area.South, (0, 0, -1));
-            (Area.East, (1, 0, 0));
-            (Area.West, (-1, 0, 0));
-            (Area.Up, (0, 1, 0));
-            (Area.Down, (0, -1, 0));
+            (Area.North, (0, -1, 0));   (* Decrease Y *)
+            (Area.South, (0, 1, 0));    (* Increase Y *)
+            (Area.East, (1, 0, 0));     (* Increase X *)
+            (Area.West, (-1, 0, 0));    (* Decrease X *)
+            (Area.Up, (0, 0, 1));       (* Increase Z *)
+            (Area.Down, (0, 0, -1));    (* Decrease Z *)
           ]
         in
         let%lwt () = acc in
         Lwt_list.iter_s
           (fun (dir, (dx, dy, dz)) ->
-            let tx = x + dx in
-            let ty = y + dy in
-            let tz = z + dz in
+            let tx, ty, tz = (x + dx, y + dy, z + dz) in
             match Hashtbl.find_opt coord_map (tx, ty, tz) with
             | Some target_id ->
-                let%lwt _ =
-                  Area.create_exit ~from_area_id:area_id ~to_area_id:target_id
-                    ~direction:dir ~description:None ~hidden:false ~locked:false
-                in
-                let%lwt _ =
-                  Area.create_exit ~from_area_id:target_id ~to_area_id:area_id
-                    ~direction:(Area.opposite_direction dir)
-                    ~description:None ~hidden:false ~locked:false
-                in
-                Lwt.return_unit
+                let%lwt result = create_exit ~from_id:area_id ~to_id:target_id ~dir in
+                begin match result with
+                | Ok _ -> Lwt.return_unit
+                | Error _ -> Lwt.return_unit
+                end
             | None -> Lwt.return_unit)
           directions)
       coord_map Lwt.return_unit
