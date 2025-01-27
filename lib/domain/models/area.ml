@@ -15,7 +15,9 @@ type room_type =
   | Desert 
   | Tundra 
   | Lake 
-  | Canyon [@@deriving yojson]
+  | Canyon 
+  | Volcano 
+  | Jungle [@@deriving yojson]
 
 type t = {
   id : string;
@@ -215,74 +217,6 @@ let create_with_climate ~name ~description ~x ~y ~z ~(climate : climate) () =
     ~temperature:climate.temperature
     ~moisture:climate.moisture
     ()
-
-let get_climate t = 
-  match t.elevation, t.temperature, t.moisture with
-  | Some e, Some t, Some m ->
-      Some { elevation = e; temperature = t; moisture = m }
-  | _ -> None
-
-let compute_room_type ({ elevation; temperature; moisture } : climate) =
-  if elevation < -0.5 then Cave
-  else if elevation > 0.6 then Mountain
-  else if temperature < 0.2 then Tundra
-  else if temperature > 0.7 && moisture < 0.2 then Desert
-  else if moisture > 0.7 then
-    if temperature > 0.6 then Swamp else Lake
-  else if elevation > 0.3 then
-    if moisture > 0.4 then Forest else Canyon
-  else Forest
-
-let get_room_type t = 
-  match get_climate t with
-  | Some climate -> Some (compute_room_type climate)
-  | None -> None
-
-let get_climate_description t =
-  match get_climate t with
-  | None -> "This area has no specific climate data."
-  | Some { elevation; temperature; moisture } ->
-      let elevation_desc =
-        if elevation < -0.5 then "deep underground"
-        else if elevation < -0.2 then "underground"
-        else if elevation < 0.2 then "at ground level"
-        else if elevation < 0.6 then "elevated"
-        else "high up"
-      in
-      let temp_desc =
-        if temperature < 0.2 then "freezing"
-        else if temperature < 0.4 then "cold"
-        else if temperature < 0.6 then "mild"
-        else if temperature < 0.8 then "warm"
-        else "hot"
-      in
-      let moisture_desc =
-        if moisture < 0.2 then "arid"
-        else if moisture < 0.4 then "dry"
-        else if moisture < 0.6 then "moderate humidity"
-        else if moisture < 0.8 then "humid"
-        else "waterlogged"
-      in
-      Printf.sprintf "You are %s. The air is %s with %s" 
-        elevation_desc temp_desc moisture_desc
-
-let get_room_type_description = function
-  | Cave -> "You are in a dark cave. The rough stone walls echo with distant sounds."
-  | Forest -> "You are in a forest. Trees of varying sizes surround you."
-  | Mountain -> "You are on a mountainous outcropping. The winds whip around you."
-  | Swamp -> "You are in a swampy area. The ground is soft and wet beneath your feet."
-  | Desert -> "You are in a desert region. Sand stretches as far as you can see."
-  | Tundra -> "You are in a frozen wasteland. The ground is hard and icy."
-  | Lake -> "You are near a body of water. The air is heavy with moisture."
-  | Canyon -> "You are in a canyon. Steep walls rise around you."
-
-let get_full_description t =
-  let base_desc = match get_room_type t with
-    | None -> "This is a nondescript area."
-    | Some room_type -> get_room_type_description room_type
-  in
-  let climate_desc = get_climate_description t in
-  base_desc ^ "\n" ^ climate_desc
 
 let find_by_id id =
   let open Base in

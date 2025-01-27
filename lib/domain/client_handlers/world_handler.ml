@@ -14,8 +14,8 @@ module Handler : Client_handler.S = struct
         let params =
           {
             World_gen.seed = 42;
-            width = 21;   (* -10 to 10 *)
-            height = 21;  (* -10 to 10 *)
+            width = 51;   (* -10 to 10 *)
+            height = 51;  (* -10 to 10 *)
             depth = 11;   (* -5 to 5 *)
             elevation_scale = 8.0;
             temperature_scale = 10.0;
@@ -23,7 +23,7 @@ module Handler : Client_handler.S = struct
           }
         in
 
-        let%lwt _coord_map = World_gen.generate_and_create_world params in
+        let%lwt _coord_map = World_gen.generate_and_create_world params client in
 
         (* Notify client and broadcast update *)
         let%lwt () =

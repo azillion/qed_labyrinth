@@ -12,7 +12,9 @@ type room_type =
   | Desert 
   | Tundra 
   | Lake 
-  | Canyon [@@deriving yojson]
+  | Canyon 
+  | Volcano 
+  | Jungle [@@deriving yojson]
 
 type t = {
   id : string;
@@ -66,12 +68,6 @@ val create_with_climate :
   unit ->
   (t, error) result Lwt.t
 
-val get_climate : t -> climate option
-val get_room_type : t -> room_type option
-val get_climate_description : t -> string
-val get_room_type_description : room_type -> string
-val get_full_description : t -> string
-
 val find_by_id : string -> (t, error) result Lwt.t
 val find_by_coordinates : x:int -> y:int -> z:int -> (t, error) result Lwt.t
 val exists : x:int -> y:int -> z:int -> (bool, error) result Lwt.t
@@ -97,4 +93,5 @@ val get_all_exits : unit -> (exit list, error) result Lwt.t
 module Q : sig
   val find_exit_by_direction :
     (string * direction, exit option, [ `Zero | `One ]) Caqti_request.t
+  val insert_exit : (exit, unit, [ `Zero ]) Caqti_request.t
 end
