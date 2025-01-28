@@ -1,0 +1,33 @@
+(library
+ (name llm)
+ (public_name qed_labyrinth.llm)
+ (libraries
+  base
+  yojson
+  ppx_deriving_yojson.runtime
+  ppx_deriving.runtime
+  digestif
+  jose
+  ptime
+  ptime.clock
+  dream
+  lwt
+  caqti
+  caqti-lwt
+  lwt.unix
+  caqti-lwt.unix
+  caqti-driver-postgresql
+  uri
+  uuidm
+  cohttp-lwt-unix
+  unix)
+ (preprocess
+  (pps
+   ppx_jane
+   ppx_let
+   lwt_ppx
+   ppx_deriving.show
+   ppx_deriving_yojson))
+   (modules_without_implementation provider))
+
+(include_subdirs unqualified)
