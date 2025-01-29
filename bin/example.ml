@@ -90,7 +90,7 @@ let run_example () =
   (* Configure all providers *)
   let deepseek_config = Deepseek.Deepseek.create_config
     ~api_key:(Sys.getenv "DEEPSEEK_API_KEY")
-    ~model:"deepseek-chat"
+    ~model:"deepseek-reasoner"
     ~base_url:"https://api.deepseek.com/v1"
     ()
   in

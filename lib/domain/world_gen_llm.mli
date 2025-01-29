@@ -1,0 +1,1 @@
+val generate_world : State.t -> Client.t -> location_id:string -> unit Lwt.t
