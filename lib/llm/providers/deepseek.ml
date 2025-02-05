@@ -29,7 +29,7 @@ module Deepseek : Provider = struct
     presence_penalty = None;
   }
 
-  let create_config ~api_key ?model ?base_url ?organization_id () = {
+  let create_config ~api_key ?model ?base_url ?organization_id ?use_options:_ () = {
     api_key;
     base_url = Option.value base_url ~default:"https://api.deepseek.com/v1";
     organization_id;

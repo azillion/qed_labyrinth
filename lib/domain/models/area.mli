@@ -89,6 +89,9 @@ val delete_all_except_starting_area : string -> (unit, error) result Lwt.t
 
 val get_all_areas : unit -> (t list, error) result Lwt.t
 val get_all_exits : unit -> (exit list, error) result Lwt.t
+val get_all_nearby_areas : string -> max_distance:int -> (t list, error) result Lwt.t
+
+val update_area_name_and_description : location_id:string -> name:string -> description:string -> (unit, error) result Lwt.t
 
 module Q : sig
   val find_exit_by_direction :

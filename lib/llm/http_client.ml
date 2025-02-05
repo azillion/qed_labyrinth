@@ -8,7 +8,7 @@ type http_error =
 
 exception RequestTimeout
 
-let post_request ?(timeout=30.0) ~headers ~body uri =
+let post_request ?(timeout=200.0) ~headers ~body uri =
   let body_str = match body with
   | None -> ""
   | Some b -> b

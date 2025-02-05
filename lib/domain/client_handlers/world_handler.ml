@@ -14,9 +14,9 @@ module Handler : Client_handler.S = struct
         let params =
           {
             World_gen.seed = 42;
-            width = 51;   (* -10 to 10 *)
-            height = 51;  (* -10 to 10 *)
-            depth = 11;   (* -5 to 5 *)
+            width = 5;   (* -10 to 10 *)
+            height = 5;  (* -10 to 10 *)
+            depth = 1;   (* -5 to 5 *)
             elevation_scale = 8.0;
             temperature_scale = 10.0;
             moisture_scale = 12.0;
@@ -24,6 +24,11 @@ module Handler : Client_handler.S = struct
         in
 
         let%lwt _coord_map = World_gen.generate_and_create_world params client in
+
+        let%lwt () =
+          World_gen_llm.generate_world state client
+            ~location_id:"00000000-0000-0000-0000-000000000000"
+        in
 
         (* Notify client and broadcast update *)
         let%lwt () =

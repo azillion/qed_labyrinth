@@ -162,6 +162,11 @@ module Q = struct
     (unit ->. unit)
       {| DELETE FROM exits |}
 
+  let find_all_nearby_areas =
+    (t6 int int int int int int ->* area_type)
+      {| SELECT *
+         FROM areas WHERE x BETWEEN ? AND ? AND y BETWEEN ? AND ? AND z BETWEEN ? AND ? |}
+
   let direction_type =
     let encode d = Ok (direction_to_string d) in
     let decode s =
@@ -183,6 +188,10 @@ module Q = struct
         
         let find_all_exits = 
           (unit ->* exit_type) "SELECT * FROM exits"
+
+  let update_area_name_and_description =
+    (t3 string string string ->. unit)
+      {| UPDATE areas SET name = ?, description = ? WHERE id = ? |}
 end
 
 let create ~name ~description ~x ~y ~z ?elevation ?temperature ?moisture () =
@@ -358,3 +367,40 @@ let get_all_exits () =
   match result with
   | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
   | Ok exits -> Lwt.return_ok exits
+
+let get_all_nearby_areas location_id ~max_distance =
+  let open Base in
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let* area_result = Db.find_opt Q.find_by_id location_id in
+    match area_result with
+    | Error e -> Lwt_result.fail e
+    | Ok result -> 
+        match result with
+        | None -> Lwt_result.return None
+        | Some area -> 
+            let x_min, x_max = area.x - max_distance, area.x + max_distance in
+            let y_min, y_max = area.y - max_distance, area.y + max_distance in 
+            let z_min, z_max = area.z - max_distance, area.z + max_distance in
+            let* result = Db.collect_list Q.find_all_nearby_areas (x_min, x_max, y_min, y_max, z_min, z_max) in
+            match result with
+            | Error e -> Lwt_result.fail e
+            | Ok areas -> Lwt_result.return (Some areas)
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
+  | Ok None -> Lwt.return_error AreaNotFound
+  | Ok (Some areas) -> Lwt.return_ok areas
+
+let update_area_name_and_description ~location_id ~name ~description =
+  let open Base in
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let* _ = Db.exec Q.update_area_name_and_description (name, description, location_id) in
+    Lwt_result.return ()
+  in
+  let* result = Database.Pool.use db_operation in
+  match result with
+  | Ok () -> Lwt.return_ok ()
+  | Error e -> 
+    Stdio.print_endline (Printf.sprintf "Error updating area: %s" (Error.to_string_hum e));
+    Lwt.return_error (DatabaseError (Error.to_string_hum e))

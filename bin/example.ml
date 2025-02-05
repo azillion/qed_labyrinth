@@ -63,6 +63,16 @@ Generate a new area at (2,0,0) that connects logically with these existing areas
 <connections>[Available directions: north, south, east, west, up, down - only include up/down when justified by terrain]</connections>
 </generatedArea>|}
 
+let get_env_var name =
+  try Sys.getenv name
+  with Not_found ->
+    Printf.printf "Error: Environment variable %s is not set.\n" name;
+    Printf.printf "Please set the following environment variables before running:\n";
+    Printf.printf "  DEEPSEEK_API_KEY\n";
+    Printf.printf "  OPENAI_API_KEY\n";
+    Printf.printf "  ANTHROPIC_API_KEY\n";
+    exit 1
+
 let run_provider name client messages =
   let%lwt result = client ~messages () in
   match result with
@@ -89,20 +99,20 @@ let run_example () =
 
   (* Configure all providers *)
   let deepseek_config = Deepseek.Deepseek.create_config
-    ~api_key:(Sys.getenv "DEEPSEEK_API_KEY")
+    ~api_key:(get_env_var "DEEPSEEK_API_KEY")
     ~model:"deepseek-reasoner"
     ~base_url:"https://api.deepseek.com/v1"
     ()
   in
   
   let openai_config = Openai.Openai.create_config
-    ~api_key:(Sys.getenv "OPENAI_API_KEY")
+    ~api_key:(get_env_var "OPENAI_API_KEY")
     ~model:"gpt-3.5-turbo"
     ()
   in
 
   let anthropic_config = Anthropic.Anthropic.create_config
-    ~api_key:(Sys.getenv "ANTHROPIC_API_KEY")
+    ~api_key:(get_env_var "ANTHROPIC_API_KEY")
     ()
   in
 

@@ -27,7 +27,7 @@ module Anthropic : Provider = struct
     presence_penalty = None;
   }
 
-  let create_config ~api_key ?model ?base_url:_ ?organization_id:_ () = {
+  let create_config ~api_key ?model ?base_url:_ ?organization_id:_ ?use_options:_ () = {
     api_key;
     model = Option.value model ~default:"claude-2.1";
   }

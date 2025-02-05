@@ -11,6 +11,7 @@ module type Provider = sig
       ?model:string ->
       ?base_url:string ->
       ?organization_id:string ->
+      ?use_options:bool ->
       unit -> config
   
     val complete : 

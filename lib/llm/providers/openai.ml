@@ -7,6 +7,7 @@ module Openai : Provider = struct
     api_key: string;
     model: string;
     organization_id: string option;
+    use_options: bool;
   }
 
   type request_options = {
@@ -29,10 +30,11 @@ module Openai : Provider = struct
     presence_penalty = None;
   }
 
-  let create_config ~api_key ?model ?base_url:_ ?organization_id () = {
+  let create_config ~api_key ?model ?base_url:_ ?organization_id ?use_options () = {
     api_key;
-    model = Option.value model ~default:"gpt-3.5-turbo";
+    model = Option.value model ~default:"gpt-4o";
     organization_id;
+    use_options = Option.value use_options ~default:true;
   }
 
   let make_headers config = 
@@ -76,15 +78,18 @@ module Openai : Provider = struct
         ("model", `String config.model);
         ("messages", to_openai_messages messages)
       ] in
-    let with_options = List.filter_map (fun (key, value) -> value |> Option.map (fun v -> (key, v))) [
-      "temperature", options.temperature |> Option.map (fun t -> `Float t);
-      "max_tokens", options.max_tokens |> Option.map (fun t -> `Int t);
-      "stream", options.stream |> Option.map (fun s -> `Bool s);
+    let with_options = if config.use_options then
+      List.filter_map (fun (key, value) -> value |> Option.map (fun v -> (key, v))) [
+        "temperature", options.temperature |> Option.map (fun t -> `Float t);
+        "max_tokens", options.max_tokens |> Option.map (fun t -> `Int t);
+        "stream", options.stream |> Option.map (fun s -> `Bool s);
       "stop", options.stop |> Option.map (fun s -> `List (List.map (fun x -> `String x) s));
       "top_p", options.top_p |> Option.map (fun t -> `Float t);
       "frequency_penalty", options.frequency_penalty |> Option.map (fun f -> `Float f);
-      "presence_penalty", options.presence_penalty |> Option.map (fun p -> `Float p)
-    ] in
+        "presence_penalty", options.presence_penalty |> Option.map (fun p -> `Float p)
+      ]
+    else
+      [] in
     `Assoc (base @ with_options)
 
   let parse_response body =

@@ -1,5 +1,6 @@
 type role =
   | System
+  | Developer
   | User 
   | Assistant
   | Function
@@ -7,6 +8,7 @@ type role =
 
 let string_of_role = function
   | System -> "system"
+  | Developer -> "developer"
   | User -> "user"
   | Assistant -> "assistant"
   | Function -> "function"
@@ -14,6 +16,7 @@ let string_of_role = function
 
 let role_of_string = function
   | "system" -> System
+  | "developer" -> Developer
   | "user" -> User
   | "assistant" -> Assistant
   | "function" -> Function

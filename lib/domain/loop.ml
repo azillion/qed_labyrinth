@@ -24,8 +24,8 @@ let tick (state : State.t) =
 let rec run (state : State.t) =
   Lwt.catch
     (fun () ->
-      let* () = process_client_messages state in
       let* () = tick state in
+      let* () = process_client_messages state in
       run state)
     (fun exn ->
       Stdio.eprintf "Game loop error: %s\n" (Base.Exn.to_string exn);

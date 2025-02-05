@@ -16,25 +16,25 @@ const LoginPage = () => {
 	const [error, setError] = createSignal("");
 
 	let containerRef;
-    let inputRef;
+	let inputRef;
 
 	const focusInput = () => {
-        if (["username", "password", "email"].includes(step())) {
-            inputRef?.focus();
-        } else {
-            containerRef?.focus();
-        }
-    };
+		if (["username", "password", "email"].includes(step())) {
+			inputRef?.focus();
+		} else {
+			containerRef?.focus();
+		}
+	};
 
 	onMount(() => {
-        containerRef?.focus();
-    });
+		containerRef?.focus();
+	});
 
-    // Focus after step changes
-    createEffect(() => {
-        const _currentStep = step();
-        focusInput();
-    });
+	// Focus after step changes
+	createEffect(() => {
+		const _currentStep = step();
+		focusInput();
+	});
 
 	const handleKeyDown = (e) => {
 		if (e.key === "Escape") {
@@ -146,7 +146,6 @@ const LoginPage = () => {
 									value={username()}
 									onInput={setUsername}
 									placeholder="Enter username"
-									autofocus={true}
 								/>
 							</div>
 						</div>
@@ -164,7 +163,6 @@ const LoginPage = () => {
 									value={password()}
 									onInput={setPassword}
 									placeholder="Enter password"
-									autofocus={true}
 								/>
 							</div>
 						</div>
@@ -172,7 +170,7 @@ const LoginPage = () => {
 				</Show>
 
 				<Show when={step() === "email"}>
-					<div class="space-y-4">
+					<div class="sace-y-4">
 						<div class="flex items-center">
 							<TerminalText class={theme().textBase}>&gt;</TerminalText>
 							<div class="ml-2 flex-1">
@@ -182,7 +180,6 @@ const LoginPage = () => {
 									value={email()}
 									onInput={setEmail}
 									placeholder="Enter email"
-									autofocus={true}
 								/>
 							</div>
 						</div>

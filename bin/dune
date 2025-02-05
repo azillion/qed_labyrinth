@@ -5,5 +5,10 @@
  (libraries
   qed_labyrinth.server
   qed_labyrinth.infra
+  qed_labyrinth.llm
   uuidm
-  dream))
+  dream
+  cohttp
+  cohttp-lwt-unix
+  lwt
+  lwt.unix))
