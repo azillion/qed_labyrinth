@@ -9,6 +9,8 @@ type world_params = {
   elevation_scale : float;
   temperature_scale : float;
   moisture_scale : float;
+  vertical_scale : float;
+  latitude_effect : float;
 }
 
 type geological_era = {
@@ -16,6 +18,8 @@ type geological_era = {
   tectonic_activity : float; (* 0-1 scale of geological activity *)
   erosion_level : float;     (* 0-1 scale of erosion *)
   volcanic_activity : float; (* 0-1 scale of volcanic presence *)
+  era_weight : float;
+  duration : float;
 }
 
 type microclimate = {
@@ -23,6 +27,8 @@ type microclimate = {
   local_moisture_mod : float;
   wind_effect : float;
   shadow_effect : float;
+  precipitation : float;
+  air_pressure : float;
 }
 
 type biome_transition = {
@@ -36,31 +42,41 @@ type generation_batch = {
   created_areas : (int * int * int, string) Hashtbl.t;
 }
 
+type area_passability =
+  | FreeMovement
+  | DifficultTerrain
+  | Blocked
+
 let batch_size = 500
 let sky_elevation = 0.7
 let frozen_temperature = -0.3
 
+let calculate_era_weights eras =
+  let total_duration = List.fold_left (fun acc era -> acc +. era.duration) 0.0 eras in
+  List.map (fun era -> { era with era_weight = era.duration /. total_duration }) eras
+
 let geological_history seed =
-  [
-    {
-      era_seed = seed;
+  let eras = [
+    { era_seed = seed;
       tectonic_activity = 0.9;
       erosion_level = 0.1;
       volcanic_activity = 0.8;
-    };
-    {
-      era_seed = seed + 1;
+      era_weight = 0.0;
+      duration = 1.0 };
+    { era_seed = seed + 1;
       tectonic_activity = 0.5;
       erosion_level = 0.4;
       volcanic_activity = 0.3;
-    };
-    {
-      era_seed = seed + 2;
+      era_weight = 0.0;
+      duration = 2.0 };
+    { era_seed = seed + 2;
       tectonic_activity = 0.2;
       erosion_level = 0.8;
       volcanic_activity = 0.1;
-    };
-  ]
+      era_weight = 0.0;
+      duration = 1.5 };
+  ] in
+  calculate_era_weights eras
 
 let axis_range size =
   let half = size / 2 in
@@ -81,42 +97,52 @@ let generate_climate params (elev_n, temp_n, moist_n, biome_n) eras (x, y, z) =
   List.iter (fun era ->
     let era_noise = PerlinNoise.create ~seed:era.era_seed () in
     let tectonic_effect =
-      PerlinNoise.octave_noise era_noise
+      (PerlinNoise.octave_noise era_noise
         (float_of_int x /. params.elevation_scale)
         (float_of_int y /. params.elevation_scale)
         (float_of_int z /. params.elevation_scale *. era.tectonic_activity)
+      +. 1.0) *. 0.5  (* Convert from [-1,1] to [0,1] *)
     in
     let volcanic_effect =
       if era.volcanic_activity > 0.5 then
         let volcano_centers = PerlinNoise.create ~seed:(era.era_seed + 1) () in
         let dist =
-          PerlinNoise.octave_noise volcano_centers
+          (PerlinNoise.octave_noise volcano_centers
             (float_of_int x /. (params.elevation_scale *. 2.0))
             (float_of_int y /. (params.elevation_scale *. 2.0))
             0.0
+          +. 1.0) *. 0.5
         in
         if dist > 0.7 then era.volcanic_activity else 0.0
       else
         0.0
     in
     base_elev := !base_elev
-                  +. (tectonic_effect *. era.tectonic_activity)
+                  +. ((tectonic_effect *. 2.0 -. 1.0) *. era.tectonic_activity)
                   +. (volcanic_effect *. 0.3)
   ) eras;
+
+  (* Scale the elevation based on number of eras *)
+  let base_elev = !base_elev /. float_of_int (List.length eras) in
+  
   let erosion_factor =
     List.fold_left (fun acc era -> acc +. era.erosion_level) 0.0 eras
     /. float_of_int (List.length eras)
   in
-  let slope =
-    abs_float (!base_elev
-      -. PerlinNoise.octave_noise elev_n
-           (float_of_int (x + 1) /. params.elevation_scale)
-           (float_of_int y       /. params.elevation_scale)
-           (float_of_int z       /. params.elevation_scale))
+  
+  (* Calculate slope using normalized noise values *)
+  let next_elev = 
+    (PerlinNoise.octave_noise elev_n
+       (float_of_int (x + 1) /. params.elevation_scale)
+       (float_of_int y       /. params.elevation_scale)
+       (float_of_int z       /. params.elevation_scale)
+    +. 1.0) *. 0.5
   in
+  let slope = abs_float (base_elev -. next_elev) in
+  
   let eroded_elev =
-    if slope > 0.3 then !base_elev -. (slope *. erosion_factor *. 0.5)
-    else !base_elev
+    if slope > 0.3 then base_elev -. (slope *. erosion_factor *. 0.5)
+    else base_elev
   in
   let elevation = max (-1.0) (min 1.0 eroded_elev) in
 
@@ -134,19 +160,24 @@ let generate_climate params (elev_n, temp_n, moist_n, biome_n) eras (x, y, z) =
         (float_of_int z /. (params.moisture_scale *. 0.1))
       *. 0.2;
     wind_effect =
-      PerlinNoise.octave_noise biome_n
+      (PerlinNoise.octave_noise biome_n
         (float_of_int x /. (params.elevation_scale *. 2.0))
         (float_of_int y /. (params.elevation_scale *. 2.0))
-        0.0;
+        0.0
+      +. 1.0) *. 0.5;
     shadow_effect =
       if elevation > 0.5 then 0.2 *. (elevation -. 0.5) else 0.0;
+    precipitation = 0.0;
+    air_pressure = 0.0;
   } in
 
+  (* Temperature calculation with better scaling *)
   let raw_temp =
-    PerlinNoise.noise3d temp_n
-      (float_of_int y /. params.temperature_scale)
+    (PerlinNoise.noise3d temp_n
       (float_of_int x /. params.temperature_scale)
+      (float_of_int y /. params.temperature_scale)
       (float_of_int z /. params.temperature_scale)
+    +. 1.0) *. 0.5
   in
   let temperature =
     let t_alt = raw_temp -. (abs_float elevation *. 0.4) in
@@ -154,43 +185,77 @@ let generate_climate params (elev_n, temp_n, moist_n, biome_n) eras (x, y, z) =
                       -. (micro.shadow_effect *. 0.3)
                       +. (micro.wind_effect *. 0.1)
     in
-    max (-1.0) (min 1.0 t_all)
+    (max 0.0 (min 1.0 t_all)) *. 2.0 -. 1.0  (* Convert [0,1] to [-1,1] *)
   in
 
+  (* Moisture calculation with better scaling *)
   let raw_moist =
-    PerlinNoise.noise3d moist_n
-      (float_of_int y /. params.moisture_scale)
+    (PerlinNoise.noise3d moist_n
       (float_of_int x /. params.moisture_scale)
+      (float_of_int y /. params.moisture_scale)
       (float_of_int z /. params.moisture_scale)
+    +. 1.0) *. 0.5
   in
   let moisture =
-    let m_all = raw_moist +. micro.local_moisture_mod
-                          +. (micro.wind_effect *. 0.2)
-                          -. (micro.shadow_effect *. 0.2)
+    let base_moisture = raw_moist *. 2.0 -. 1.0 in (* Convert back to [-1,1] *)
+    let m_all = base_moisture 
+                +. (micro.local_moisture_mod *. 0.3)    (* Reduce local effect *)
+                +. (micro.wind_effect *. 0.1)          (* Reduce wind effect *)
+                -. (micro.shadow_effect *. 0.4)        (* Increase shadow effect *)
+                -. (abs_float elevation *. 0.3)        (* Add elevation-based drying *)
     in
-    max (-1.0) (min 1.0 m_all)
+    max (-1.0) (min 1.0 m_all)  (* Already in [-1,1] range *)
   in
   { Area.elevation; temperature; moisture }
 
 let compute_room_type (cl : Area.climate) =
+  (* Compute a simple slope value to capture local variation.
+     (Note: you might eventually want to replace this with the more complex
+      `calculate_slope` logic if needed.) *)
   let slope = cl.moisture *. cl.elevation in
-  if      cl.elevation < -0.5 then Area.Cave
-  else if cl.elevation > 0.8 then
-    if      cl.temperature > 0.7 then Area.Volcano
-    else if cl.moisture > 0.7    then Area.Forest
-    else Area.Mountain
-  else if cl.temperature < 0.2 then Area.Tundra
-  else if cl.temperature > 0.7 && cl.moisture < 0.2 then Area.Desert
-  else if cl.moisture > 0.8 then
-    if      slope > 0.3       then Area.Jungle
-    else if cl.temperature > 0.6 then Area.Swamp
-    else Area.Lake
-  else if cl.elevation > 0.3 then
-    if slope < -0.2      then Area.Canyon
-    else if cl.moisture > 0.5 then Area.Forest
-    else Area.Mountain
-  else if cl.moisture > 0.5 then Area.Forest
-  else Area.Lake
+
+  if cl.elevation < -0.3 then 
+    Area.Cave
+
+  else if cl.elevation > 0.6 then
+    if cl.temperature > 0.5 then 
+      Area.Volcano
+    else if cl.moisture > 0.5 then 
+      Area.Forest
+    else 
+      Area.Mountain
+
+  else if cl.temperature < -0.2 then 
+    Area.Tundra
+
+  else if cl.temperature > 0.5 && cl.moisture < 0.0 then 
+    Area.Desert
+
+  else if cl.moisture > 0.6 then
+    if slope > 0.25 then 
+      Area.Jungle
+    else if cl.temperature > 0.4 then 
+      Area.Swamp
+    else 
+      Area.Lake
+
+  else if cl.elevation > 0.2 then
+    (* For moderate elevation, we now distinguish between two climates:
+       - If moisture is at or below 0.5 and temperature is modest (below 0.6),
+         we treat the area as Grassland.
+       - Otherwise, we assume a denser forest.
+       Adjust these thresholds based on the distribution of your generated values.
+    *)
+    if cl.moisture <= 0.5 && cl.temperature < 0.6 then 
+      Area.Grassland  (* NEW BIOME: consider adding Grassland to your Area.room_type definition *)
+    else
+      Area.Forest
+
+  else if cl.moisture > 0.3 then 
+    Area.Forest
+
+  else 
+    Area.Lake
 
 let get_biome_transition cl =
   let p_biome = compute_room_type cl in
@@ -206,6 +271,7 @@ let get_room_type_description rt transition =
   let base = match rt with
     | Area.Cave      -> "a dark cave with rough stone walls."
     | Area.Forest    -> "a forest with abundant foliage."
+    | Area.Grassland -> "a grassy plain with scattered trees."
     | Area.Mountain  -> "a mountainous outcropping battered by winds."
     | Area.Swamp     -> "a swamp of mucky, waterlogged ground."
     | Area.Desert    -> "an arid desert of drifting sands."
@@ -234,6 +300,7 @@ let get_room_name (cl : Area.climate) =
   match compute_room_type cl with
   | Area.Cave      -> "Cave"
   | Area.Forest    -> "Forest"
+  | Area.Grassland -> "Grassland"
   | Area.Mountain  -> "Mountain Peak"
   | Area.Swamp     -> "Swamp"
   | Area.Desert    -> "Desert"
@@ -251,7 +318,6 @@ let generate_coordinates params =
   List.iter (fun zz ->
     List.iter (fun yy ->
       List.iter (fun xx ->
-        (* removed the check for (xx=0 && yy=0 && zz=0); everything is fair game now *)
         coords := (xx, yy, zz) :: !coords
       ) xs
     ) ys
@@ -403,3 +469,45 @@ let generate_and_create_world (params : world_params) (client : Client.t) =
 
   let* () = Client_handler.send_success client "World generation complete" in
   Lwt.return final_map
+
+let calculate_slope elev_n params (x,y,z) =
+  let scale = params.elevation_scale in
+  let vscale = params.vertical_scale in
+  let dx = (PerlinNoise.octave_noise elev_n 
+    ((float_of_int (x+1)) /. scale) 
+    (float_of_int y /. scale) 
+    (float_of_int z /. scale) +. 1.0) *. 0.5 
+  in
+  let dy = (PerlinNoise.octave_noise elev_n 
+    (float_of_int x /. scale) 
+    ((float_of_int (y+1)) /. scale) 
+    (float_of_int z /. scale) +. 1.0) *. 0.5 
+  in
+  let dz = (PerlinNoise.octave_noise elev_n 
+    (float_of_int x /. scale) 
+    (float_of_int y /. scale) 
+    ((float_of_int (z+1)) /. scale) +. 1.0) *. 0.5 
+  in
+  let current = (PerlinNoise.octave_noise elev_n 
+    (float_of_int x /. scale) 
+    (float_of_int y /. scale) 
+    (float_of_int z /. scale) +. 1.0) *. 0.5 
+  in
+  let slope_x = abs_float (dx -. current) in
+  let slope_y = abs_float (dy -. current) in
+  let slope_z = abs_float (dz -. current) *. vscale in
+  (slope_x +. slope_y +. slope_z) /. 3.0
+
+let calculate_volcanic_effect era params x y z =
+  if era.volcanic_activity <= 0.0 then 0.0 else
+  let volcano_noise = PerlinNoise.create ~seed:(era.era_seed + 1) () in
+  let volcanic_3d_scale = params.elevation_scale *. 1.5 in
+  let dist = 
+    (PerlinNoise.octave_noise volcano_noise 
+      (float_of_int x /. volcanic_3d_scale) 
+      (float_of_int y /. volcanic_3d_scale)
+      (float_of_int z /. volcanic_3d_scale)
+    +. 1.0) *. 0.5
+  in
+  let falloff = 1.0 -. (dist *. 1.5) in
+  max 0.0 (era.volcanic_activity *. (falloff ** 2.0))

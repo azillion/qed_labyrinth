@@ -10,6 +10,7 @@ type climate = {
 type room_type = 
   | Cave 
   | Forest 
+  | Grassland
   | Mountain 
   | Swamp 
   | Desert 

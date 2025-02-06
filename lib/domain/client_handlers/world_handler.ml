@@ -13,13 +13,15 @@ module Handler : Client_handler.S = struct
         (* Generate world using WorldGen module *)
         let params =
           {
-            World_gen.seed = 42;
-            width = 5;   (* -10 to 10 *)
-            height = 5;  (* -10 to 10 *)
+            World_gen.seed = 43;
+            width = 20;   (* -10 to 10 *)
+            height = 20;  (* -10 to 10 *)
             depth = 1;   (* -5 to 5 *)
-            elevation_scale = 8.0;
-            temperature_scale = 10.0;
-            moisture_scale = 12.0;
+            elevation_scale = 15.0;  (* smoother, more gradual elevation changes *)
+            temperature_scale = 12.0; (* experiment to see how the climate variation feels *)
+            moisture_scale = 14.0;    (* adjust for desired moisture variation *)
+            vertical_scale = 2.5;     (* tuned for multi-layered worlds *)
+            latitude_effect = 0.3;   (* How much latitude affects temperature *)
           }
         in
 
