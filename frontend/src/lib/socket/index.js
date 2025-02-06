@@ -4,6 +4,7 @@ import { areaHandlers } from '@features/game/stores/area';
 import { chatHandlers } from '@features/game/stores/chat';
 import { characterHandlers } from '@features/auth/stores/character';
 import { mapHandlers } from '@features/map/stores/map';
+import { authHandlers } from '@features/auth/stores/auth';
 
 export const socketManager = new SocketManager();
 
@@ -31,6 +32,10 @@ export function registerCoreHandlers() {
 
   // Map handlers
   Object.entries(mapHandlers).forEach(([type, handler]) => {
+    socketManager.registerHandler(type, handler);
+  });
+
+  Object.entries(authHandlers).forEach(([type, handler]) => {
     socketManager.registerHandler(type, handler);
   });
 

@@ -77,7 +77,7 @@ export const ChatFrame = () => {
 
     return (
         <div 
-            class={`w-1/3 bg-gray-900/95 border ${theme().border} backdrop-blur-sm 
+            class={`h-full bg-gray-900/95 border ${theme().border} backdrop-blur-sm 
                    rounded-lg p-4 flex flex-col`}
         >
             <TerminalText class="text-lg mb-2">Chat</TerminalText>

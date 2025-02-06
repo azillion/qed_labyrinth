@@ -1,4 +1,3 @@
-import { useNavigate } from "@solidjs/router";
 import { createMemo, createEffect, onCleanup } from "solid-js";
 
 import { StatusFrame } from "./status";
@@ -8,15 +7,15 @@ import { ChatFrame } from "./chat";
 import { CommandInput } from "./command";
 import { chatActions } from "../../features/game/stores/chat";
 import { currentFocus } from "../../features/game/stores/game";
+import { NavBar } from "../../components/shared/NavBar";
 
 const GamePage = () => {
-    const navigate = useNavigate();
     const isAreaFocused = createMemo(() => currentFocus() === "area");
 
     createEffect(() => {
         const handleKeyPress = (e) => {
             if (!isAreaFocused()) return;
-            
+
             switch (e.key.toLowerCase()) {
                 case 'w':
                     // Move north
@@ -46,7 +45,7 @@ const GamePage = () => {
         };
 
         window.addEventListener('keydown', handleKeyPress);
-        
+
         onCleanup(() => {
             window.removeEventListener('keydown', handleKeyPress);
         });
@@ -54,17 +53,14 @@ const GamePage = () => {
 
     return (
         <div class="h-screen bg-black text-gray-100 font-mono flex flex-col">
-            <button onClick={() => navigate("/map")}>Map</button>
-            {/* Top Section - Status & Inventory */}
-            <div class="h-[25%] flex gap-4 p-4">
-                <StatusFrame />
-                <InventoryFrame />
-            </div>
-
-            {/* Middle Section - Main Area & Chat */}
-            <div class="h-[65%] flex gap-4 px-4">
+            <NavBar />
+            <div class="h-[85%] flex gap-4 p-4">
                 <AreaFrame />
-                <ChatFrame />
+                {/* Middle Section - Main Area & Chat */}
+                <div class="w-1/2 flex flex-col gap-4">
+                    <StatusFrame />
+                    <ChatFrame />
+                </div>
             </div>
 
             {/* Command Input */}

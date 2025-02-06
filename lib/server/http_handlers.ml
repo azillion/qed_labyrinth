@@ -5,8 +5,12 @@ let error_response ~status error =
   Dream.json ~status
     (Yojson.Safe.to_string (`Assoc [ ("error", `String error) ]))
 
-let user_response ~token =
-  Dream.json (Yojson.Safe.to_string (`Assoc [ ("token", `String token) ]))
+let user_response ~token ~role =
+  Dream.json (Yojson.Safe.to_string 
+    (`Assoc [ 
+      ("token", `String token);
+      ("role", `String role)
+    ]))
 
 let is_valid_username username = String.length username >= 3
 let is_valid_password password = String.length password >= 6
@@ -32,7 +36,7 @@ let handle_login body =
                   ~expires_at:(Some expires_at)
               in
               match token_result with
-              | Ok () -> user_response ~token
+              | Ok () -> user_response ~token ~role:(User.string_of_role user.User.role)  
               | Error _ ->
                   error_response ~status:`Internal_Server_Error
                     "Failed to store token")
@@ -80,7 +84,7 @@ let handle_register body =
                     ~expires_at:(Some expires_at)
                 in
                 match token_result with
-                | Ok () -> user_response ~token
+                | Ok () -> user_response ~token ~role:(User.string_of_role user.role)
                 | Error _ ->
                     error_response ~status:`Internal_Server_Error
                       "Failed to store token")

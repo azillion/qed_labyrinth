@@ -11,6 +11,7 @@ import { initAuth, authToken } from "@features/auth/stores/auth";
 import LoginPage from "@pages/auth";
 import CharacterPage from "@pages/character";
 import { isCharacterSelected } from "@features/auth/stores/character";
+import { InventoryPage } from "@pages/inventory";
 
 const App = (props) => {
 	onMount(async () => {
@@ -34,17 +35,18 @@ const App = (props) => {
 	setCurrentTheme("red");
 
 	return (
-		<>
+		<div class="h-screen bg-black text-gray-100 font-mono flex flex-col">
 			<Show when={authToken()} fallback={<LoginPage />}>
 				<Show when={isCharacterSelected()} fallback={<CharacterPage />}>
 					<Router>
 						<Route path="/" component={GamePage} />
+						<Route path="/inventory" component={InventoryPage} />
 						<Route path="/map" component={MapPage} />
 					</Router>
 				</Show>
 			</Show>
 			<ConnectionStatus />
-		</>
+		</div>
 	);
 };
 

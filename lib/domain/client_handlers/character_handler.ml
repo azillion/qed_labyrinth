@@ -104,7 +104,14 @@ module Handler : Client_handler.S = struct
       (character_id : string) =
     match client.auth_state with
     | Anonymous -> Lwt.return_unit
-    | Authenticated _ -> (
+    | Authenticated { user_id; _ } -> (
+        match%lwt User.find_by_id user_id with
+        | Error _ ->
+            client.send
+              (Protocol.CharacterSelectionFailed
+                 { error = Character.error_to_yojson Character.UserNotFound })
+        | Ok user ->
+            let%lwt () = client.send (Protocol.UserRole { role = User.string_of_role user.role }) in
         match%lwt Character.find_by_id character_id with
         | Ok character ->
             let () = Client.set_character client character.id in

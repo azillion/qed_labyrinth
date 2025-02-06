@@ -7,16 +7,17 @@ import { socketManager } from '@lib/socket';
 export const [isAuthenticated, setIsAuthenticated] = createSignal(false);
 export const [authToken, setAuthToken] = createSignal(null);
 export const [authError, setAuthError] = createSignal(null);
+export const [userRole, setUserRole] = createSignal(null);
 
 export const setAuthState = (token) => {
 	if (token && typeof token !== 'string') {
 		console.error('Invalid token type');
 		return;
 	}
-	
+
 	setAuthToken(token);
 	setIsAuthenticated(!!token);
-	
+
 	if (token) {
 		localStorage.setItem('auth_token', token);
 	} else {
@@ -27,9 +28,18 @@ export const setAuthState = (token) => {
 
 // Auth actions
 export const login = async (username, password) => {
-	const response = await fetcher.post(ENDPOINTS.login, { username, password });
-	if (response.token) {
-		setAuthState(response.token);
+	try {
+		const response = await fetcher.post(ENDPOINTS.login, { username, password });
+		if (response.token) {
+			setAuthState(response.token);
+			setUserRole(response.role);
+			setAuthError(null);
+		} else {
+			setAuthError('Invalid response from server');
+		}
+	} catch (error) {
+		setAuthError('Login failed');
+		setAuthState(null);
 	}
 };
 
@@ -38,6 +48,7 @@ export const register = async (username, password, email) => {
 		const response = await fetcher.post(ENDPOINTS.register, { username, password, email });
 		if (response?.token && typeof response.token === 'string') {
 			setAuthState(response.token);
+			setUserRole(response.role);
 			setAuthError(null); // Clear any previous errors
 		} else {
 			setAuthError('Invalid response from server');
@@ -58,4 +69,10 @@ export const initAuth = async () => {
 	if (token) {
 		setAuthToken(token);
 	}
+};
+
+export const authHandlers = {
+	'UserRole': (payload) => {
+		setUserRole(payload.role);
+	},
 };

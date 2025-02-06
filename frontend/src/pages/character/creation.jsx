@@ -2,7 +2,6 @@ import { createSignal, Show, onMount } from "solid-js";
 import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { characterActions, characterError } from "@features/auth/stores/character";
-
 const CharacterCreatePage = () => {
     const [name, setName] = createSignal("");
     const [error, setError] = createSignal("");

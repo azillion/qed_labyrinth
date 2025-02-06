@@ -54,4 +54,5 @@ type server_message =
   | ChatHistory of { messages : Types.chat_message list }
   | ChatMessage of { message : Types.chat_message }
   | AdminMap of { world : Types.world }
+  | UserRole of { role : string }
 [@@deriving yojson]
