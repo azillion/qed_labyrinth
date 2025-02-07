@@ -3,6 +3,7 @@ import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { area, isLoading, error } from "../../features/game/stores/area";
 import { chatActions } from "@features/game/stores/chat";
+import { userRole } from "@features/auth/stores/auth";
 
 const EXIT_DIRECTION_TO_COMMAND = {
     north: "/north",
@@ -27,9 +28,9 @@ export const AreaFrame = () => {
         console.log('Current area name:', area.name);
         return Boolean(area.name);
     });
-    
+
     const orderedExits = createMemo(() => {
-        return [...area.exits].sort((a, b) => 
+        return [...area.exits].sort((a, b) =>
             DIRECTION_ORDER[a.direction] - DIRECTION_ORDER[b.direction]
         );
     });
@@ -53,7 +54,7 @@ export const AreaFrame = () => {
                                 Exits:{" "}
                                 {orderedExits().map((exit, i) => (
                                     <>
-                                        <span 
+                                        <span
                                             class="cursor-pointer hover:text-white transition-colors select-none"
                                             onClick={() => chatActions.command(EXIT_DIRECTION_TO_COMMAND[exit.direction])}
                                         >
@@ -64,15 +65,17 @@ export const AreaFrame = () => {
                                 ))}
                             </TerminalText>
                         )}
-                        <TerminalText class={`${theme().textDim}`}>
-                            Elevation: {area.elevation}
-                        </TerminalText>
-                        <TerminalText class={`${theme().textDim}`}>
-                            Temperature: {area.temperature}
-                        </TerminalText>
-                        <TerminalText class={`${theme().textDim}`}>
-                            Moisture: {area.moisture}
-                        </TerminalText>
+                        <Show when={userRole() === "admin" || userRole() === "super admin"}>
+                            <TerminalText class={`${theme().textDim}`}>
+                                Elevation: {area.elevation}
+                            </TerminalText>
+                            <TerminalText class={`${theme().textDim}`}>
+                                Temperature: {area.temperature}
+                            </TerminalText>
+                            <TerminalText class={`${theme().textDim}`}>
+                                Moisture: {area.moisture}
+                            </TerminalText>
+                        </Show>
                     </>
                 ) : (
                     <TerminalText>No area loaded</TerminalText>
