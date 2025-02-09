@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, onMount, Show } from "solid-js";
 import { TerminalText } from "@components/ui/TerminalText";
 import { TerminalOption } from "@components/shared/TerminalOption";
 import { theme } from "@stores/themeStore";
@@ -8,10 +8,19 @@ import CharacterCreatePage from "./creation";
 const CharacterPage = () => {
     const [step, setStep] = createSignal('select');
     const [error, setError] = createSignal('');
+	
+    let containerRef;
+
+	onMount(() => {
+		containerRef?.focus();
+	});
 
     const handleKeyDown = (e) => {
         if (e.key === "Escape") {
             setStep("select");
+			e.preventDefault();
+			setError("");
+			containerRef?.focus();
         }
 
         if (step() === "select") {
@@ -28,6 +37,7 @@ const CharacterPage = () => {
             class="fixed inset-0 flex items-center justify-center bg-black focus:outline-none"
             onKeyDown={handleKeyDown}
             tabIndex={0}
+            ref={containerRef}
         >
             <div class={`bg-black p-8 w-full max-w-2xl font-mono ${theme().textBase} ${theme().border} ${theme().shadow}`}>
                 <div class="mb-8">

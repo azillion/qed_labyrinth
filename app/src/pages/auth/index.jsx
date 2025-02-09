@@ -39,6 +39,10 @@ const LoginPage = () => {
 	const handleKeyDown = (e) => {
 		if (e.key === "Escape") {
 			setStep("select");
+			e.preventDefault();
+			setEmail("");
+			setPassword("");
+			setUsername("");
 		}
 		if (e.key === "Enter" && step() === "username" && username() === "") {
 			setError("Username cannot be empty");
@@ -52,6 +56,7 @@ const LoginPage = () => {
 		}
 		setError("");
 		if (step() === "select") {
+			e.preventDefault();
 			if (e.key === "1") {
 				setMode("login");
 				setStep("username");

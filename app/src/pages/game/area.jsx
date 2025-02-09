@@ -15,17 +15,16 @@ const EXIT_DIRECTION_TO_COMMAND = {
 };
 
 const DIRECTION_ORDER = {
-    north: 0,
-    south: 1,
-    east: 2,
-    west: 3,
+    west: 0,
+    north: 1,
+    south: 2,
+    east: 3,
     up: 4,
     down: 5
 };
 
 export const AreaFrame = () => {
     const hasArea = createMemo(() => {
-        console.log('Current area name:', area.name);
         return Boolean(area.name);
     });
 
@@ -36,7 +35,6 @@ export const AreaFrame = () => {
     });
 
     const hasExits = createMemo(() => {
-        console.log('Current area exits:', area.exits);
         return area.exits.length > 0;
     });
 
