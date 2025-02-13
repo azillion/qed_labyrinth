@@ -43,6 +43,7 @@ const LoginPage = () => {
 			setEmail("");
 			setPassword("");
 			setUsername("");
+			setError("");
 		}
 		if (e.key === "Enter" && step() === "username" && username() === "") {
 			setError("Username cannot be empty");
