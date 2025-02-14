@@ -13,7 +13,7 @@ module Handler : Client_handler.S = struct
   (* Movement handling *)
   let handle_character_movement (state : State.t) (client : Client.t) direction
       =
-    Client_handler.with_character_check client (fun character ->
+    Client_handler.with_character_check client (fun (character : Character.t) ->
         let old_area_id = character.location_id in
         match%lwt Character.move ~character_id:character.id ~direction with
         | Error _ ->
@@ -59,7 +59,10 @@ module Handler : Client_handler.S = struct
                   (Protocol.ChatMessage { message = arrival_msg' });
 
                 (* Send new area info to moving character *)
-                send_area_info client new_area_id))
+                let%lwt () = send_area_info client new_area_id in
+                let status = Status_frame.of_character character in
+                let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in
+                Lwt.return_unit))
 
   (* Character creation/selection *)
   let handle_character_creation (state : State.t) (client : Client.t)
@@ -81,7 +84,10 @@ module Handler : Client_handler.S = struct
             Connection_manager.add_to_room state.connection_manager
               ~client_id:client.Client.id
               ~room_id:"00000000-0000-0000-0000-000000000000";
-            send_area_info client character.location_id
+            let%lwt () = send_area_info client character.location_id in
+            let status = Status_frame.of_character character in
+            let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in
+            Lwt.return_unit
         | Error error ->
             client.send
               (Protocol.CharacterCreationFailed
@@ -124,7 +130,10 @@ module Handler : Client_handler.S = struct
             (* Add to character's current room and send info *)
             Connection_manager.add_to_room state.connection_manager
               ~client_id:client.Client.id ~room_id:character.location_id;
-            send_area_info client character.location_id
+            let%lwt () = send_area_info client character.location_id in
+            let status = Status_frame.of_character character in
+            let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in
+            Lwt.return_unit
         | Error error ->
             client.send
               (Protocol.CharacterSelectionFailed

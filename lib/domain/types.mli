@@ -53,3 +53,13 @@ type world = {
   connections : connection list;
   current_location : string;
 } [@@deriving yojson]
+
+type status = {
+  health : int;
+  mana : int;
+  level : int;
+  experience : int;
+  time_of_day : string;
+} [@@deriving yojson]
+
+val status_of_model : Status_frame.t -> status

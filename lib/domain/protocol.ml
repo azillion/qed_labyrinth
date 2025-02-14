@@ -17,6 +17,7 @@ type client_message =
   | RequestAdminMap
   | RequestWorldGeneration
   | RequestWorldDeletion
+  | RequestStatus
   | Help
   | Unknown of string
 [@@deriving yojson]
@@ -48,6 +49,7 @@ type server_message =
   | CharacterSelected of { character : Types.character }
   | CharacterSelectionFailed of error_response
   | Area of { area : Types.area }
+  | Status of { status : Types.status }
   | Error of error_response
   | CommandSuccess of { message : Types.chat_message }
   | CommandFailed of { error : string }
