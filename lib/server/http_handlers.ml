@@ -43,9 +43,9 @@ let handle_login body =
           | Error _ ->
               error_response ~status:`Internal_Server_Error
                 "Failed to generate token")
-      | Error User.UserNotFound | Error User.InvalidPassword ->
+      | Error Qed_error.UserNotFound | Error Qed_error.InvalidPassword ->
           error_response ~status:`Unauthorized "Invalid username or password"
-      | Error (User.DatabaseError msg) ->
+      | Error (Qed_error.DatabaseError msg) ->
           error_response ~status:`Internal_Server_Error msg
       | Error _ ->
           error_response ~status:`Internal_Server_Error "Authentication failed")
@@ -91,11 +91,11 @@ let handle_register body =
             | Error _ ->
                 error_response ~status:`Internal_Server_Error
                   "Token generation failed")
-        | Error User.UsernameTaken ->
+        | Error Qed_error.UsernameTaken ->
             error_response ~status:`Bad_Request "Username already taken"
-        | Error User.EmailTaken ->
+        | Error Qed_error.EmailTaken ->
             error_response ~status:`Bad_Request "Email already taken"
-        | Error (User.DatabaseError msg) ->
+        | Error (Qed_error.DatabaseError msg) ->
             error_response ~status:`Internal_Server_Error msg
         | Error _ -> error_response ~status:`Bad_Request "Registration failed")
   | _ -> error_response ~status:`Bad_Request "Invalid request format"

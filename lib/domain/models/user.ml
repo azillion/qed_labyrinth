@@ -1,5 +1,6 @@
 open Lwt.Syntax
 open Infra
+open Qed_error
 
 type role =
   | Player
@@ -28,14 +29,6 @@ type t = {
   token_expires_at : Ptime.t option;
   role : role;
 }
-
-type error =
-  | UserNotFound
-  | InvalidPassword
-  | UsernameTaken
-  | EmailTaken
-  | DatabaseError of string
-[@@deriving yojson]
 
 let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 

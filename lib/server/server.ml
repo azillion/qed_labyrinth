@@ -26,7 +26,7 @@ let is_valid_token request : (unit, Dream.response) Lwt_result.t =
                   Lwt.return_error
                     (error_response ~status:`Unauthorized
                        "Token invalid or expired"))
-          | Error User.UserNotFound ->
+          | Error Qed_error.UserNotFound ->
               Lwt.return_error
                 (error_response ~status:`Unauthorized "User not found")
           | Error _ ->
