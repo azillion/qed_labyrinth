@@ -9,19 +9,12 @@ type t = {
   timestamp : Ptime.t;
 }
 
-type error =
-  | InvalidMessageType
-  | InvalidSenderId
-  | InvalidContent
-  | InvalidAreaId
-  | DatabaseError of string
-[@@deriving yojson]
 
 val create :
   message_type:message_type ->
   sender_id:string option ->
   content:string ->
   area_id:string option ->
-  (t, error) result Lwt.t
+  (t, Qed_error.t) result Lwt.t
 
-val find_by_area_id : string -> (t list, error) result Lwt.t
+val find_by_area_id : string -> (t list, Qed_error.t) result Lwt.t

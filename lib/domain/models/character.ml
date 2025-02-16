@@ -1,5 +1,6 @@
 open Lwt.Syntax
 open Infra
+open Qed_error
 
 type t = {
   id : string;
@@ -9,13 +10,6 @@ type t = {
   created_at : Ptime.t;
   deleted_at : Ptime.t option;
 }
-
-type error =
-  | CharacterNotFound
-  | UserNotFound
-  | NameTaken
-  | DatabaseError of string
-[@@deriving yojson]
 
 let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 

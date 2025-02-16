@@ -43,7 +43,7 @@ module Handler : Client_handler.S = struct
             | Error e, _ | _, Error e ->
                 ignore
                   (Stdio.print_endline
-                     (Yojson.Safe.to_string (Communication.error_to_yojson e)));
+                     (Yojson.Safe.to_string (Qed_error.to_yojson e)));
                 Lwt.return_unit
             | Ok departure_msg, Ok arrival_msg ->
                 (* Broadcast movement messages *)
@@ -91,7 +91,7 @@ module Handler : Client_handler.S = struct
         | Error error ->
             client.send
               (Protocol.CharacterCreationFailed
-                 { error = Character.error_to_yojson error }))
+                 { error = Qed_error.to_yojson error }))
 
   let handle_character_list (client : Client.t) =
     match client.auth_state with
@@ -104,7 +104,7 @@ module Handler : Client_handler.S = struct
         | Error error ->
             client.send
               (Protocol.CharacterListFailed
-                 { error = Character.error_to_yojson error }))
+                 { error = Qed_error.to_yojson error }))
 
   let handle_character_select (state : State.t) (client : Client.t)
       (character_id : string) =
@@ -115,7 +115,7 @@ module Handler : Client_handler.S = struct
         | Error _ ->
             client.send
               (Protocol.CharacterSelectionFailed
-                 { error = Character.error_to_yojson Character.UserNotFound })
+                 { error = Qed_error.to_yojson Qed_error.UserNotFound })
         | Ok user ->
             let%lwt () = client.send (Protocol.UserRole { role = User.string_of_role user.role }) in
         match%lwt Character.find_by_id character_id with
@@ -137,7 +137,7 @@ module Handler : Client_handler.S = struct
         | Error error ->
             client.send
               (Protocol.CharacterSelectionFailed
-                 { error = Character.error_to_yojson error }))
+                 { error = Qed_error.to_yojson error }))
 
   (* Main message handler *)
   let handle state client msg =

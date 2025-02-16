@@ -1,4 +1,5 @@
 open Infra
+open Qed_error
 
 type message_type = Chat | Emote | System | CommandSuccess | CommandFailed [@@deriving yojson]
 
@@ -10,14 +11,6 @@ type t = {
   area_id : string option;
   timestamp : Ptime.t;
 }
-
-type error =
-  | InvalidMessageType
-  | InvalidSenderId
-  | InvalidContent
-  | InvalidAreaId
-  | DatabaseError of string
-[@@deriving yojson]
 
 module Q = struct
   open Caqti_request.Infix

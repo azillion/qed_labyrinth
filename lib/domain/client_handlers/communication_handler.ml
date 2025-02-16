@@ -16,7 +16,7 @@ module Handler : Client_handler.S = struct
               match%lwt Character.find_by_id character_id with
               | Error _ ->
                   Lwt.return_error
-                    (Communication.DatabaseError "Character not found")
+                    (Qed_error.DatabaseError "Character not found")
               | Ok character ->
                   Communication.create
                     ~message_type:Communication.CommandSuccess ~sender_id:None

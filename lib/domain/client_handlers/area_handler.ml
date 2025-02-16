@@ -69,20 +69,20 @@ module Handler : Client_handler.S = struct
             client.send (Protocol.AdminMap { world })
         | Error area_error, Error exit_error ->
             Printf.printf "Error fetching areas: %s, exits: %s\n"
-              (Area.error_to_string area_error)
-              (Area.error_to_string exit_error);
+              (Qed_error.to_string area_error)
+              (Qed_error.to_string exit_error);
             client.send
               (Protocol.CommandFailed
                  { error = "Error fetching areas or exits" })
         | Error area_error, _ ->
             Printf.printf "Error fetching areas: %s\n"
-              (Area.error_to_string area_error);
+              (Qed_error.to_string area_error);
             client.send
               (Protocol.CommandFailed
                  { error = "Error fetching areas or exits" })
         | _, Error exit_error ->
             Printf.printf "Error fetching exits: %s\n"
-              (Area.error_to_string exit_error);
+              (Qed_error.to_string exit_error);
             client.send
               (Protocol.CommandFailed
                  { error = "Error fetching areas or exits" }))

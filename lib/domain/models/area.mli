@@ -29,10 +29,6 @@ type t = {
   moisture : float option;
 }
 
-type error = AreaNotFound | DatabaseError of string [@@deriving yojson]
-
-val error_to_string : error -> string
-
 type direction = North | South | East | West | Up | Down [@@deriving yojson]
 
 val opposite_direction : direction -> direction
@@ -57,7 +53,7 @@ val create :
   ?temperature:float ->
   ?moisture:float ->
   unit ->
-  (t, error) result Lwt.t
+  (t, Qed_error.t) result Lwt.t
 
 val create_with_climate :
   name:string ->
@@ -67,13 +63,13 @@ val create_with_climate :
   z:int ->
   climate:climate ->
   unit ->
-  (t, error) result Lwt.t
+  (t, Qed_error.t) result Lwt.t
 
-val find_by_id : string -> (t, error) result Lwt.t
-val find_by_coordinates : x:int -> y:int -> z:int -> (t, error) result Lwt.t
-val exists : x:int -> y:int -> z:int -> (bool, error) result Lwt.t
+val find_by_id : string -> (t, Qed_error.t) result Lwt.t
+val find_by_coordinates : x:int -> y:int -> z:int -> (t, Qed_error.t) result Lwt.t
+val exists : x:int -> y:int -> z:int -> (bool, Qed_error.t) result Lwt.t
 
-val get_exits : t -> (exit list, error) result Lwt.t
+val get_exits : t -> (exit list, Qed_error.t) result Lwt.t
 val create_exit :
   from_area_id:string ->
   to_area_id:string ->
@@ -81,18 +77,18 @@ val create_exit :
   description:string option ->
   hidden:bool ->
   locked:bool ->
-  (exit, error) result Lwt.t
+  (exit, Qed_error.t) result Lwt.t
 
-val find_exits : area_id:string -> (exit list, error) result Lwt.t
+val find_exits : area_id:string -> (exit list, Qed_error.t) result Lwt.t
 val direction_equal : direction -> direction -> bool
 
-val delete_all_except_starting_area : string -> (unit, error) result Lwt.t
+val delete_all_except_starting_area : string -> (unit, Qed_error.t) result Lwt.t
 
-val get_all_areas : unit -> (t list, error) result Lwt.t
-val get_all_exits : unit -> (exit list, error) result Lwt.t
-val get_all_nearby_areas : string -> max_distance:int -> (t list, error) result Lwt.t
+val get_all_areas : unit -> (t list, Qed_error.t) result Lwt.t
+val get_all_exits : unit -> (exit list, Qed_error.t) result Lwt.t
+val get_all_nearby_areas : string -> max_distance:int -> (t list, Qed_error.t) result Lwt.t
 
-val update_area_name_and_description : location_id:string -> name:string -> description:string -> (unit, error) result Lwt.t
+val update_area_name_and_description : location_id:string -> name:string -> description:string -> (unit, Qed_error.t) result Lwt.t
 
 module Q : sig
   val find_exit_by_direction :
