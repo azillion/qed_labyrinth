@@ -66,10 +66,20 @@ module Schema = struct
            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
            name VARCHAR(255) NOT NULL,
            location_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000' REFERENCES areas(id),
+           health INT NOT NULL DEFAULT 100,
+           max_health INT NOT NULL DEFAULT 100,
+           mana INT NOT NULL DEFAULT 100,
+           max_mana INT NOT NULL DEFAULT 100,
+           level INT NOT NULL DEFAULT 1,
+           experience INT NOT NULL DEFAULT 0,
            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
            deleted_at TIMESTAMP WITH TIME ZONE,
            UNIQUE(user_id, name),
-           CONSTRAINT characters_deleted_after_created CHECK (deleted_at IS NULL OR deleted_at > created_at)
+           CONSTRAINT characters_deleted_after_created CHECK (deleted_at IS NULL OR deleted_at > created_at),
+           CONSTRAINT health_range CHECK (health >= 0 AND health <= max_health),
+           CONSTRAINT mana_range CHECK (mana >= 0 AND mana <= max_mana),
+           CONSTRAINT level_range CHECK (level >= 1),
+           CONSTRAINT experience_range CHECK (experience >= 0)
          ) |}
 
   let create_characters_indexes = [

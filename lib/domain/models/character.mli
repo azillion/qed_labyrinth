@@ -3,6 +3,12 @@ type t = {
   user_id : string;
   name : string;
   location_id : string;
+  health : int;
+  max_health : int;
+  mana : int;
+  max_mana : int;
+  level : int;
+  experience : int;
   created_at : Ptime.t;
   deleted_at : Ptime.t option;
 }

@@ -149,10 +149,10 @@ end
    Printf.printf "Noise value: %f\n" value
 *)
 
-let calculate_time_of_day = fun () ->
-  let current_time = Unix.gettimeofday () in
-  let hours = int_of_float (current_time *. 24.0) in
-  if hours < 6 then "night"
-  else if hours < 12 then "morning"
-  else if hours < 18 then "afternoon"
+let calculate_time_of_day () =
+  let localtime = Unix.localtime (Unix.time ()) in
+  let hour = localtime.tm_hour in
+  if hour < 6 then "night"
+  else if hour < 12 then "morning"
+  else if hour < 18 then "afternoon"
   else "evening"

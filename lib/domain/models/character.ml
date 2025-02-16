@@ -7,6 +7,12 @@ type t = {
   user_id : string;
   name : string;
   location_id : string;
+  health : int;
+  max_health : int;
+  mana : int;
+  max_mana : int;
+  level : int;
+  experience : int;
   created_at : Ptime.t;
   deleted_at : Ptime.t option;
 }
@@ -18,19 +24,20 @@ module Q = struct
   open Caqti_type.Std
 
   let character_type =
-    let encode { id; user_id; name; location_id; created_at; deleted_at } =
-      Ok (id, user_id, name, location_id, created_at, deleted_at)
+    let encode { id; user_id; name; location_id; health; max_health; mana; max_mana; level; experience; created_at; deleted_at } =
+      Ok (id, user_id, name, location_id, health, max_health, mana, max_mana, level, experience, created_at, deleted_at)
     in
-    let decode (id, user_id, name, location_id, created_at, deleted_at) =
-      Ok { id; user_id; name; location_id; created_at; deleted_at }
+    let decode (id, user_id, name, location_id, health, max_health, mana, max_mana, level, experience, created_at, deleted_at) =
+      Ok { id; user_id; name; location_id; health; max_health; mana; max_mana; level; experience; created_at; deleted_at }
     in
-    let rep = t6 string string string string ptime (option ptime) in
+    let rep = t12 string string string string int int int int int int ptime (option ptime) in
     custom ~encode ~decode rep
 
   let insert =
     (character_type ->. unit)
-      {| INSERT INTO characters (id, user_id, name, location_id, created_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?) |}
+      {| INSERT INTO characters 
+         (id, user_id, name, location_id, health, max_health, mana, max_mana, level, experience, created_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) |}
 
   let find_by_id =
     (string ->? character_type)
@@ -82,6 +89,12 @@ let create ~user_id ~name =
                 user_id;
                 name;
                 location_id = "00000000-0000-0000-0000-000000000000";
+                health = 100;
+                max_health = 100;
+                mana = 100;
+                max_mana = 100;
+                level = 1;
+                experience = 0;
                 created_at = Ptime_clock.now ();
                 deleted_at = None;
               }

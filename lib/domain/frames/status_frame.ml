@@ -18,14 +18,14 @@ let empty = {
   time_of_day = Utils.calculate_time_of_day ();
 }
 
-let of_character (_character: Character.t) =
+let of_character (character: Character.t) =
   (* Convert game character data to status frame format *)
   {
-    health = 100;  (* Example values - replace with real data *)
-    max_health = 100;
-    mana = 50;
-    max_mana = 50;
-    level = 1;
-    experience = 0;
+    health = character.health;
+    max_health = character.max_health;
+    mana = character.mana;
+    max_mana = character.max_mana;
+    level = character.level;
+    experience = character.experience;
     time_of_day = Utils.calculate_time_of_day ();
   }
