@@ -10,6 +10,6 @@ module Handler : Client_handler.S = struct
   let handle state client msg =
     let open Protocol in
     match msg with
-    | RequestStatus -> handle_status_request state client
+    | RequestStatusFrame -> handle_status_request state client
     | _ -> Lwt.return_unit
 end

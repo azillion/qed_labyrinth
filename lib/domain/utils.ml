@@ -1,21 +1,13 @@
-let get_area_by_id_opt (area_id : string) =
-  match%lwt Area.find_by_id area_id with
-  | Error _ -> Lwt.return_none
-  | Ok area -> (
-      match%lwt Area.get_exits area with
-      | Error _ -> Lwt.return_none
-      | Ok exits ->
-          let area' = Types.area_of_model area exits in
-          Lwt.return_some area')
 
-let broadcast_area_update (state : State.t) (area_id : string) =
+
+(* let broadcast_area_update (state : State.t) (area_id : string) =
   match%lwt get_area_by_id_opt area_id with
   | None -> Lwt.return_unit
   | Some area ->
       let update = Protocol.Area { area } in
       Connection_manager.broadcast_to_room state.connection_manager area_id
         update;
-      Lwt.return_unit
+      Lwt.return_unit *)
 
 module PerlinNoise = struct
   (* Type for our permutation table *)
@@ -156,3 +148,11 @@ end
    let value = PerlinNoise.noise2d noise 0.5 0.5 in
    Printf.printf "Noise value: %f\n" value
 *)
+
+let calculate_time_of_day = fun () ->
+  let current_time = Unix.gettimeofday () in
+  let hours = int_of_float (current_time *. 24.0) in
+  if hours < 6 then "night"
+  else if hours < 12 then "morning"
+  else if hours < 18 then "afternoon"
+  else "evening"

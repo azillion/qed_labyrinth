@@ -405,3 +405,4 @@ let update_area_name_and_description ~location_id ~name ~description =
   | Error e -> 
     Stdio.print_endline (Printf.sprintf "Error updating area: %s" (Error.to_string_hum e));
     Lwt.return_error (DatabaseError (Error.to_string_hum e))
+

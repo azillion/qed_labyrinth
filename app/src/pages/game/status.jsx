@@ -26,15 +26,10 @@ export const StatusFrame = () => {
                     when={!error()} 
                     fallback={<TerminalText class="text-sm text-red-400">{error()}</TerminalText>}
                 >
-                    <div class="grid grid-cols-3 gap-x-6 gap-y-2">
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2">
                         <div class="flex items-center justify-between">
                             <TerminalText class="text-sm text-gray-400">Health:</TerminalText>
                             <TerminalText>{status.health}</TerminalText>
-                        </div>
-                        
-                        <div class="flex items-center justify-between">
-                            <TerminalText class="text-sm text-gray-400">Level:</TerminalText>
-                            <TerminalText>{status.level}</TerminalText>
                         </div>
                         
                         <div class="flex items-center justify-between">

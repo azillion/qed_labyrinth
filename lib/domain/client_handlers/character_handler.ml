@@ -1,6 +1,6 @@
 module Handler : Client_handler.S = struct
   let send_area_info (client : Client.t) (area_id : string) =
-    match%lwt Utils.get_area_by_id_opt area_id with
+    match%lwt Client_handler.get_area_by_id_opt area_id with
     | None -> Lwt.return_unit
     | Some area -> (
         let%lwt () = client.send (Protocol.Area { area }) in

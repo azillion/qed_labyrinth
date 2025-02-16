@@ -30,6 +30,6 @@ export const statusHandlers = {
 export const statusActions = {
     requestStatus: () => {
         setIsLoading(true);
-        socketManager.send('RequestStatus');
+        socketManager.send('RequestStatusFrame');
     }
 };

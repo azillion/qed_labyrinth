@@ -17,7 +17,7 @@ type client_message =
   | RequestAdminMap
   | RequestWorldGeneration
   | RequestWorldDeletion
-  | RequestStatus
+  | RequestStatusFrame
   | Help
   | Unknown of string
 [@@deriving yojson]

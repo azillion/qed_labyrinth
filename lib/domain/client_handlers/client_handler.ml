@@ -42,3 +42,13 @@ let with_character_check (client : Client.t) (f : Character.t -> unit Lwt.t) =
       match%lwt Character.find_by_id character_id with
       | Error _ -> Lwt.return_unit
       | Ok character -> f character)
+
+let get_area_by_id_opt (area_id : string) =
+  match%lwt Area.find_by_id area_id with
+  | Error _ -> Lwt.return_none
+  | Ok area -> (
+      match%lwt Area.get_exits area with
+      | Error _ -> Lwt.return_none
+      | Ok exits ->
+          let area' = Types.area_of_model area exits in
+          Lwt.return_some area')
