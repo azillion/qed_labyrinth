@@ -1,6 +1,10 @@
 open Base
 
 module Schema = struct
+  let create_entities_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      "CREATE TABLE IF NOT EXISTS entities ( id UUID PRIMARY KEY )"
+
   let create_users_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS users (
@@ -50,13 +54,13 @@ module Schema = struct
   let create_exits_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS exits (
-           from_area_id UUID NOT NULL REFERENCES areas(id),
-           to_area_id UUID NOT NULL REFERENCES areas(id),
-           direction VARCHAR(10) CHECK (direction IN ('north', 'south', 'east', 'west', 'up', 'down')),
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           from_entity UUID NOT NULL REFERENCES entities(id),
+           to_entity UUID NOT NULL REFERENCES entities(id),
+           direction VARCHAR(10),
            description TEXT,
            hidden BOOLEAN NOT NULL DEFAULT FALSE,
-           locked BOOLEAN NOT NULL DEFAULT FALSE,
-           PRIMARY KEY (from_area_id, direction)
+           locked BOOLEAN NOT NULL DEFAULT FALSE
          ) |}
 
   let create_characters_table =
@@ -113,6 +117,136 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
            timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
          ) |}
 
+  let create_positions_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS positions (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           x INT,
+           y INT,
+           z INT
+         ) |}
+
+  let create_descriptions_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS descriptions (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           name VARCHAR(255) NOT NULL,
+           description TEXT NOT NULL
+         ) |}
+
+  let create_climates_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS climates (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           elevation FLOAT,
+           temperature FLOAT,
+           moisture FLOAT
+         ) |}
+
+  let create_timestamps_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS timestamps (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+         ) |}
+
+  let create_user_ownerships_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS user_ownerships (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           user_id UUID NOT NULL REFERENCES entities(id)
+         ) |}
+
+  let create_names_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS names (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           name VARCHAR(255) NOT NULL
+         ) |}
+
+  let create_char_positions_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS positions (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           location_id UUID NOT NULL REFERENCES entities(id)
+         ) |}
+
+  let create_healths_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS healths (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           hp INT NOT NULL DEFAULT 100,
+           max_hp INT NOT NULL DEFAULT 100
+         ) |}
+
+  let create_manas_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS manas (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           mana INT NOT NULL DEFAULT 100,
+           max_mana INT NOT NULL DEFAULT 100
+         ) |}
+
+  let create_levels_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS levels (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           level INT NOT NULL DEFAULT 1,
+           experience INT NOT NULL DEFAULT 0
+         ) |}
+
+  let create_credentials_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS credentials (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           username VARCHAR(255) NOT NULL,
+           password_hash VARCHAR(255) NOT NULL
+         ) |}
+
+  let create_emails_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS emails (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           email VARCHAR(255) NOT NULL
+         ) |}
+
+  let create_tokens_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS tokens (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           token TEXT,
+           token_expires_at TIMESTAMP WITH TIME ZONE
+         ) |}
+
+  let create_roles_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS roles (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           role VARCHAR(12) NOT NULL DEFAULT 'player'
+         ) |}
+
+  let create_messages_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS messages (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           message_type VARCHAR(20) NOT NULL,
+           content TEXT NOT NULL
+         ) |}
+
+  let create_senders_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS senders (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           sender_id UUID REFERENCES entities(id)
+         ) |}
+
+  let create_locations_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS locations (
+           entity_id UUID PRIMARY KEY REFERENCES entities(id),
+           area_id UUID REFERENCES entities(id)
+         ) |}
+
   (* Helper to run a list of statements in sequence *)
   let exec_statements (module C : Caqti_lwt.CONNECTION) statements =
     let rec run_all = function
@@ -127,42 +261,44 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
 
   (* Combined schema creation function *)
   let create_schema (module C : Caqti_lwt.CONNECTION) =
-    let%lwt users_result = C.exec create_users_table () in
-    match users_result with
-    | Error e -> Lwt.return_error e
-    | Ok () ->
-        let%lwt users_indexes_result = exec_statements (module C) create_users_indexes in
-        match users_indexes_result with
-        | Error e -> Lwt.return_error e
-        | Ok () ->
-            let%lwt areas_result = C.exec create_areas_table () in
-            match areas_result with
-            | Error e -> Lwt.return_error e
-            | Ok () ->
-                let%lwt areas_indexes_result = exec_statements (module C) create_areas_indexes in
-                match areas_indexes_result with
-                | Error e -> Lwt.return_error e
-                | Ok () ->
-                    let%lwt exits_result = C.exec create_exits_table () in
-                    match exits_result with
-                    | Error e -> Lwt.return_error e
-                    | Ok () ->
-                        let%lwt chars_result = C.exec create_characters_table () in
-                        match chars_result with
-                        | Error e -> Lwt.return_error e
-                        | Ok () ->
-                            let%lwt chars_indexes_result = exec_statements (module C) create_characters_indexes in
-                            match chars_indexes_result with
-                            | Error e -> Lwt.return_error e
-                            | Ok () ->
-                                let%lwt starting_area_result = C.exec create_starting_area_entry () in
-                                match starting_area_result with
-                                | Error e -> Lwt.return_error e
-                                | Ok () ->
-                                    let%lwt comm_result = C.exec create_comm_table () in
-                                    match comm_result with
-                                    | Error e -> Lwt.return_error e
-                                    | Ok () -> Lwt.return_ok ()
+    let ( let* ) = Lwt_result.bind in
+    
+    Lwt.catch
+      (fun () ->
+        (* entity table *)
+        let* () = C.exec create_entities_table () in
+
+        (* component tables *)
+        let* () = C.exec create_positions_table () in
+        let* () = C.exec create_descriptions_table () in
+        let* () = C.exec create_climates_table () in
+        let* () = C.exec create_timestamps_table () in
+        let* () = C.exec create_user_ownerships_table () in
+        let* () = C.exec create_names_table () in
+        let* () = C.exec create_char_positions_table () in
+        let* () = C.exec create_healths_table () in
+        let* () = C.exec create_manas_table () in
+        let* () = C.exec create_levels_table () in
+        let* () = C.exec create_messages_table () in
+        let* () = C.exec create_senders_table () in
+        let* () = C.exec create_locations_table () in
+        let* () = C.exec create_credentials_table () in
+        let* () = C.exec create_emails_table () in
+        let* () = C.exec create_tokens_table () in
+        let* () = C.exec create_roles_table () in
+
+        (* legacy tables *)
+        let* () = C.exec create_users_table () in
+        let* () = exec_statements (module C) create_users_indexes in
+        let* () = C.exec create_areas_table () in
+        let* () = exec_statements (module C) create_areas_indexes in
+        let* () = C.exec create_exits_table () in
+        let* () = C.exec create_characters_table () in
+        let* () = exec_statements (module C) create_characters_indexes in
+        let* () = C.exec create_starting_area_entry () in
+        let* () = C.exec create_comm_table () in
+        Lwt.return_ok ())
+      (fun _ -> failwith "Database error")
 end
 
 module Pool = struct
