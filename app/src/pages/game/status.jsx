@@ -2,17 +2,21 @@ import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { status, isLoading, error, statusActions } from "@features/game/stores/status";
 import { Show } from "solid-js";
-import { onMount } from "solid-js";
+import { onMount, onCleanup } from "solid-js";
 
 const STATUS_REFRESH_INTERVAL = 1000 * 60 * 2; // 2 minutes
 
 export const StatusFrame = () => {
+    let interval;
     onMount(() => {
         statusActions.requestStatus();
-        const interval = setInterval(() => {
+        interval = setInterval(() => {
             statusActions.requestStatus();
         }, STATUS_REFRESH_INTERVAL);
-        return () => clearInterval(interval);
+    });
+
+    onCleanup(() => {
+        clearInterval(interval);
     });
 
     return (
