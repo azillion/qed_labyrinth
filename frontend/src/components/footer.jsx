@@ -2,6 +2,8 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 
 const footerLinks = [
+  { href: '/', icon: '/home.svg', label: 'Home' },
+  { href: '/lore', icon: '/scroll.svg', label: 'Lore' },
   { href: '/chronicles', icon: '/scroll.svg', label: 'Chronicles' },
   { href: '/characters', icon: '/sword.svg', label: 'Characters' },
   { href: '/world', icon: '/world.svg', label: 'World' },
