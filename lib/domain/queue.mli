@@ -3,9 +3,7 @@ type client_message_with_client = {
   client: Client.t;
 }
 
-type t = {
-  queue: client_message_with_client Lwt_mvar.t;
-}
+type t
 
 val create : unit -> t
 
