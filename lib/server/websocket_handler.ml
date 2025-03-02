@@ -22,10 +22,10 @@ let handler (state : Qed_domain.State.t) user_id websocket =
             match message with
             | Command { command } ->
                 let message' = Qed_domain.Protocol.parse_command command in
-                let%lwt () = Queue.push state.message_queue message' client in
+                let%lwt () = Queue.push state.client_message_queue message' client in
                 process_messages ()
             | _ ->
-                let%lwt () = Queue.push state.message_queue message client in
+                let%lwt () = Queue.push state.client_message_queue message client in
                 process_messages ())
         | Error err ->
             ignore (Stdio.print_endline ("Parse error: " ^ err));

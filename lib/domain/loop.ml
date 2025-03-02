@@ -1,8 +1,15 @@
 open Lwt.Syntax
 
+let tick (state : State.t) =
+  let delta = Unix.gettimeofday () -. state.last_tick in
+  let* () = Lwt_unix.sleep (Float.max 0.0 (0.01 -. delta)) in
+  State.update_tick state;
+  (* ignore (Stdio.print_endline (Printf.sprintf "Tick: %f" delta)); *)
+  Lwt.return_unit
+
 let process_client_messages ?(timeout_seconds = 1.0) (state : State.t) =
   let rec process_all () =
-    match%lwt Queue.pop_opt state.message_queue with
+    match%lwt Queue.pop_opt state.client_message_queue with
     | None -> Lwt.return_unit
     | Some { message; client } ->
         let process_promise =
@@ -26,13 +33,6 @@ let process_client_messages ?(timeout_seconds = 1.0) (state : State.t) =
     (fun exn ->
       Stdio.eprintf "Message processing error: %s\n" (Base.Exn.to_string exn);
       Lwt.return_unit)
-
-let tick (state : State.t) =
-  let delta = Unix.gettimeofday () -. state.last_tick in
-  let* () = Lwt_unix.sleep (Float.max 0.0 (0.01 -. delta)) in
-  State.update_tick state;
-  (* ignore (Stdio.print_endline (Printf.sprintf "Tick: %f" delta)); *)
-  Lwt.return_unit
 
 let rec run (state : State.t) =
   Lwt.catch
