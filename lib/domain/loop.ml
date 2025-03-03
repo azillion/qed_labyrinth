@@ -7,27 +7,19 @@ let tick (state : State.t) =
   (* ignore (Stdio.print_endline (Printf.sprintf "Tick: %f" delta)); *)
   Lwt.return_unit
 
-let process_client_messages ?(timeout_seconds = 1.0) (state : State.t) =
+let process_client_messages (state : State.t) =
   let rec process_all () =
     match%lwt Queue.pop_opt state.client_message_queue with
     | None -> Lwt.return_unit
     | Some { message; client } ->
-        let process_promise =
-          let* () =
-            Lwt_list.iter_s
-              (fun (module H : Client_handler.S) -> H.handle state client message)
-              Handlers.all_client_handlers
-          in
-          process_all ()
+        let* () =
+          Lwt_list.iter_s
+            (fun (module H : Client_handler.S) -> H.handle state client message)
+            Handlers.all_client_handlers
         in
-        let timeout =
-          let* () = Lwt_unix.sleep timeout_seconds in
-          Stdio.eprintf "Message processing timeout after %f seconds\n" timeout_seconds;
-          Lwt.return_unit
-        in
-        Lwt.pick [process_promise; timeout]
-
+        process_all ()
   in
+
   Lwt.catch
     (fun () -> process_all ())
     (fun exn ->
