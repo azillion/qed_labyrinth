@@ -61,5 +61,3 @@ type status = {
   experience : int;
   time_of_day : string;
 } [@@deriving yojson]
-
-val status_of_model : Status_frame.t -> status

@@ -82,12 +82,3 @@ type status = {
   experience : int;
   time_of_day : string;
 } [@@deriving yojson]
-
-let status_of_model (status_model : Status_frame.t) : status =
-  {
-    health = status_model.health;
-    mana = status_model.mana;
-    level = status_model.level;
-    experience = status_model.experience;
-    time_of_day = status_model.time_of_day;
-  }

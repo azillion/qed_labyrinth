@@ -60,8 +60,8 @@ module Handler : Client_handler.S = struct
 
                 (* Send new area info to moving character *)
                 let%lwt () = send_area_info client new_area_id in
-                let status = Status_frame.of_character character in
-                let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in
+                (* let status = Status_frame.of_character character in
+                let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in *)
                 Lwt.return_unit))
 
   (* Character creation/selection *)
@@ -85,8 +85,8 @@ module Handler : Client_handler.S = struct
               ~client_id:client.Client.id
               ~room_id:"00000000-0000-0000-0000-000000000000";
             let%lwt () = send_area_info client character.location_id in
-            let status = Status_frame.of_character character in
-            let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in
+            (* let status = Status_frame.of_character character in
+            let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in *)
             Lwt.return_unit
         | Error error ->
             client.send
@@ -131,8 +131,8 @@ module Handler : Client_handler.S = struct
             Connection_manager.add_to_room state.connection_manager
               ~client_id:client.Client.id ~room_id:character.location_id;
             let%lwt () = send_area_info client character.location_id in
-            let status = Status_frame.of_character character in
-            let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in
+            (* let status = Status_frame.of_character character in
+            let%lwt () = client.send (Protocol.Status { status = Types.status_of_model status }) in *)
             Lwt.return_unit
         | Error error ->
             client.send

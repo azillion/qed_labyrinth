@@ -1,3 +1,4 @@
+(* Protocol defines the messages that can be sent between the client and the server *)
 type auth_message =
   | Register of { username : string; password : string; email : string }
   | Login of { username : string; password : string }
