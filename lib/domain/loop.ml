@@ -9,7 +9,7 @@ let tick (state : State.t) =
 
 let process_client_messages (state : State.t) =
   let rec process_all () =
-    match%lwt Queue.pop_opt state.client_message_queue with
+    match%lwt Infra.Queue.pop_opt state.client_message_queue with
     | None -> Lwt.return_unit
     | Some { message; client } ->
         let* () =
@@ -26,12 +26,21 @@ let process_client_messages (state : State.t) =
       Stdio.eprintf "Message processing error: %s\n" (Base.Exn.to_string exn);
       Lwt.return_unit)
 
-let rec run (state : State.t) =
+let register_ecs_systems (_state : State.t) =
+  (* Register your ECS systems here *)
+  (* For example: State.register_system state my_system *)
+  Lwt.return_unit
+
+let rec game_loop (state : State.t) =
   Lwt.catch
     (fun () ->
       let* () = tick state in
       let* () = process_client_messages state in
-      run state)
+      game_loop state)
     (fun exn ->
       Stdio.eprintf "Game loop error: %s\n" (Base.Exn.to_string exn);
-      run state)
+      game_loop state)
+
+let run (state : State.t) =
+  let* () = register_ecs_systems state in
+  game_loop state

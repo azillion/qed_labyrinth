@@ -111,7 +111,7 @@ let generate_area_description location_id =
                   Stdio.print_endline "Error updating area";
                   Lwt.return_unit
 
-let generate_world _state client ~(location_id : string) =
+let generate_world (_state : State.t) client ~(location_id : string) =
   let%lwt () = Client_handler.send_success client "Generating world with LLM" in
   
   (* Set to keep track of visited area IDs *)
