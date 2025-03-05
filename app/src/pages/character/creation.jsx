@@ -1,12 +1,10 @@
 import { createSignal, Show, onMount } from "solid-js";
-import { useNavigate } from "@solidjs/router";
 
 import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { characterActions, characterError } from "@features/auth/stores/character";
 
 const CharacterCreatePage = () => {
-    const navigate = useNavigate();
     const [name, setName] = createSignal("");
     const [error, setError] = createSignal("");
 
@@ -56,7 +54,6 @@ const CharacterCreatePage = () => {
             await characterActions.create({
                 name: name().trim()
             });
-            navigate("/");
         } catch (err) {
             setError(err.message || "Failed to create character");
         }
