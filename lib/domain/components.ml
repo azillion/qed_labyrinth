@@ -2,9 +2,6 @@ module CharacterComponent = struct
   type t = {
     entity_id: string;
     user_id: string;  (* Links character to the owning user *)
-    name: string;     (* Character's name *)
-    description: string option;  (* Character's description *)
-    (* Add other fields as needed, e.g., stats, if present in character.ml *)
   } [@@deriving yojson]
 
   let table_name = "characters"

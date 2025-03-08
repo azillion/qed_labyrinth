@@ -6,6 +6,7 @@ type client_message_with_client = {
 type t = {
   mutable last_tick : float;
   client_message_queue: client_message_with_client Infra.Queue.t;
+  event_queue: Event.t Infra.Queue.t;
   connection_manager: Connection_manager.t;
 }
 
@@ -13,6 +14,7 @@ let create () =
   {
     last_tick = Unix.gettimeofday ();
     client_message_queue = Infra.Queue.create ();
+    event_queue = Infra.Queue.create ();
     connection_manager = Connection_manager.create ();
   }
 
