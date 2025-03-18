@@ -26,6 +26,20 @@ let process_client_messages (state : State.t) =
       Stdio.eprintf "Message processing error: %s\n" (Base.Exn.to_string exn);
       Lwt.return_unit)
 
+let process_events (state : State.t) =
+  let rec process_all () =
+    match%lwt Infra.Queue.pop_opt state.event_queue with
+    | None -> Lwt.return_unit
+    | Some _event ->
+        (* let* () = process_event state event in *)
+        process_all ()
+  in
+  Lwt.catch
+    (fun () -> process_all ())
+    (fun exn ->
+      Stdio.eprintf "Event processing error: %s\n" (Base.Exn.to_string exn);
+      Lwt.return_unit)
+
 let register_ecs_systems (_state : State.t) =
   (* Register your ECS systems here *)
   (* For example: State.register_system state my_system *)
