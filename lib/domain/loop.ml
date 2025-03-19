@@ -26,6 +26,7 @@ let process_client_messages (state : State.t) =
       Stdio.eprintf "Message processing error: %s\n" (Base.Exn.to_string exn);
       Lwt.return_unit)
 
+(* TODO: We need to register systems here I think *)
 let process_events (state : State.t) =
   let rec process_all () =
     match%lwt Infra.Queue.pop_opt state.event_queue with
