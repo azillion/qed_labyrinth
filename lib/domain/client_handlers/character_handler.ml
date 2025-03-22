@@ -106,7 +106,7 @@ module Handler : Client_handler.S = struct
               (Protocol.CharacterListFailed
                  { error = Qed_error.to_yojson error }))
 
-  let handle_character_select (state : State.t) (client : Client.t)
+  let _handle_character_select (state : State.t) (client : Client.t)
       (character_id : string) =
     match client.auth_state with
     | Anonymous -> Lwt.return_unit
@@ -156,7 +156,12 @@ module Handler : Client_handler.S = struct
           } in
           Infra.Queue.push state.State.event_queue event)
     | SelectCharacter { character_id } ->
-        handle_character_select state client character_id
+        (* handle_character_select state client character_id *)
+        (match client.Client.auth_state with
+        | Client.Anonymous -> Lwt.return_unit
+        | Client.Authenticated { user_id; _ } ->
+            let%lwt () = Infra.Queue.push state.State.event_queue (Event.CharacterSelected { user_id; character_id }) in
+            Lwt.return_unit)
     | ListCharacters ->
         (* | ListCharacters -> handle_character_list client *)
         (match client.Client.auth_state with

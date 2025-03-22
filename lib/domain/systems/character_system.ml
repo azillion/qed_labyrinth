@@ -124,3 +124,99 @@ module Character_creation_system = struct
     (* This system doesn't need to run on every tick *)
     Lwt.return_unit
 end 
+
+module Character_selection_system = struct
+  let handle_character_selected state user_id character_id =
+    (* Check if character exists and belongs to the user *)
+    match Uuidm.of_string character_id with
+    | None ->
+        Stdio.eprintf "Invalid character ID format: %s\n" character_id;
+        Lwt.return_unit
+    | Some entity_id ->
+        (* Get character component to verify ownership *)
+        match%lwt Ecs.CharacterStorage.get entity_id with
+        | None ->
+            (* Character not found *)
+            let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+            (match client_opt with
+            | Some client ->
+                client.Client.send (Protocol.CharacterSelectionFailed 
+                  { error = Qed_error.to_yojson Qed_error.CharacterNotFound })
+            | None -> Lwt.return_unit)
+        | Some char_comp ->
+            if not (String.equal char_comp.Components.CharacterComponent.user_id user_id) then
+              (* Character doesn't belong to this user *)
+              let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+              (match client_opt with
+              | Some client ->
+                  client.Client.send (Protocol.CharacterSelectionFailed 
+                    { error = Qed_error.to_yojson (Qed_error.InvalidCharacter) })
+              | None -> Lwt.return_unit)
+            else
+              (* Character is valid and belongs to the user *)
+              (* Get description and position components *)
+              let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
+              let%lwt pos_opt = Ecs.CharacterPositionStorage.get entity_id in
+              
+              (* Find current location *)
+              let location_id = match pos_opt with
+                | Some pos -> pos.Components.CharacterPositionComponent.area_id
+                | None -> "00000000-0000-0000-0000-000000000000" (* Default starting area *)
+              in
+              
+              (* Get the name from description *)
+              match desc_opt with
+              | None ->
+                  (* Missing description component *)
+                  let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+                  (match client_opt with
+                  | Some client ->
+                      client.Client.send (Protocol.CharacterSelectionFailed 
+                        { error = Qed_error.to_yojson (Qed_error.DatabaseError "Character data is incomplete") })
+                  | None -> Lwt.return_unit)
+              | Some desc ->
+                  (* Build character model *)
+                  let character = {
+                    Character.id = character_id;
+                    user_id;
+                    name = desc.Components.DescriptionComponent.name;
+                    location_id;
+                    health = 100; (* Default values *)
+                    max_health = 100;
+                    mana = 100;
+                    max_mana = 100;
+                    level = 1;
+                    experience = 0;
+                    created_at = Ptime_clock.now (); (* Current time as placeholder *)
+                    deleted_at = None
+                  } in
+                  
+                  (* Find the client *)
+                  let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+                  (match client_opt with
+                  | Some client ->
+                      (* Update client state *)
+                      Client.set_character client character_id;
+                      
+                      (* Add to character's current room *)
+                      Connection_manager.add_to_room state.State.connection_manager
+                        ~client_id:client.Client.id
+                        ~room_id:location_id;
+                      
+                      (* Send character selection confirmation *)
+                      let character' = Types.character_of_model character in
+                      let%lwt () = client.Client.send 
+                        (Protocol.CharacterSelected { character = character' }) in
+                      
+                      (* TODO: Send area info *)
+                      (* This would normally call something like send_area_info *)
+                      
+                      Lwt.return_unit
+                  | None -> Lwt.return_unit)
+
+  let priority = 100
+
+  let execute () =
+    (* This system doesn't need to run on every tick *)
+    Lwt.return_unit
+end
