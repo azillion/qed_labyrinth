@@ -27,6 +27,18 @@ let remove_client t client_id =
   | None -> ();
   Hashtbl.remove t.clients client_id
 
+(* Find a client by the user_id in their authentication state *)
+let find_client_by_user_id t user_id =
+  Hashtbl.fold t.clients ~init:None ~f:(fun ~key:_ ~data:client acc ->
+    match acc with
+    | Some _ -> acc
+    | None ->
+        match client.Client.auth_state with
+        | Client.Authenticated { user_id = client_user_id; _ } when String.equal client_user_id user_id ->
+            Some client
+        | _ -> None
+  )
+
 (* Room management *)
 let add_to_room t ~client_id ~room_id =
   (* First remove from any existing room *)
