@@ -1,29 +1,65 @@
 module Character_list_system = struct
 
   let handle_character_list_requested state user_id =
-    match%lwt Character.find_all_by_user ~user_id with
-    | Ok characters ->
-        (* Convert the characters to the protocol format *)
-        let characters' = Base.List.map characters ~f:Types.character_of_model in
+    match%lwt Ecs.CharacterStorage.all () with
+    | [] ->
+        (* No characters found, return an empty list *)
+        let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+        (match client_opt with
+        | Some client ->
+            (* Send empty character list to the client *)
+            client.Client.send (Protocol.CharacterList { characters = [] })
+        | None -> Lwt.return_unit)
+    | character_components ->
+        (* Filter characters by user_id *)
+        let user_characters = Base.List.filter character_components ~f:(fun (_, component) ->
+          String.equal component.Components.CharacterComponent.user_id user_id
+        ) in
+        
+        (* Get description and position components for each character *)
+        let%lwt characters_with_details = Lwt_list.map_s (fun (entity_id, char_component) ->
+          let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
+          let%lwt pos_opt = Ecs.CharacterPositionStorage.get entity_id in
+          
+          match desc_opt with
+          | Some desc -> 
+              let location_id = match pos_opt with
+                | Some pos -> pos.Components.CharacterPositionComponent.area_id
+                | None -> "00000000-0000-0000-0000-000000000000" (* Default starting area *)
+              in
+              
+              Lwt.return (Some {
+                Character.id = Uuidm.to_string entity_id;
+                user_id = char_component.Components.CharacterComponent.user_id;
+                name = desc.Components.DescriptionComponent.name;
+                location_id = location_id;
+                health = 100; (* Default values since we're primarily using id and name *)
+                max_health = 100;
+                mana = 100;
+                max_mana = 100;
+                level = 1;
+                experience = 0;
+                created_at = Ptime_clock.now (); (* Current time as placeholder *)
+                deleted_at = None
+              })
+          | None -> Lwt.return None
+        ) user_characters in
+        
+        (* Filter out None values and convert to protocol format *)
+        let characters = 
+          Base.List.filter_map characters_with_details ~f:(fun char_opt -> char_opt)
+          |> Base.List.map ~f:Types.character_of_model 
+        in
         
         (* Find the client associated with this user_id *)
         let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
         (match client_opt with
         | Some client ->
             (* Send the character list to the client *)
-            client.Client.send (Protocol.CharacterList { characters = characters' })
+            client.Client.send (Protocol.CharacterList { characters = characters })
         | None ->
             (* User not connected, nothing to do *)
             Lwt.return_unit)
-    | Error error ->
-        let%lwt () = Lwt_io.printl (Printf.sprintf "Error: %s" (Qed_error.to_string error)) in
-        (* Handle the error - try to send an error to the client if they're still connected *)
-        let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-        (match client_opt with
-        | Some client ->
-            client.Client.send (Protocol.CharacterListFailed 
-              { error = Qed_error.to_yojson error })
-        | None -> Lwt.return_unit)
 
   (* System implementation for ECS *)
   let priority = 100
