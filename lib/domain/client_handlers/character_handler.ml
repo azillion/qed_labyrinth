@@ -65,7 +65,7 @@ module Handler : Client_handler.S = struct
                 Lwt.return_unit))
 
   (* Character creation/selection *)
-  let handle_character_creation (state : State.t) (client : Client.t)
+  let _handle_character_creation (state : State.t) (client : Client.t)
       (name : string) =
     match client.auth_state with
     | Anonymous -> Lwt.return_unit
@@ -143,15 +143,26 @@ module Handler : Client_handler.S = struct
   let handle state client msg =
     let open Protocol in
     match msg with
-    | CreateCharacter { name } -> handle_character_creation state client name
+    | CreateCharacter { name } -> (
+      match client.Client.auth_state with
+      | Client.Anonymous -> Lwt.return_unit (* Do nothing if not authenticated *)
+      | Client.Authenticated { user_id; _ } ->
+          (* Push CreateCharacter event to the queue *)
+          let event = Event.CreateCharacter { 
+            user_id; 
+            name; 
+            description = ""; (* Default empty description *)
+            starting_area_id = "00000000-0000-0000-0000-000000000000" (* Default starting area *)
+          } in
+          Infra.Queue.push state.State.event_queue event)
     | SelectCharacter { character_id } ->
         handle_character_select state client character_id
     | ListCharacters ->
         (* | ListCharacters -> handle_character_list client *)
-        (match client.auth_state with
-        | Anonymous -> Lwt.return_unit
-        | Authenticated { user_id; _ } ->
-            let%lwt () = Infra.Queue.push state.event_queue (Event.CharacterListRequested { user_id }) in
+        (match client.Client.auth_state with
+        | Client.Anonymous -> Lwt.return_unit
+        | Client.Authenticated { user_id; _ } ->
+            let%lwt () = Infra.Queue.push state.State.event_queue (Event.CharacterListRequested { user_id }) in
             Lwt.return_unit)
     | Move { direction } -> handle_character_movement state client direction
     | _ -> Lwt.return_unit

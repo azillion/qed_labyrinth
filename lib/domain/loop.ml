@@ -37,6 +37,9 @@ let process_events (state : State.t) =
         | CharacterListRequested { user_id } ->
             let%lwt () = Character_system.Character_list_system.handle_character_list_requested state user_id in
             process_all ()
+        | CreateCharacter { user_id; name; description; starting_area_id } ->
+            let%lwt () = Character_system.Character_creation_system.handle_create_character state user_id name description starting_area_id in
+            process_all ()
         | _ -> process_all ()
   in
   Lwt.catch

@@ -68,3 +68,59 @@ module Character_list_system = struct
     (* This system doesn't need to run on every tick *)
     Lwt.return_unit
 end 
+
+module Character_creation_system = struct
+  let handle_create_character state user_id name description starting_area_id =
+    (* Create a new entity *)
+    let%lwt entity_id_result = Ecs.Entity.create () in
+    match entity_id_result with
+    | Error e -> 
+        Stdio.eprintf "Failed to create entity: %s\n" (Base.Error.to_string_hum e);
+        Lwt.return_unit
+    | Ok entity_id ->
+        let entity_id_str = Uuidm.to_string entity_id in
+        
+        (* Add CharacterComponent *)
+        let character_comp = Components.CharacterComponent.{ 
+          entity_id = entity_id_str; 
+          user_id 
+        } in
+        let%lwt () = Ecs.CharacterStorage.set entity_id character_comp in
+        
+        (* Add DescriptionComponent *)
+        let desc_comp = Components.DescriptionComponent.{ 
+          entity_id = entity_id_str; 
+          name; 
+          description = Some description 
+        } in
+        let%lwt () = Ecs.DescriptionStorage.set entity_id desc_comp in
+        
+        (* Add CharacterPositionComponent *)
+        let pos_comp = Components.CharacterPositionComponent.{ 
+          entity_id = entity_id_str;
+          area_id = starting_area_id 
+        } in
+        let%lwt () = Ecs.CharacterPositionStorage.set entity_id pos_comp in
+        
+        (* Find the client and update state/send response *)
+        let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+        match client_opt with
+        | Some client ->
+            (* Update client state *)
+            Client.set_character client entity_id_str;
+            Connection_manager.add_to_room state.connection_manager 
+              ~client_id:client.Client.id 
+              ~room_id:starting_area_id;
+            (* Send response to client *)
+            let character = { Types.id = entity_id_str; name } in
+            let%lwt () = client.Client.send (Protocol.CharacterCreated (Types.character_to_yojson character)) in
+            (* TODO: Send initial area info *)
+            Lwt.return_unit
+        | None -> Lwt.return_unit
+
+  let priority = 100
+
+  let execute () =
+    (* This system doesn't need to run on every tick *)
+    Lwt.return_unit
+end 
