@@ -2,7 +2,7 @@ module Handler : Client_handler.S = struct
   (* Helper functions *)
 
   (* World generation logic *)
-  let handle_world_generation (state : State.t) (client : Client.t) =
+  (* let handle_world_generation (state : State.t) (client : Client.t) =
     Client_handler.with_super_admin_check client (fun _character ->
         (* Delete existing world except starting area *)
         let%lwt _result =
@@ -49,10 +49,10 @@ module Handler : Client_handler.S = struct
                    timestamp = Unix.time ();
                  };
              });
-        Lwt.return_unit)
+        Lwt.return_unit) *)
 
   (* World deletion logic *)
-  let handle_world_deletion (state : State.t) (client : Client.t) =
+  (* let handle_world_deletion (state : State.t) (client : Client.t) =
     Client_handler.with_super_admin_check client (fun character ->
         match%lwt
           Area.delete_all_except_starting_area character.location_id
@@ -74,13 +74,12 @@ module Handler : Client_handler.S = struct
                        timestamp = Unix.time ();
                      };
                  });
-            Lwt.return_unit)
+            Lwt.return_unit) *)
 
   (* Main message handler *)
-  let handle state client msg =
-    let open Protocol in
+  let handle (_state : State.t) (_client : Client.t) (msg : Protocol.client_message) =
     match msg with
-    | RequestWorldGeneration -> handle_world_generation state client
-    | RequestWorldDeletion -> handle_world_deletion state client
+    (* | RequestWorldGeneration -> handle_world_generation state client
+    | RequestWorldDeletion -> handle_world_deletion state client *)
     | _ -> Lwt.return_unit
 end

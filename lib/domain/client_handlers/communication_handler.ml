@@ -1,5 +1,5 @@
 module Handler : Client_handler.S = struct
-  let handle_chat (state : State.t) (client : Client.t) message message_type =
+  (* let handle_chat (state : State.t) (client : Client.t) message message_type =
     match client.auth_state with
     | Anonymous -> Lwt.return_unit
     | Authenticated { character_id = None; _ } ->
@@ -75,12 +75,12 @@ module Handler : Client_handler.S = struct
         | Error _ -> Lwt.return_unit
         | Ok messages ->
             let messages' = List.map Types.chat_message_of_model messages in
-            client.send (Protocol.ChatHistory { messages = messages' }))
+            client.send (Protocol.ChatHistory { messages = messages' })) *)
 
   (* Main message handler *)
-  let handle state client msg =
-    let open Protocol in
+  let handle (_state : State.t) (_client : Client.t) (msg : Protocol.client_message) =
     match msg with
+    (* let open Protocol in
     | SendChat { message } ->
         handle_chat state client message Communication.Chat
     | SendEmote { message } ->
@@ -94,6 +94,6 @@ module Handler : Client_handler.S = struct
           client.send
             (Protocol.CommandFailed { error = "Unknown command: " ^ cmd })
         in
-        Lwt.return_unit
+        Lwt.return_unit *)
     | _ -> Lwt.return_unit
 end

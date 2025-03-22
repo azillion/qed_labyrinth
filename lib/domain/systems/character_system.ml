@@ -17,38 +17,29 @@ module Character_list_system = struct
         ) in
         
         (* Get description and position components for each character *)
-        let%lwt characters_with_details = Lwt_list.map_s (fun (entity_id, char_component) ->
+        let%lwt characters_with_details = Lwt_list.map_s (fun (entity_id, _char_component) ->
           let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
           let%lwt pos_opt = Ecs.CharacterPositionStorage.get entity_id in
           
           match desc_opt with
           | Some desc -> 
-              let location_id = match pos_opt with
+              let _location_id = match pos_opt with
                 | Some pos -> pos.Components.CharacterPositionComponent.area_id
                 | None -> "00000000-0000-0000-0000-000000000000" (* Default starting area *)
               in
               
-              Lwt.return (Some {
-                Character.id = Uuidm.to_string entity_id;
-                user_id = char_component.Components.CharacterComponent.user_id;
-                name = desc.Components.DescriptionComponent.name;
-                location_id = location_id;
-                health = 100; (* Default values since we're primarily using id and name *)
-                max_health = 100;
-                mana = 100;
-                max_mana = 100;
-                level = 1;
-                experience = 0;
-                created_at = Ptime_clock.now (); (* Current time as placeholder *)
-                deleted_at = None
-              })
+              let entity_id_str = Uuidm.to_string entity_id in
+              let list_character : Types.list_character = {
+                id = entity_id_str;
+                name = desc.Components.DescriptionComponent.name
+              } in
+              Lwt.return (Some list_character)
           | None -> Lwt.return None
         ) user_characters in
         
         (* Filter out None values and convert to protocol format *)
         let characters = 
           Base.List.filter_map characters_with_details ~f:(fun char_opt -> char_opt)
-          |> Base.List.map ~f:Types.character_of_model 
         in
         
         (* Find the client associated with this user_id *)
@@ -108,12 +99,15 @@ module Character_creation_system = struct
         | Some client ->
             (* Update client state *)
             Client.set_character client entity_id_str;
-            Connection_manager.add_to_room state.connection_manager 
+            Connection_manager.add_to_room state.State.connection_manager 
               ~client_id:client.Client.id 
               ~room_id:starting_area_id;
             (* Send response to client *)
-            let character = { Types.id = entity_id_str; name } in
-            let%lwt () = client.Client.send (Protocol.CharacterCreated (Types.character_to_yojson character)) in
+            let list_character : Types.list_character = {
+              id = entity_id_str;
+              name = name;
+            } in  
+            let%lwt () = client.Client.send (Protocol.CharacterCreated { character = list_character }) in
             (* TODO: Send initial area info *)
             Lwt.return_unit
         | None -> Lwt.return_unit
@@ -176,9 +170,8 @@ module Character_selection_system = struct
                   | None -> Lwt.return_unit)
               | Some desc ->
                   (* Build character model *)
-                  let character = {
-                    Character.id = character_id;
-                    user_id;
+                  let character : Types.character = {
+                    id = character_id;
                     name = desc.Components.DescriptionComponent.name;
                     location_id;
                     health = 100; (* Default values *)
@@ -187,8 +180,6 @@ module Character_selection_system = struct
                     max_mana = 100;
                     level = 1;
                     experience = 0;
-                    created_at = Ptime_clock.now (); (* Current time as placeholder *)
-                    deleted_at = None
                   } in
                   
                   (* Find the client *)
@@ -203,10 +194,9 @@ module Character_selection_system = struct
                         ~client_id:client.Client.id
                         ~room_id:location_id;
                       
-                      (* Send character selection confirmation *)
-                      let character' = Types.character_of_model character in
+                      (* Create a protocol character from the model *)
                       let%lwt () = client.Client.send 
-                        (Protocol.CharacterSelected { character = character' }) in
+                        (Protocol.CharacterSelected { character = character }) in
                       
                       (* TODO: Send area info *)
                       (* This would normally call something like send_area_info *)

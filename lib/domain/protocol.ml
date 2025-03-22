@@ -43,9 +43,9 @@ let error_response_of_string str =
   { error = json }
 
 type server_message =
-  | CharacterList of { characters : Types.character list }
+  | CharacterList of Types.characters_list
   | CharacterListFailed of error_response
-  | CharacterCreated of Yojson.Safe.t
+  | CharacterCreated of { character : Types.list_character }
   | CharacterCreationFailed of error_response
   | CharacterSelected of { character : Types.character }
   | CharacterSelectionFailed of error_response

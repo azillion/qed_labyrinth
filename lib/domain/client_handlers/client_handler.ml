@@ -16,7 +16,7 @@ let send_success (client : Client.t) message =
         (Protocol.CommandSuccess { message = Types.chat_message_of_model msg })
   | Error _ -> Lwt.return_unit
 
-let with_super_admin_check (client : Client.t) (f : Character.t -> unit Lwt.t) =
+(* let with_super_admin_check (client : Client.t) (f : Character.t -> unit Lwt.t) =
   match client.auth_state with
   | Anonymous -> Lwt.return_unit
   | Authenticated { character_id = None; _ } ->
@@ -40,8 +40,8 @@ let with_character_check (client : Client.t) (f : Character.t -> unit Lwt.t) =
       send_error client "You must select a character first"
   | Authenticated { character_id = Some character_id; _ } -> (
       match%lwt Character.find_by_id character_id with
-      | Error _ -> Lwt.return_unit
-      | Ok character -> f character)
+      | Error _ -> Lwt.return_unit 
+      | Ok character -> f character) *)
 
 let get_area_by_id_opt (area_id : string) =
   match%lwt Area.find_by_id area_id with

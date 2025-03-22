@@ -1,5 +1,5 @@
 module Handler : Client_handler.S = struct
-  let send_admin_map (client : Client.t) =
+  (* let send_admin_map (client : Client.t) =
     Client_handler.with_super_admin_check client (fun character ->
         let open Lwt.Syntax in
         let* areas_result = Area.get_all_areas () in
@@ -85,12 +85,11 @@ module Handler : Client_handler.S = struct
               (Qed_error.to_string exit_error);
             client.send
               (Protocol.CommandFailed
-                 { error = "Error fetching areas or exits" }))
+                 { error = "Error fetching areas or exits" })) *)
 
   (* Main message handler *)
-  let handle (_state : State.t) (client : Client.t) msg =
-    let open Protocol in
+  let handle (_state : State.t) (_client : Client.t) msg =
     match msg with
-    | RequestAdminMap -> send_admin_map client
+    (* | RequestAdminMap -> send_admin_map client *)
     | _ -> Lwt.return_unit
 end

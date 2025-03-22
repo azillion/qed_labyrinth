@@ -1,9 +1,23 @@
 type character = {
   id : string;
   name : string;
+  location_id : string;
+  health : int;
+  max_health : int;
+  mana : int;
+  max_mana : int;
+  level : int;
+  experience : int;
 } [@@deriving yojson]
 
-val character_of_model : Character.t -> character
+type list_character = {
+  id : string;
+  name : string;
+} [@@deriving yojson]
+
+type characters_list = {
+  characters : list_character list;
+} [@@deriving yojson]
 
 (* area types *)
 type coordinate = {

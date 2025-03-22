@@ -1,5 +1,5 @@
 module Handler : Client_handler.S = struct
-  let send_area_info (client : Client.t) (area_id : string) =
+  (* let send_area_info (client : Client.t) (area_id : string) =
     match%lwt Client_handler.get_area_by_id_opt area_id with
     | None -> Lwt.return_unit
     | Some area -> (
@@ -8,10 +8,10 @@ module Handler : Client_handler.S = struct
         | Ok messages ->
             let messages' = List.map Types.chat_message_of_model messages in
             client.send (Protocol.ChatHistory { messages = messages' })
-        | Error _ -> Lwt.return_unit)
+        | Error _ -> Lwt.return_unit) *)
 
   (* Movement handling *)
-  let handle_character_movement (state : State.t) (client : Client.t) direction
+  (* let handle_character_movement (state : State.t) (client : Client.t) direction
       =
     Client_handler.with_character_check client (fun (character : Character.t) ->
         let old_area_id = character.location_id in
@@ -137,7 +137,7 @@ module Handler : Client_handler.S = struct
         | Error error ->
             client.send
               (Protocol.CharacterSelectionFailed
-                 { error = Qed_error.to_yojson error }))
+                 { error = Qed_error.to_yojson error })) *)
 
   (* Main message handler *)
   let handle state client msg =
@@ -169,6 +169,6 @@ module Handler : Client_handler.S = struct
         | Client.Authenticated { user_id; _ } ->
             let%lwt () = Infra.Queue.push state.State.event_queue (Event.CharacterListRequested { user_id }) in
             Lwt.return_unit)
-    | Move { direction } -> handle_character_movement state client direction
+    (* | Move { direction } -> handle_character_movement state client direction *)
     | _ -> Lwt.return_unit
 end
