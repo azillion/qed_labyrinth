@@ -93,7 +93,7 @@ module Handler : Client_handler.S = struct
               (Protocol.CharacterCreationFailed
                  { error = Qed_error.to_yojson error }))
 
-  let handle_character_list (client : Client.t) =
+  let _handle_character_list (client : Client.t) =
     match client.auth_state with
     | Anonymous -> Lwt.return_unit
     | Authenticated { user_id; _ } -> (
@@ -146,7 +146,13 @@ module Handler : Client_handler.S = struct
     | CreateCharacter { name } -> handle_character_creation state client name
     | SelectCharacter { character_id } ->
         handle_character_select state client character_id
-    | ListCharacters -> handle_character_list client
+    | ListCharacters ->
+        (* | ListCharacters -> handle_character_list client *)
+        (match client.auth_state with
+        | Anonymous -> Lwt.return_unit
+        | Authenticated { user_id; _ } ->
+            let%lwt () = Infra.Queue.push state.event_queue (Event.CharacterListRequested { user_id }) in
+            Lwt.return_unit)
     | Move { direction } -> handle_character_movement state client direction
     | _ -> Lwt.return_unit
 end

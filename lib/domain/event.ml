@@ -10,5 +10,5 @@ type t =
   | SelectCharacter of { user_id: string; character_id: string }
   | CharacterSelected of { user_id: string; character_id: string }
   | CharacterSelectionFailed of { user_id: string; error: string }
-  | ListCharacters of { user_id: string }
+  | CharacterListRequested of { user_id: string }
   | CharacterList of { user_id: string; characters: (string * string) list }

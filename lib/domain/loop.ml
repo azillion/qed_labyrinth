@@ -51,11 +51,19 @@ let rec game_loop (state : State.t) =
     (fun () ->
       let* () = tick state in
       let* () = process_client_messages state in
+      let* () = process_events state in
+      let* () = Ecs.World.step () in
       game_loop state)
     (fun exn ->
       Stdio.eprintf "Game loop error: %s\n" (Base.Exn.to_string exn);
       game_loop state)
 
 let run (state : State.t) =
-  let* () = register_ecs_systems state in
-  game_loop state
+  let* init_result = Ecs.World.init () in
+  match init_result with
+  | Ok () ->
+      let* () = register_ecs_systems state in
+      game_loop state
+  | Error e ->
+      Stdio.eprintf "World initialization error: %s\n" (Base.Error.to_string_hum e);
+      Lwt.return_unit
