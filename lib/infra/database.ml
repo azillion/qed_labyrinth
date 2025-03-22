@@ -124,15 +124,11 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
         let* () = C.exec (create_component_table "levels") () in
         let* () = C.exec (create_component_table "messages") () in
         let* () = C.exec (create_component_table "senders") () in
+        let* () = C.exec (create_component_table "areas") () in
+        let* () = C.exec (create_component_table "exits") () in
 
         (* legacy tables *)
         let* () = C.exec create_users_table () in
-        let* () = exec_statements (module C) create_users_indexes in
-        let* () = C.exec create_areas_table () in
-        let* () = exec_statements (module C) create_areas_indexes in
-        let* () = C.exec create_exits_table () in
-        let* () = C.exec create_starting_area_entry () in
-        let* () = C.exec create_comm_table () in
         Lwt.return_ok ())
       (fun _ -> failwith "Database error")
 end

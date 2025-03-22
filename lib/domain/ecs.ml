@@ -291,7 +291,8 @@ open Components
 module CharacterStorage = MakeComponentStorage(CharacterComponent)
 module CharacterPositionStorage = MakeComponentStorage(CharacterPositionComponent)
 module DescriptionStorage = MakeComponentStorage(DescriptionComponent)
-
+module AreaStorage = MakeComponentStorage(AreaComponent)
+module ExitStorage = MakeComponentStorage(ExitComponent)
 
 (* World module *)
 module World = struct
@@ -328,6 +329,8 @@ module World = struct
         let* () = CharacterStorage.load_from_db () in
         let* () = CharacterPositionStorage.load_from_db () in
         let* () = DescriptionStorage.load_from_db () in
+        let* () = AreaStorage.load_from_db () in
+        let* () = ExitStorage.load_from_db () in
         (* Load other component storages here *)
 
         Lwt.return_ok ()
@@ -339,6 +342,8 @@ module World = struct
         let* () = CharacterStorage.sync_to_db () in
         let* () = CharacterPositionStorage.sync_to_db () in
         let* () = DescriptionStorage.sync_to_db () in
+        let* () = AreaStorage.sync_to_db () in
+        let* () = ExitStorage.sync_to_db () in
         (* Sync other component storages here *)
 
         let deleted = Entity.cleanup_deleted () in
