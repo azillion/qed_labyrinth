@@ -30,6 +30,7 @@ export const Button = (props) => {
       bg-${theme().primary}-700 hover:bg-${theme().primary}-800
       text-gray-100
       focus:ring-${theme().primary}-400
+      border border-${theme().primary}-500
     `
   };
 
