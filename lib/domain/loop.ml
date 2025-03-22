@@ -48,6 +48,51 @@ let process_events (state : State.t) =
                 let* () = Lwt_io.printl (Printf.sprintf "Character creation error for user %s: %s" user_id (Base.Exn.to_string exn)) in
                 Lwt.return_unit) in
             process_all ()
+        | SelectCharacter { user_id; character_id } ->
+            let* () = Lwt.catch
+              (fun () -> Character_system.Character_selection_system.handle_character_selected state user_id character_id)
+              (fun exn ->
+                let* () = Lwt_io.printl (Printf.sprintf "Character selection error for user %s: %s" user_id (Base.Exn.to_string exn)) in
+                Lwt.return_unit) in
+            process_all ()
+        
+        (* Communication events handlers *)
+        | SendCharacterList { user_id; characters } ->
+            let* () = Lwt.catch
+              (fun () -> Communication_system.Character_list_communication_system.handle_character_list state user_id characters)
+              (fun exn ->
+                let* () = Lwt_io.printl (Printf.sprintf "Sending character list error for user %s: %s" user_id (Base.Exn.to_string exn)) in
+                Lwt.return_unit) in
+            process_all ()
+        | SendCharacterCreated { user_id; character } ->
+            let* () = Lwt.catch
+              (fun () -> Communication_system.Character_creation_communication_system.handle_character_created state user_id character)
+              (fun exn ->
+                let* () = Lwt_io.printl (Printf.sprintf "Sending character created error for user %s: %s" user_id (Base.Exn.to_string exn)) in
+                Lwt.return_unit) in
+            process_all ()
+        | SendCharacterCreationFailed { user_id; error } ->
+            let* () = Lwt.catch
+              (fun () -> Communication_system.Character_creation_communication_system.handle_character_creation_failed state user_id error)
+              (fun exn ->
+                let* () = Lwt_io.printl (Printf.sprintf "Sending character creation failed error for user %s: %s" user_id (Base.Exn.to_string exn)) in
+                Lwt.return_unit) in
+            process_all ()
+        | SendCharacterSelected { user_id; character } ->
+            let* () = Lwt.catch
+              (fun () -> Communication_system.Character_selection_communication_system.handle_character_selected state user_id character)
+              (fun exn ->
+                let* () = Lwt_io.printl (Printf.sprintf "Sending character selected error for user %s: %s" user_id (Base.Exn.to_string exn)) in
+                Lwt.return_unit) in
+            process_all ()
+        | SendCharacterSelectionFailed { user_id; error } ->
+            let* () = Lwt.catch
+              (fun () -> Communication_system.Character_selection_communication_system.handle_character_selection_failed state user_id error)
+              (fun exn ->
+                let* () = Lwt_io.printl (Printf.sprintf "Sending character selection failed error for user %s: %s" user_id (Base.Exn.to_string exn)) in
+                Lwt.return_unit) in
+            process_all ()
+            
         | _ -> process_all ()
   in
   Lwt.catch
@@ -62,6 +107,7 @@ let process_events (state : State.t) =
 
 let register_ecs_systems (_state : State.t) =
   (* Register your ECS systems here *)
+  (* Character systems *)
   (* Ecs.World.register_system Character_system.Character_list_system.execute
     ~priority:Character_system.Character_list_system.priority; *)
   Lwt.return_unit

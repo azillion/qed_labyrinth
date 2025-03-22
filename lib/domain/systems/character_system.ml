@@ -3,13 +3,9 @@ module Character_list_system = struct
   let handle_character_list_requested state user_id =
     match%lwt Ecs.CharacterStorage.all () with
     | [] ->
-        (* No characters found, return an empty list *)
-        let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-        (match client_opt with
-        | Some client ->
-            (* Send empty character list to the client *)
-            client.Client.send (Protocol.CharacterList { characters = [] })
-        | None -> Lwt.return_unit)
+        (* No characters found, queue an empty list event *)
+        let%lwt () = Infra.Queue.push state.State.event_queue (Event.SendCharacterList { user_id; characters = [] }) in
+        Lwt.return_unit
     | character_components ->
         (* Filter characters by user_id *)
         let user_characters = Base.List.filter character_components ~f:(fun (_, component) ->
@@ -42,15 +38,9 @@ module Character_list_system = struct
           Base.List.filter_map characters_with_details ~f:(fun char_opt -> char_opt)
         in
         
-        (* Find the client associated with this user_id *)
-        let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-        (match client_opt with
-        | Some client ->
-            (* Send the character list to the client *)
-            client.Client.send (Protocol.CharacterList { characters = characters })
-        | None ->
-            (* User not connected, nothing to do *)
-            Lwt.return_unit)
+        (* Queue the event to send character list to the client *)
+        let%lwt () = Infra.Queue.push state.State.event_queue (Event.SendCharacterList { user_id; characters }) in
+        Lwt.return_unit
 
   (* System implementation for ECS *)
   let priority = 100
@@ -67,6 +57,13 @@ module Character_creation_system = struct
     match entity_id_result with
     | Error e -> 
         Stdio.eprintf "Failed to create entity: %s\n" (Base.Error.to_string_hum e);
+        (* Queue event for creation failure *)
+        let%lwt () = Infra.Queue.push state.State.event_queue (
+          Event.SendCharacterCreationFailed { 
+            user_id; 
+            error = Qed_error.to_yojson (Qed_error.DatabaseError "Failed to create entity") 
+          }
+        ) in
         Lwt.return_unit
     | Ok entity_id ->
         let entity_id_str = Uuidm.to_string entity_id in
@@ -93,7 +90,7 @@ module Character_creation_system = struct
         } in
         let%lwt () = Ecs.CharacterPositionStorage.set entity_id pos_comp in
         
-        (* Find the client and update state/send response *)
+        (* Find the client to update state *)
         let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
         match client_opt with
         | Some client ->
@@ -102,12 +99,15 @@ module Character_creation_system = struct
             Connection_manager.add_to_room state.State.connection_manager 
               ~client_id:client.Client.id 
               ~room_id:starting_area_id;
-            (* Send response to client *)
+            
+            (* Queue an event to send response to client *)
             let list_character : Types.list_character = {
               id = entity_id_str;
-              name = name;
+              name
             } in  
-            let%lwt () = client.Client.send (Protocol.CharacterCreated { character = list_character }) in
+            let%lwt () = Infra.Queue.push state.State.event_queue (
+              Event.SendCharacterCreated { user_id; character = list_character }
+            ) in
             (* TODO: Send initial area info *)
             Lwt.return_unit
         | None -> Lwt.return_unit
@@ -125,28 +125,36 @@ module Character_selection_system = struct
     match Uuidm.of_string character_id with
     | None ->
         Stdio.eprintf "Invalid character ID format: %s\n" character_id;
+        let%lwt () = Infra.Queue.push state.State.event_queue (
+          Event.SendCharacterSelectionFailed { 
+            user_id; 
+            error = Qed_error.to_yojson (Qed_error.InvalidCharacter) 
+          }
+        ) in
         Lwt.return_unit
     | Some entity_id ->
         (* Get character component to verify ownership *)
         match%lwt Ecs.CharacterStorage.get entity_id with
         | None ->
             (* Character not found *)
-            let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-            (match client_opt with
-            | Some client ->
-                client.Client.send (Protocol.CharacterSelectionFailed 
-                  { error = Qed_error.to_yojson Qed_error.CharacterNotFound })
-            | None -> Lwt.return_unit)
+            let%lwt () = Infra.Queue.push state.State.event_queue (
+              Event.SendCharacterSelectionFailed { 
+                user_id; 
+                error = Qed_error.to_yojson (Qed_error.CharacterNotFound) 
+              }
+            ) in
+            Lwt.return_unit
         | Some char_comp ->
-            if not (String.equal char_comp.Components.CharacterComponent.user_id user_id) then
+            if not (String.equal char_comp.Components.CharacterComponent.user_id user_id) then begin
               (* Character doesn't belong to this user *)
-              let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-              (match client_opt with
-              | Some client ->
-                  client.Client.send (Protocol.CharacterSelectionFailed 
-                    { error = Qed_error.to_yojson (Qed_error.InvalidCharacter) })
-              | None -> Lwt.return_unit)
-            else
+              let%lwt () = Infra.Queue.push state.State.event_queue (
+                Event.SendCharacterSelectionFailed { 
+                  user_id; 
+                  error = Qed_error.to_yojson (Qed_error.InvalidCharacter) 
+                }
+              ) in
+              Lwt.return_unit
+            end else begin
               (* Character is valid and belongs to the user *)
               (* Get description and position components *)
               let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
@@ -162,12 +170,13 @@ module Character_selection_system = struct
               match desc_opt with
               | None ->
                   (* Missing description component *)
-                  let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-                  (match client_opt with
-                  | Some client ->
-                      client.Client.send (Protocol.CharacterSelectionFailed 
-                        { error = Qed_error.to_yojson (Qed_error.DatabaseError "Character data is incomplete") })
-                  | None -> Lwt.return_unit)
+                  let%lwt () = Infra.Queue.push state.State.event_queue (
+                    Event.SendCharacterSelectionFailed { 
+                      user_id; 
+                      error = Qed_error.to_yojson (Qed_error.DatabaseError "Character data is incomplete") 
+                    }
+                  ) in
+                  Lwt.return_unit
               | Some desc ->
                   (* Build character model *)
                   let character : Types.character = {
@@ -184,7 +193,7 @@ module Character_selection_system = struct
                   
                   (* Find the client *)
                   let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-                  (match client_opt with
+                  match client_opt with
                   | Some client ->
                       (* Update client state *)
                       Client.set_character client character_id;
@@ -194,15 +203,17 @@ module Character_selection_system = struct
                         ~client_id:client.Client.id
                         ~room_id:location_id;
                       
-                      (* Create a protocol character from the model *)
-                      let%lwt () = client.Client.send 
-                        (Protocol.CharacterSelected { character = character }) in
+                      (* Queue event to send character data to client *)
+                      let%lwt () = Infra.Queue.push state.State.event_queue (
+                        Event.SendCharacterSelected { user_id; character }
+                      ) in
                       
                       (* TODO: Send area info *)
                       (* This would normally call something like send_area_info *)
                       
                       Lwt.return_unit
-                  | None -> Lwt.return_unit)
+                  | None -> Lwt.return_unit
+            end
 
   let priority = 100
 
