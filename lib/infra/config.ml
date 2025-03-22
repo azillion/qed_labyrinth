@@ -4,19 +4,11 @@ let getenv_default var default = try Sys.getenv_exn var with _ -> default
 
 module Database : sig
   type t = {
-    name : string;
-    host : string;
-    port : int;
-    user : string;
-    password : string;
+    db_path : string;
   }
 
   val create :
-    ?name:string ->
-    ?host:string ->
-    ?port:int ->
-    ?user:string ->
-    ?password:string ->
+    ?db_path:string ->
     unit ->
     t
 
@@ -24,32 +16,18 @@ module Database : sig
   val to_uri : t -> Uri.t
 end = struct
   type t = {
-    name : string;
-    host : string;
-    port : int;
-    user : string;
-    password : string;
+    db_path : string;
   }
 
-  let create ?(name = "qed_labyrinth") ?(host = "localhost") ?(port = 5432)
-      ?(user = "qed") ?(password = "password") () =
-    { name; host; port; user; password }
+  let create ?(db_path="qed_labyrinth.sqlite3") () =
+    { db_path }
 
   let from_env () =
-    {
-      name = getenv_default "QED_DB_NAME" "qed_labyrinth";
-      host = getenv_default "QED_DB_HOST" "localhost";
-      port = getenv_default "QED_DB_PORT" "5432" |> Int.of_string;
-      user = getenv_default "QED_DB_USER" "qed";
-      password = getenv_default "QED_DB_PASSWORD" "password";
-    }
+    let db_path = getenv_default "QED_DATABASE_PATH" "qed_labyrinth.sqlite3" in
+    { db_path }
 
   let to_uri t =
-    Uri.make ~scheme:"postgresql" ~host:t.host ~port:t.port
-      ~userinfo:(t.user ^ ":" ^ t.password)
-      ~path:("/" ^ t.name)
-      ~query:[]
-      ()
+    Uri.make ~scheme:"sqlite3" ~path:t.db_path ()
 end
 
 type t = { database : Database.t; server_port : int; server_interface : string }

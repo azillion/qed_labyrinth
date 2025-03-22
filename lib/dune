@@ -16,7 +16,7 @@
   caqti-lwt
   lwt.unix
   caqti-lwt.unix
-  caqti-driver-postgresql
+  caqti-driver-sqlite3
   uri
   uuidm
   unix)

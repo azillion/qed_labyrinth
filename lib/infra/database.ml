@@ -5,52 +5,52 @@ module Schema = struct
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       (Printf.sprintf
          {| CREATE TABLE IF NOT EXISTS %s (
-              entity_id UUID PRIMARY KEY REFERENCES entities(id),
-              data JSONB NOT NULL
+              entity_id TEXT PRIMARY KEY REFERENCES entities(id),
+              data TEXT NOT NULL
             ) |}
          name)
   
   let create_entities_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      "CREATE TABLE IF NOT EXISTS entities ( id UUID PRIMARY KEY )"
+      "CREATE TABLE IF NOT EXISTS entities ( id TEXT PRIMARY KEY )"
 
   let create_users_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS users (
-           id UUID PRIMARY KEY,
-           username VARCHAR(255) NOT NULL UNIQUE,
-           password_hash VARCHAR(255) NOT NULL,
-           email VARCHAR(255) NOT NULL UNIQUE,
-           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-           deleted_at TIMESTAMP WITH TIME ZONE,
+           id TEXT PRIMARY KEY,
+           username TEXT NOT NULL UNIQUE,
+           password_hash TEXT NOT NULL,
+           email TEXT NOT NULL UNIQUE,
+           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+           deleted_at TIMESTAMP,
            token TEXT,
-           token_expires_at TIMESTAMP WITH TIME ZONE,
-           role VARCHAR(12) NOT NULL DEFAULT 'player' CHECK (role IN ('player', 'admin', 'super admin')),
+           token_expires_at TIMESTAMP,
+           role TEXT NOT NULL DEFAULT 'player' CHECK (role IN ('player', 'admin', 'super admin')),
            CONSTRAINT users_deleted_after_created CHECK (deleted_at IS NULL OR deleted_at > created_at)
          ) |}
 
   let create_users_indexes = [
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      "CREATE INDEX IF NOT EXISTS users_deleted_at_idx ON users(deleted_at) WHERE deleted_at IS NULL";
+      "CREATE INDEX IF NOT EXISTS users_deleted_at_idx ON users(deleted_at)";
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      "CREATE INDEX IF NOT EXISTS users_username_idx ON users(username) WHERE deleted_at IS NULL";
+      "CREATE INDEX IF NOT EXISTS users_username_idx ON users(username)";
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      "CREATE INDEX IF NOT EXISTS users_email_idx ON users(email) WHERE deleted_at IS NULL";
+      "CREATE INDEX IF NOT EXISTS users_email_idx ON users(email)";
   ]
 
   let create_areas_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS areas (
-           id UUID PRIMARY KEY,
-           name VARCHAR(255) NOT NULL,
+           id TEXT PRIMARY KEY,
+           name TEXT NOT NULL,
            description TEXT NOT NULL,
-           x INT,
-           y INT,
-           z INT,
-           climate_elevation FLOAT,
-           climate_temperature FLOAT,
-           climate_moisture FLOAT,
-           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+           x INTEGER,
+           y INTEGER,
+           z INTEGER,
+           climate_elevation REAL,
+           climate_temperature REAL,
+           climate_moisture REAL,
+           created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
          ) |}
 
   let create_areas_indexes = [
@@ -63,13 +63,13 @@ module Schema = struct
   let create_exits_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS exits (
-           entity_id UUID PRIMARY KEY REFERENCES entities(id),
-           from_entity UUID NOT NULL REFERENCES entities(id),
-           to_entity UUID NOT NULL REFERENCES entities(id),
-           direction VARCHAR(10),
+           entity_id TEXT PRIMARY KEY REFERENCES entities(id),
+           from_entity TEXT NOT NULL REFERENCES entities(id),
+           to_entity TEXT NOT NULL REFERENCES entities(id),
+           direction TEXT,
            description TEXT,
-           hidden BOOLEAN NOT NULL DEFAULT FALSE,
-           locked BOOLEAN NOT NULL DEFAULT FALSE
+           hidden INTEGER NOT NULL DEFAULT 0,
+           locked INTEGER NOT NULL DEFAULT 0
          ) |}
 
   let create_starting_area_entry =
@@ -86,12 +86,12 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
   let create_comm_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS communications (
-           id UUID PRIMARY KEY,
-           message_type VARCHAR(20) NOT NULL,
-           sender_id UUID,
+           id TEXT PRIMARY KEY,
+           message_type TEXT NOT NULL,
+           sender_id TEXT,
            content TEXT NOT NULL,
-           area_id UUID REFERENCES areas(id),
-           timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+           area_id TEXT REFERENCES areas(id),
+           timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
          ) |}
 
   (* Helper to run a list of statements in sequence *)
