@@ -12,4 +12,6 @@ let push queue value =
   Lwt.return_unit
 
 let pop_opt queue =
-  Lwt_stream.get queue.stream
+  match Lwt_stream.get_available_up_to 1 queue.stream with
+  | [] -> Lwt.return_none
+  | x::_ -> Lwt.return_some x
