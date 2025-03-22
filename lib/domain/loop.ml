@@ -1,10 +1,11 @@
 open Lwt.Syntax
+open Event
 
 let tick (state : State.t) =
   let delta = Unix.gettimeofday () -. state.last_tick in
   let* () = Lwt_unix.sleep (Float.max 0.0 (0.01 -. delta)) in
   State.update_tick state;
-  (* ignore (Stdio.print_endline (Printf.sprintf "Tick: %f" delta)); *)
+  (* let* () = Lwt_io.printl (Printf.sprintf "Tick: %f" delta) in *)
   Lwt.return_unit
 
 let process_client_messages (state : State.t) =
@@ -23,39 +24,44 @@ let process_client_messages (state : State.t) =
   Lwt.catch
     (fun () -> process_all ())
     (fun exn ->
-      Stdio.eprintf "Message processing error: %s\n" (Base.Exn.to_string exn);
+      let* () = Lwt_io.printl (Printf.sprintf "Message processing error: %s" (Base.Exn.to_string exn)) in
       Lwt.return_unit)
 
-(* TODO: We need to register systems here I think *)
+(* Process events from the queue *)
 let process_events (state : State.t) =
   let rec process_all () =
     match%lwt Infra.Queue.pop_opt state.event_queue with
     | None -> Lwt.return_unit
-    | Some _event ->
-        (* let* () = process_event state event in *)
-        process_all ()
+    | Some event ->
+        match event with
+        | CharacterListRequested { user_id } ->
+            let%lwt () = Character_system.Character_list_system.handle_character_list_requested state user_id in
+            process_all ()
+        | _ -> process_all ()
   in
   Lwt.catch
     (fun () -> process_all ())
     (fun exn ->
-      Stdio.eprintf "Event processing error: %s\n" (Base.Exn.to_string exn);
+      let* () = Lwt_io.printl (Printf.sprintf "Event processing error: %s" (Base.Exn.to_string exn)) in
       Lwt.return_unit)
 
 let register_ecs_systems (_state : State.t) =
   (* Register your ECS systems here *)
-  (* For example: State.register_system state my_system *)
+  (* Ecs.World.register_system Character_system.Character_list_system.execute
+    ~priority:Character_system.Character_list_system.priority; *)
   Lwt.return_unit
 
 let rec game_loop (state : State.t) =
   Lwt.catch
     (fun () ->
+      let* () = Lwt_io.flush Lwt_io.stdout in
       let* () = tick state in
       let* () = process_client_messages state in
       let* () = process_events state in
       let* () = Ecs.World.step () in
       game_loop state)
     (fun exn ->
-      Stdio.eprintf "Game loop error: %s\n" (Base.Exn.to_string exn);
+      let* () = Lwt_io.printl (Printf.sprintf "Game loop error: %s" (Base.Exn.to_string exn)) in
       game_loop state)
 
 let run (state : State.t) =
@@ -65,5 +71,5 @@ let run (state : State.t) =
       let* () = register_ecs_systems state in
       game_loop state
   | Error e ->
-      Stdio.eprintf "World initialization error: %s\n" (Base.Error.to_string_hum e);
+      let* () = Lwt_io.printl (Printf.sprintf "World initialization error: %s" (Base.Error.to_string_hum e)) in
       Lwt.return_unit
