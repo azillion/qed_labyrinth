@@ -334,35 +334,44 @@ module World = struct
     | Error e -> Lwt.return_error e
 
   let sync_to_db () =
-    let* () = CharacterStorage.sync_to_db () in
-    let* () = CharacterPositionStorage.sync_to_db () in
-    let* () = DescriptionStorage.sync_to_db () in
-    (* Sync other component storages here *)
+    Lwt.catch
+      (fun () ->
+        let* () = CharacterStorage.sync_to_db () in
+        let* () = CharacterPositionStorage.sync_to_db () in
+        let* () = DescriptionStorage.sync_to_db () in
+        (* Sync other component storages here *)
 
-    let deleted = Entity.cleanup_deleted () in
-    if not (List.is_empty deleted) then
-      let db_operation (module Db : Caqti_lwt.CONNECTION) =
-        let* result = Lwt_list.fold_left_s (fun acc id ->
-          let* r = Db.exec 
-            (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-              "DELETE FROM entities WHERE id = ?")
-            (Uuidm.to_string id)
+        let deleted = Entity.cleanup_deleted () in
+        if not (List.is_empty deleted) then
+          let db_operation (module Db : Caqti_lwt.CONNECTION) =
+            let* result = Lwt_list.fold_left_s (fun acc id ->
+              let* r = Db.exec 
+                (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
+                  "DELETE FROM entities WHERE id = ?")
+                (Uuidm.to_string id)
+              in
+              match r, acc with
+              | Ok (), Ok () -> Lwt.return (Ok ())
+              | Error e, _ -> Lwt.return (Error e)
+              | _, Error e -> Lwt.return (Error e)
+            ) (Ok ()) deleted in
+            match result with
+            | Ok () -> Lwt_result.return ()
+            | Error e -> Lwt_result.fail e
           in
-          match r, acc with
-          | Ok (), Ok () -> Lwt.return (Ok ())
-          | Error e, _ -> Lwt.return (Error e)
-          | _, Error e -> Lwt.return (Error e)
-        ) (Ok ()) deleted in
-        match result with
-        | Ok () -> Lwt_result.return ()
-        | Error e -> Lwt_result.fail e
-      in
-      let* result = Database.Pool.use db_operation in
-      match result with
-      | Ok () -> Lwt.return_unit
-      | Error e ->
-          Stdio.eprintf "Failed to delete entities: %s\n" (Error.to_string_hum e);
+          let* result = Database.Pool.use db_operation in
+          match result with
+          | Ok () -> Lwt.return_unit
+          | Error e ->
+              Stdio.eprintf "Failed to delete entities: %s\n" (Error.to_string_hum e);
+              Lwt.return_unit
+        else
+          Lwt.return_unit)
+      (fun exn ->
+        if String.equal (Exn.to_string exn) "End_of_file" then
+          let () = Stdio.eprintf "Database sync error: End_of_file - Database connection may have been closed\n" in
           Lwt.return_unit
-    else
-      Lwt.return_unit
+        else 
+          let () = Stdio.eprintf "Database sync error: %s\n" (Exn.to_string exn) in
+          Lwt.return_unit)
 end

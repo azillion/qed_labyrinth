@@ -34,7 +34,7 @@
   ; Network & Database - for post-MVP
   (dream (>= 1.0.0~alpha4))          ; Async web framework
   (caqti (>= 1.9.0))                 ; Database abstraction
-  ; (caqti-driver-postgresql (>= 1.9.0)); Postgres driver
+  (caqti-driver-postgresql (>= 1.9.0)); Postgres driver
   (caqti-lwt (>= 1.9.0))             ; Async DB interface
   (caqti-driver-sqlite3 (>= 1.9.0))
   ; (ppx_yojson_conv (>= 0.1.0))       ; Additional JSON support
