@@ -172,7 +172,6 @@ end
 
 module Character_selection_system = struct
   let handle_character_selected state user_id character_id =
-    Stdio.printf "[DEBUG] Character selection initiated: user=%s, character=%s\n" user_id character_id;
     (* Check if character exists and belongs to the user *)
     match Uuidm.of_string character_id with
     | None ->
@@ -185,7 +184,6 @@ module Character_selection_system = struct
         ) in
         Lwt.return_unit
     | Some entity_id ->
-        Stdio.printf "[DEBUG] Character ID parsed successfully: %s\n" (Uuidm.to_string entity_id);
         (* Get character component to verify ownership *)
         match%lwt Ecs.CharacterStorage.get entity_id with
         | None ->
@@ -199,8 +197,6 @@ module Character_selection_system = struct
             ) in
             Lwt.return_unit
         | Some char_comp ->
-            Stdio.printf "[DEBUG] Character found, checking ownership. Character user: %s, Request user: %s\n" 
-              char_comp.Components.CharacterComponent.user_id user_id;
             if not (String.equal char_comp.Components.CharacterComponent.user_id user_id) then begin
               (* Character doesn't belong to this user *)
               Stdio.eprintf "[ERROR] Character %s doesn't belong to user %s\n" character_id user_id;
@@ -212,24 +208,15 @@ module Character_selection_system = struct
               ) in
               Lwt.return_unit
             end else begin
-              Stdio.printf "[DEBUG] Character ownership verified\n";
               (* Character is valid and belongs to the user *)
               (* Get description and position components *)
               let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
               let%lwt pos_opt = Ecs.CharacterPositionStorage.get entity_id in
               
-              Stdio.printf "[DEBUG] Description component exists: %b, Position component exists: %b\n"
-                (Option.is_some desc_opt) (Option.is_some pos_opt);
-              
               (* Find current location *)
               let location_id = match pos_opt with
-                | Some pos -> 
-                    let area_id = pos.Components.CharacterPositionComponent.area_id in
-                    Stdio.printf "[DEBUG] Character position found, area_id: %s\n" area_id;
-                    area_id
-                | None -> 
-                    Stdio.printf "[DEBUG] Character position not found, using default area\n";
-                    "00000000-0000-0000-0000-000000000000" (* Default starting area *)
+                | Some pos -> pos.Components.CharacterPositionComponent.area_id
+                | None -> "00000000-0000-0000-0000-000000000000" (* Default starting area *)
               in
               
               (* Get the name from description *)
@@ -245,7 +232,6 @@ module Character_selection_system = struct
                   ) in
                   Lwt.return_unit
               | Some desc ->
-                  Stdio.printf "[DEBUG] Character name: %s\n" desc.Components.DescriptionComponent.name;
                   (* Build character model *)
                   let character : Types.character = {
                     id = character_id;
@@ -263,11 +249,9 @@ module Character_selection_system = struct
                   let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
                   match client_opt with
                   | Some client ->
-                      Stdio.printf "[DEBUG] Client found for user: %s\n" user_id;
                       (* Update client state *)
                       (try 
                         Client.set_character client character_id;
-                        Stdio.printf "[DEBUG] Client character set to: %s\n" character_id;
                       with e -> 
                         Stdio.eprintf "[ERROR] Exception in set_character: %s\n" (Printexc.to_string e));
                       
@@ -276,7 +260,6 @@ module Character_selection_system = struct
                         Connection_manager.add_to_room state.State.connection_manager
                           ~client_id:client.Client.id
                           ~room_id:location_id;
-                        Stdio.printf "[DEBUG] Client added to room: %s\n" location_id;
                       with e ->
                         Stdio.eprintf "[ERROR] Exception in add_to_room: %s\n" (Printexc.to_string e));
                       
@@ -286,7 +269,6 @@ module Character_selection_system = struct
                           let%lwt result = Infra.Queue.push state.State.event_queue (
                             Event.SendCharacterSelected { user_id; character }
                           ) in
-                          Stdio.printf "[DEBUG] SendCharacterSelected event queued\n";
                           Lwt.return result
                         with e ->
                           Stdio.eprintf "[ERROR] Exception when pushing SendCharacterSelected: %s\n" (Printexc.to_string e);
@@ -299,14 +281,12 @@ module Character_selection_system = struct
                           let%lwt result = Infra.Queue.push state.State.event_queue (
                             Event.AreaQuery { user_id; area_id = location_id }
                           ) in
-                          Stdio.printf "[DEBUG] AreaQuery event queued: %s\n" location_id;
                           Lwt.return result
                         with e ->
                           Stdio.eprintf "[ERROR] Exception when pushing AreaQuery: %s\n" (Printexc.to_string e);
                           Lwt.return_unit
                       in
                       
-                      Stdio.printf "[DEBUG] Character selection completed successfully\n";
                       Lwt.return_unit
                   | None -> 
                       Stdio.eprintf "[ERROR] Client not found for user: %s\n" user_id;
@@ -324,17 +304,12 @@ module Character_selection_communication_system = struct
   (* Handles sending character selection responses to clients *)
   
   let handle_character_selected state user_id character =
-    (* Type checking: character should be of type Types.character *)
-    Stdio.printf "[DEBUG] Handling character selected event for user_id: %s\n" user_id;
-    
     let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
     match client_opt with
     | Some client ->
-        Stdio.printf "[DEBUG] Client found, sending CharacterSelected message\n";
         begin
           try%lwt 
             let%lwt result = client.Client.send (Protocol.CharacterSelected { character }) in
-            Stdio.printf "[DEBUG] CharacterSelected message sent successfully\n";
             Lwt.return result
           with exn ->
             Stdio.eprintf "[ERROR] Exception sending CharacterSelected message: %s\n" (Printexc.to_string exn);
@@ -345,15 +320,12 @@ module Character_selection_communication_system = struct
         Lwt.return_unit
 
   let handle_character_selection_failed state user_id error =
-    Stdio.printf "[DEBUG] Handling character selection failed event for user %s\n" user_id;
     let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
     match client_opt with
     | Some client ->
-        Stdio.printf "[DEBUG] Client found, sending CharacterSelectionFailed message\n";
         begin
           try%lwt
             let%lwt result = client.Client.send (Protocol.CharacterSelectionFailed { error }) in
-            Stdio.printf "[DEBUG] CharacterSelectionFailed message sent successfully\n";
             Lwt.return result
           with exn ->
             Stdio.eprintf "[ERROR] Exception sending CharacterSelectionFailed message: %s\n" (Printexc.to_string exn);
