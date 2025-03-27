@@ -166,7 +166,6 @@ module Character_creation_communication_system = struct
   let priority = 50
 
   let execute () =
-    (* This system doesn't need to run on every tick *)
     Lwt.return_unit
 end
 
