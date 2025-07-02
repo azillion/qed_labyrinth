@@ -129,6 +129,10 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
 
         (* legacy tables *)
         let* () = C.exec create_users_table () in
+
+        (* communications table used for chat and system messages *)
+        let* () = C.exec create_comm_table () in
+
         Lwt.return_ok ())
       (fun _ -> failwith "Database error")
 end

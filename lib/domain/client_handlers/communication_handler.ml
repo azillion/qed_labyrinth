@@ -78,22 +78,19 @@ module Handler : Client_handler.S = struct
             client.send (Protocol.ChatHistory { messages = messages' })) *)
 
   (* Main message handler *)
-  let handle (_state : State.t) (_client : Client.t) (msg : Protocol.client_message) =
+  let handle (state : State.t) (client : Client.t) (msg : Protocol.client_message) =
     match msg with
-    (* let open Protocol in
     | SendChat { message } ->
-        handle_chat state client message Communication.Chat
+        (match client.Client.auth_state with
+        | Authenticated { user_id; _ } ->
+            let event = Event.Say { user_id; content = message } in
+            Infra.Queue.push state.State.event_queue event
+        | Anonymous -> Lwt.return_unit)
     | SendEmote { message } ->
-        handle_chat state client message Communication.Emote
-    | SendSystem { message } ->
-        handle_chat state client message Communication.System
-    | RequestChatHistory -> handle_request_chat_history state client
-    | Help -> handle_chat state client "" Communication.CommandSuccess
-    | Unknown cmd ->
-        let%lwt () =
-          client.send
-            (Protocol.CommandFailed { error = "Unknown command: " ^ cmd })
-        in
-        Lwt.return_unit *)
+        (match client.Client.auth_state with
+        | Authenticated { user_id; _ } ->
+            let event = Event.Emote { user_id; content = message } in
+            Infra.Queue.push state.State.event_queue event
+        | Anonymous -> Lwt.return_unit)
     | _ -> Lwt.return_unit
 end

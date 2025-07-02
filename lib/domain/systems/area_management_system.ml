@@ -213,6 +213,23 @@ module Exit_creation_communication_system = struct
 end
 
 module Area_query_system = struct
+  let find_characters_in_area area_id =
+    let%lwt all_positions = Ecs.CharacterPositionStorage.all () in
+    let characters_in_area =
+      List.filter all_positions ~f:(fun (_, pos) -> String.equal pos.area_id area_id)
+      |> List.map ~f:fst
+    in
+    let%lwt char_details =
+      Lwt_list.map_s (fun char_id ->
+        let%lwt name_opt =
+          let%lwt desc_opt = Ecs.DescriptionStorage.get char_id in
+          Lwt.return (Option.map desc_opt ~f:(fun d -> d.name))
+        in
+        Lwt.return (Option.map name_opt ~f:(fun name -> { Types.id = Uuidm.to_string char_id; name }))
+      ) characters_in_area
+    in
+    Lwt.return (List.filter_opt char_details)
+
   let handle_area_query state user_id area_id =
     let* () = Lwt_io.printl (Printf.sprintf "Area query for user %s: %s" user_id area_id) in
     (* Get area details *)
@@ -263,6 +280,17 @@ module Area_query_system = struct
               Event.AreaQueryResult {
                 user_id;
                 area = area_info
+              }
+            ) in
+            let* () = Infra.Queue.push state.State.event_queue
+              (Event.RequestChatHistory { user_id; area_id })
+            in
+            (* Queue event to update area presence *)
+            let%lwt characters_here = find_characters_in_area area_id in
+            let%lwt () = Infra.Queue.push state.State.event_queue (
+              Event.UpdateAreaPresence {
+                area_id;
+                characters = characters_here
               }
             ) in
             Lwt.return_unit

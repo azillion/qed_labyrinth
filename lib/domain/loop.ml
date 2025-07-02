@@ -57,13 +57,28 @@ let process_event (state : State.t) (event : Event.t) =
   
   | Event.Move { user_id; direction } ->
       Movement_system.System.handle_move state user_id direction
-  | Event.PlayerMoved { user_id; old_area_id; new_area_id } ->
-      Presence_system.System.handle_player_moved state user_id old_area_id new_area_id
+  | Event.PlayerMoved { user_id; old_area_id; new_area_id; direction } ->
+      Presence_system.System.handle_player_moved state user_id old_area_id new_area_id direction
   | Event.SendMovementFailed { user_id; reason } ->
       (* This is a communication event, so it's okay to just send *)
       (match Connection_manager.find_client_by_user_id state.connection_manager user_id with
       | Some client -> client.send (Protocol.CommandFailed { error = reason }) |> Lwt_result.ok
       | None -> Lwt_result.return ())
+  
+  | Event.Say { user_id; content } ->
+      Communication_system.System.handle_say state user_id content
+  | Event.Announce { area_id; message } ->
+      Communication_system.System.handle_announce state area_id message
+  | Event.Tell { user_id; message } ->
+      Communication_system.System.handle_tell state user_id message
+  | Event.RequestChatHistory { user_id; area_id } ->
+      Communication_system.Chat_history_system.handle_request_chat_history state user_id area_id
+  | Event.SendChatHistory { user_id; messages } ->
+      Communication_system.Chat_history_system.handle_send_chat_history state user_id messages
+  | Event.UpdateAreaPresence { area_id; characters } ->
+      (* For now, just log this event - we can implement full presence updates later *)
+      let%lwt () = Lwt_io.printl (Printf.sprintf "Area presence update for %s: %d characters" area_id (List.length characters)) in
+      Lwt_result.return ()
   
   (* Add other event handlers here as they are refactored *)
   | _ -> Lwt_result.return () (* Ignore unhandled events for now *)

@@ -49,12 +49,12 @@ module Q = struct
       {| INSERT INTO communications (id, message_type, sender_id, content, area_id, timestamp)
          VALUES (?, ?, ?, ?, ?, ?) |}
 
-  (* find messages by area_id and timestamp less than 10 minutes ago *)
+  (* SQLite doesn't support NOW() or INTERVAL syntax; use datetime('now', '-10 minutes') instead. *)
   let find_by_area_id =
     (string ->* message_t)
       {| SELECT id, message_type, sender_id, content, area_id, timestamp
          FROM communications 
-         WHERE area_id = ? AND timestamp >= NOW() - INTERVAL '10 minutes'
+         WHERE area_id = ? AND timestamp >= datetime('now', '-10 minutes')
          ORDER BY timestamp ASC
      |}
 end

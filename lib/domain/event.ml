@@ -50,5 +50,16 @@ type t =
 
   (* Movement events *)
   | Move of { user_id: string; direction: Components.ExitComponent.direction }
-  | PlayerMoved of { user_id: string; old_area_id: string; new_area_id: string }
+  | PlayerMoved of { user_id: string; old_area_id: string; new_area_id: string; direction: Components.ExitComponent.direction }
   | SendMovementFailed of { user_id: string; reason: string }
+
+  (* Communication Events *)
+  | Say of { user_id: string; content: string }
+  | Emote of { user_id: string; content: string }
+  | Announce of { area_id: string; message: Communication.t }
+  | Tell of { user_id: string; message: Communication.t }
+  | RequestChatHistory of { user_id: string; area_id: string }
+  | SendChatHistory of { user_id: string; messages: Types.chat_message list }
+
+  (* Presence Events *)
+  | UpdateAreaPresence of { area_id: string; characters: Types.list_character list }
