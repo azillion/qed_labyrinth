@@ -26,6 +26,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <script defer data-domain="ironpsalm.com" src="https://plausible.io/js/script.js"></script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${crimsonText.variable} antialiased font-serif`}
       >
