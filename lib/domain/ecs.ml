@@ -108,7 +108,7 @@ module type ComponentStorage = sig
   val get : Entity.t -> component option Lwt.t   (* Made Lwt.t for async *)
   val remove : Entity.t -> unit Lwt.t            (* Made Lwt.t for async *)
   val all : unit -> (Entity.t * component) list Lwt.t
-  val sync_to_db : unit -> unit Lwt.t
+  val sync_to_db : (module Caqti_lwt.CONNECTION) -> (unit, 'err) Result.t Lwt.t
   val load_from_db : unit -> unit Lwt.t
   val clear_modified : unit -> unit
   val get_modified : unit -> Entity.t list
@@ -187,61 +187,51 @@ module MakeComponentStorage (C : Component) : ComponentStorage
   let get_modified () = Hash_set.to_list modified
 
   (* Sync changes to database *)
-  let sync_to_db () =
-    let db_operation (module Db : Caqti_lwt.CONNECTION) =
-      let modified_list = get_modified () in
-      let components = 
-        List.filter_map modified_list ~f:(fun entity ->
-          Option.map (Hashtbl.find store entity) ~f:(fun comp -> (entity, comp)))
-      in
-      
-      (* Delete removed components *)
-      let* _ = Lwt_list.iter_s (fun entity ->
-        if not (Hashtbl.mem store entity) then
-          let* result = Db.exec 
-            (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-              ("DELETE FROM " ^ C.table_name ^ " WHERE entity_id = ?"))
-            (Uuidm.to_string entity)
-          in
-          match result with
-          | Ok () -> Lwt.return_unit
-          | Error e -> 
-              Stdio.eprintf "Failed to delete %s: %s\n" C.table_name (Caqti_error.show e);
-              Lwt.return_unit
-        else
-          Lwt.return_unit
-      ) modified_list in
-      
-      (* Update or insert components *)
-      let* _ = Lwt_list.iter_s (fun (entity, comp) ->
-        let json_str = comp |> [%to_yojson: C.t] |> Yojson.Safe.to_string in
-        let entity_id = Uuidm.to_string entity in
+  let sync_to_db (module Db : Caqti_lwt.CONNECTION) =
+    let modified_list = get_modified () in
+    let components = 
+      List.filter_map modified_list ~f:(fun entity ->
+        Option.map (Hashtbl.find store entity) ~f:(fun comp -> (entity, comp)))
+    in
+    
+    (* Delete removed components *)
+    let* _ = Lwt_list.iter_s (fun entity ->
+      if not (Hashtbl.mem store entity) then
         let* result = Db.exec 
-          (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-            ("INSERT INTO " ^ C.table_name ^ " (entity_id, data) 
-              VALUES (?, ?) 
-              ON CONFLICT (entity_id) 
-              DO UPDATE SET data = EXCLUDED.data"))
-          (entity_id, json_str)
+          (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
+            ("DELETE FROM " ^ C.table_name ^ " WHERE entity_id = ?"))
+          (Uuidm.to_string entity)
         in
         match result with
         | Ok () -> Lwt.return_unit
         | Error e -> 
-            Stdio.eprintf "Failed to update %s: %s\n" C.table_name (Caqti_error.show e);
+            Stdio.eprintf "Failed to delete %s: %s\n" C.table_name (Caqti_error.show e);
             Lwt.return_unit
-      ) components in
-      
-      Lwt_result.return ()
-    in
-    
-    let* result = Database.Pool.use db_operation in
-    match result with
-    | Ok () -> 
-        clear_modified ();
-        Lwt.return_unit 
-    | Error e ->
-        Stdio.eprintf "Failed to sync %s: %s\n" C.table_name (Error.to_string_hum e);
+      else
         Lwt.return_unit
+    ) modified_list in
+    
+    (* Update or insert components *)
+    let* _ = Lwt_list.iter_s (fun (entity, comp) ->
+      let json_str = comp |> [%to_yojson: C.t] |> Yojson.Safe.to_string in
+      let entity_id = Uuidm.to_string entity in
+      let* result = Db.exec 
+        (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
+          ("INSERT INTO " ^ C.table_name ^ " (entity_id, data) 
+            VALUES (?, ?) 
+            ON CONFLICT (entity_id) 
+            DO UPDATE SET data = EXCLUDED.data"))
+        (entity_id, json_str)
+      in
+      match result with
+      | Ok () -> Lwt.return_unit
+      | Error e -> 
+          Stdio.eprintf "Failed to update %s: %s\n" C.table_name (Caqti_error.show e);
+          Lwt.return_unit
+    ) components in
+    
+    clear_modified ();
+    Lwt.return_ok ()
 
   (* Load components from database *)
   let load_from_db () =
@@ -337,41 +327,39 @@ module World = struct
     | Error e -> Lwt.return_error e
 
   let sync_to_db () =
-    Lwt.catch
-      (fun () ->
-        let* () = CharacterStorage.sync_to_db () in
-        let* () = CharacterPositionStorage.sync_to_db () in
-        let* () = DescriptionStorage.sync_to_db () in
-        let* () = AreaStorage.sync_to_db () in
-        let* () = ExitStorage.sync_to_db () in
-        (* Sync other component storages here *)
-
-        let deleted = Entity.cleanup_deleted () in
-        if not (List.is_empty deleted) then
-          let db_operation (module Db : Caqti_lwt.CONNECTION) =
-            let* result = Lwt_list.fold_left_s (fun acc id ->
-              let* r = Db.exec 
+    let db_operation (module Db : Caqti_lwt.CONNECTION) =
+      let (let*) = Lwt_result.bind in
+      let* () = CharacterStorage.sync_to_db (module Db) in
+      let* () = CharacterPositionStorage.sync_to_db (module Db) in
+      let* () = DescriptionStorage.sync_to_db (module Db) in
+      let* () = AreaStorage.sync_to_db (module Db) in
+      let* () = ExitStorage.sync_to_db (module Db) in
+      (* Sync other component storages here *)
+      
+      let deleted = Entity.cleanup_deleted () in
+      if not (List.is_empty deleted) then
+        let rec delete_entities = function
+          | [] -> Lwt_result.return ()
+          | id :: rest ->
+              let* () = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
                   "DELETE FROM entities WHERE id = ?")
                 (Uuidm.to_string id)
               in
-              match r, acc with
-              | Ok (), Ok () -> Lwt.return (Ok ())
-              | Error e, _ -> Lwt.return (Error e)
-              | _, Error e -> Lwt.return (Error e)
-            ) (Ok ()) deleted in
-            match result with
-            | Ok () -> Lwt_result.return ()
-            | Error e -> Lwt_result.fail e
-          in
-          let* result = Database.Pool.use db_operation in
-          match result with
-          | Ok () -> Lwt.return_unit
-          | Error e ->
-              Stdio.eprintf "Failed to delete entities: %s\n" (Error.to_string_hum e);
-              Lwt.return_unit
-        else
-          Lwt.return_unit)
+              delete_entities rest
+        in
+        delete_entities deleted
+      else
+        Lwt_result.return ()
+    in
+    Lwt.catch
+      (fun () ->
+        let* result = Database.Pool.use db_operation in
+        match result with
+        | Ok () -> Lwt.return_unit
+        | Error e ->
+            Stdio.eprintf "Database sync error: %s\n" (Error.to_string_hum e);
+            Lwt.return_unit)
       (fun exn ->
         if String.equal (Exn.to_string exn) "End_of_file" then
           let () = Stdio.eprintf "Database sync error: End_of_file - Database connection may have been closed\n" in

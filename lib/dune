@@ -20,4 +20,5 @@
   uri
   uuidm
   unix)
+ (preprocess (pps ppx_let ppx_deriving_yojson))
  (modules :standard))

@@ -36,3 +36,4 @@ game_events.json
 .pnpm-lock.yaml
 .env
 *.sqlite3
+node_modules/

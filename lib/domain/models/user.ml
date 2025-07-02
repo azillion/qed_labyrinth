@@ -143,25 +143,23 @@ end
 
 let register ~username ~password ~email =
   let open Base in
+  let open Lwt_result.Syntax in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     let* existing_user = Db.find_opt Q.find_by_username username in
     match existing_user with
-    | Error e -> Lwt_result.fail e
-    | Ok (Some _) ->
+    | Some _ ->
         Lwt_result.return
           (`UsernameTaken : [ `UsernameTaken | `EmailTaken | `Success of t ])
-    | Ok None -> (
+    | None ->
         let* existing_email = Db.find_opt Q.find_by_email email in
         match existing_email with
-        | Error e -> Lwt_result.fail e
-        | Ok (Some _) -> Lwt_result.return `EmailTaken
-        | Ok None -> (
+        | Some _ -> Lwt_result.return `EmailTaken
+        | None ->
             let user = create ~username ~password ~email ~role:Player in
-            match%lwt Db.exec Q.insert user with
-            | Error e -> Lwt_result.fail e
-            | Ok () -> Lwt_result.return (`Success user)))
+            let* () = Db.exec Q.insert user in
+            Lwt_result.return (`Success user)
   in
-  let* result = Database.Pool.use db_operation in
+  let%lwt result = Database.Pool.use db_operation in
   match result with
   | Ok (`Success user) -> Lwt.return_ok user
   | Ok `UsernameTaken -> Lwt.return_error UsernameTaken
@@ -170,21 +168,21 @@ let register ~username ~password ~email =
 
 let authenticate ~username ~password =
   let open Base in
+  let open Lwt_result.Syntax in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     let* user_result = Db.find_opt Q.find_by_username username in
     match user_result with
-    | Error e -> Lwt_result.fail e
-    | Ok None ->
+    | None ->
         Lwt_result.return
           (`UserNotFound : [ `UserNotFound | `Success of t | `InvalidPassword ])
-    | Ok (Some user) ->
+    | Some user ->
         let password_hash = hash_password password in
         if String.equal user.password_hash password_hash then
           Lwt_result.return (`Success user)
         else
           Lwt_result.return `InvalidPassword
   in
-  let* result = Database.Pool.use db_operation in
+  let%lwt result = Database.Pool.use db_operation in
   match result with
   | Ok (`Success user) -> Lwt.return_ok user
   | Ok `UserNotFound -> Lwt.return_error UserNotFound

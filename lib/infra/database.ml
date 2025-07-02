@@ -148,8 +148,16 @@ module Pool = struct
     match get () with
     | None -> Lwt.return_error (Error.of_string "Database pool not initialized")
     | Some pool -> 
-        let%lwt result = Caqti_lwt_unix.Pool.use f pool in
-        Lwt.return (Result.map_error ~f:(fun e -> Error.of_string (Caqti_error.show e)) result)
+        Lwt.catch
+          (fun () ->
+            let%lwt result = Caqti_lwt_unix.Pool.use f pool in
+            Lwt.return (Result.map_error ~f:(fun e -> Error.of_string (Caqti_error.show e)) result))
+          (fun exn ->
+            let error_msg = Base.Exn.to_string exn in
+            if String.equal error_msg "End_of_file" then
+              Lwt.return_error (Error.of_string "Database connection closed unexpectedly")
+            else
+              Lwt.return_error (Error.of_string (Printf.sprintf "Database error: %s" error_msg)))
 
   let connect ?(max_size = 10) config =
     let open Config.Database in

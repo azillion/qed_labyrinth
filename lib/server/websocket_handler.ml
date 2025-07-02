@@ -1,6 +1,13 @@
 open Base
 
 let handler (state : Qed_domain.State.t) user_id websocket =
+  (* Check for and remove any existing client for this user_id *)
+  (match Qed_domain.Connection_manager.find_client_by_user_id state.connection_manager user_id with
+  | Some old_client ->
+      Stdio.printf "Found and removing lingering client for user %s (client_id: %s)\n" user_id old_client.Qed_domain.Client.id;
+      Qed_domain.Connection_manager.remove_client state.connection_manager old_client.Qed_domain.Client.id
+  | None -> ());
+  
   let client_id =
     Digestif.SHA256.(
       digest_string (Int64.of_int (Random.bits ()) |> Int64.to_string) |> to_hex)
