@@ -47,3 +47,8 @@ type t =
   | AreaQuery of { user_id: string; area_id: string }
   | AreaQueryResult of { user_id: string; area: Types.area }
   | AreaQueryFailed of { user_id: string; error: Yojson.Safe.t }
+
+  (* Movement events *)
+  | Move of { user_id: string; direction: Components.ExitComponent.direction }
+  | PlayerMoved of { user_id: string; old_area_id: string; new_area_id: string }
+  | SendMovementFailed of { user_id: string; reason: string }

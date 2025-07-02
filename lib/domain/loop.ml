@@ -54,6 +54,17 @@ let process_event (state : State.t) (event : Event.t) =
       Area_management_system.Area_query_system.handle_area_query state user_id area_id |> Lwt_result.ok
   | Event.AreaQueryResult { user_id; area } ->
       Area_management_system.Area_query_communication_system.handle_area_query_result state user_id area |> Lwt_result.ok
+  
+  | Event.Move { user_id; direction } ->
+      Movement_system.System.handle_move state user_id direction
+  | Event.PlayerMoved { user_id; old_area_id; new_area_id } ->
+      Presence_system.System.handle_player_moved state user_id old_area_id new_area_id
+  | Event.SendMovementFailed { user_id; reason } ->
+      (* This is a communication event, so it's okay to just send *)
+      (match Connection_manager.find_client_by_user_id state.connection_manager user_id with
+      | Some client -> client.send (Protocol.CommandFailed { error = reason }) |> Lwt_result.ok
+      | None -> Lwt_result.return ())
+  
   (* Add other event handlers here as they are refactored *)
   | _ -> Lwt_result.return () (* Ignore unhandled events for now *)
 

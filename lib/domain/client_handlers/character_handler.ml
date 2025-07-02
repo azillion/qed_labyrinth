@@ -169,6 +169,20 @@ module Handler : Client_handler.S = struct
         | Client.Authenticated { user_id; _ } ->
             let%lwt () = Infra.Queue.push state.State.event_queue (Event.CharacterListRequested { user_id }) in
             Lwt.return_unit)
-    (* | Move { direction } -> handle_character_movement state client direction *)
+    | Move { direction } ->
+        (match client.Client.auth_state with
+        | Client.Anonymous -> Lwt.return_unit (* Do nothing if not authenticated *)
+        | Client.Authenticated { user_id; _ } ->
+            let direction' =
+              match direction with
+              | Area.North -> Components.ExitComponent.North
+              | Area.South -> Components.ExitComponent.South
+              | Area.East -> Components.ExitComponent.East
+              | Area.West -> Components.ExitComponent.West
+              | Area.Up -> Components.ExitComponent.Up
+              | Area.Down -> Components.ExitComponent.Down
+            in
+            let event = Event.Move { user_id; direction = direction' } in
+            Infra.Queue.push state.State.event_queue event)
     | _ -> Lwt.return_unit
 end
