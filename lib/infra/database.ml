@@ -119,7 +119,10 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
         let* () = C.exec (create_component_table "characters") () in
         let* () = C.exec (create_component_table "character_positions") () in
         let* () = C.exec (create_component_table "descriptions") () in
+        let* () = C.exec (create_component_table "core_stats") () in
+        let* () = C.exec (create_component_table "derived_stats") () in
         let* () = C.exec (create_component_table "healths") () in
+        let* () = C.exec (create_component_table "action_points") () in
         let* () = C.exec (create_component_table "manas") () in
         let* () = C.exec (create_component_table "levels") () in
         let* () = C.exec (create_component_table "messages") () in
@@ -129,6 +132,12 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
 
         (* legacy tables *)
         let* () = C.exec create_users_table () in
+        
+        (* Tier 1 relational tables *)
+        let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+          "CREATE TABLE IF NOT EXISTS characters (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL UNIQUE, FOREIGN KEY(user_id) REFERENCES users(id))") () in
+        let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+          "CREATE TABLE IF NOT EXISTS character_core_stats (character_id TEXT PRIMARY KEY, might INTEGER NOT NULL, finesse INTEGER NOT NULL, wits INTEGER NOT NULL, grit INTEGER NOT NULL, presence INTEGER NOT NULL, FOREIGN KEY(character_id) REFERENCES characters(id))") () in
 
         (* communications table used for chat and system messages *)
         let* () = C.exec create_comm_table () in

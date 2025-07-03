@@ -86,3 +86,50 @@ module ExitComponent = struct
     | Up -> Down
     | Down -> Up
 end
+
+module CoreStatsComponent = struct
+  type t = {
+    entity_id: string;
+    might: int;
+    finesse: int;
+    wits: int;
+    grit: int;
+    presence: int;
+  } [@@deriving yojson]
+
+  let table_name = "core_stats"
+end
+
+module DerivedStatsComponent = struct
+  type t = {
+    entity_id: string;
+    physical_power: int;
+    spell_power: int;
+    accuracy: int;
+    evasion: int;
+    armor: int;
+    resolve: int;
+  } [@@deriving yojson]
+
+  let table_name = "derived_stats"
+end
+
+module HealthComponent = struct
+  type t = {
+    entity_id: string;
+    current: int;
+    max: int;
+  } [@@deriving yojson]
+
+  let table_name = "healths"
+end
+
+module ActionPointsComponent = struct
+  type t = {
+    entity_id: string;
+    current: int;
+    max: int;
+  } [@@deriving yojson]
+
+  let table_name = "action_points"
+end

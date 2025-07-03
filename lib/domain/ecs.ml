@@ -281,6 +281,10 @@ open Components
 module CharacterStorage = MakeComponentStorage(CharacterComponent)
 module CharacterPositionStorage = MakeComponentStorage(CharacterPositionComponent)
 module DescriptionStorage = MakeComponentStorage(DescriptionComponent)
+module CoreStatsStorage = MakeComponentStorage(CoreStatsComponent)
+module DerivedStatsStorage = MakeComponentStorage(DerivedStatsComponent)
+module HealthStorage = MakeComponentStorage(HealthComponent)
+module ActionPointsStorage = MakeComponentStorage(ActionPointsComponent)
 module AreaStorage = MakeComponentStorage(AreaComponent)
 module ExitStorage = MakeComponentStorage(ExitComponent)
 
@@ -319,6 +323,10 @@ module World = struct
         let* () = CharacterStorage.load_from_db () in
         let* () = CharacterPositionStorage.load_from_db () in
         let* () = DescriptionStorage.load_from_db () in
+        let* () = CoreStatsStorage.load_from_db () in
+        let* () = DerivedStatsStorage.load_from_db () in
+        let* () = HealthStorage.load_from_db () in
+        let* () = ActionPointsStorage.load_from_db () in
         let* () = AreaStorage.load_from_db () in
         let* () = ExitStorage.load_from_db () in
         (* Load other component storages here *)
@@ -332,6 +340,10 @@ module World = struct
       let* () = CharacterStorage.sync_to_db (module Db) in
       let* () = CharacterPositionStorage.sync_to_db (module Db) in
       let* () = DescriptionStorage.sync_to_db (module Db) in
+      let* () = CoreStatsStorage.sync_to_db (module Db) in
+      let* () = DerivedStatsStorage.sync_to_db (module Db) in
+      let* () = HealthStorage.sync_to_db (module Db) in
+      let* () = ActionPointsStorage.sync_to_db (module Db) in
       let* () = AreaStorage.sync_to_db (module Db) in
       let* () = ExitStorage.sync_to_db (module Db) in
       (* Sync other component storages here *)

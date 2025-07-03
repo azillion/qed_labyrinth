@@ -38,6 +38,8 @@ let process_event (state : State.t) (event : Event.t) =
       Character_system.Character_creation_system.handle_create_character state user_id name description starting_area_id
   | Event.CharacterSelected { user_id; character_id } ->
       Character_system.Character_selection_system.handle_character_selected state user_id character_id
+  | Event.LoadCharacterIntoECS { user_id = _; character_id } ->
+      Character_loading_system.handle_load_character state character_id
   
   | Event.SendCharacterList { user_id; characters } ->
       Character_system.Character_list_communication_system.handle_character_list state user_id characters |> Lwt_result.ok
@@ -45,8 +47,8 @@ let process_event (state : State.t) (event : Event.t) =
       Character_system.Character_creation_communication_system.handle_character_created state user_id character |> Lwt_result.ok
   | Event.SendCharacterCreationFailed { user_id; error } ->
       Character_system.Character_creation_communication_system.handle_character_creation_failed state user_id error |> Lwt_result.ok
-  | Event.SendCharacterSelected { user_id; character } ->
-      Character_system.Character_selection_communication_system.handle_character_selected state user_id character |> Lwt_result.ok
+  | Event.SendCharacterSelected { user_id; character_sheet } ->
+      Character_system.Character_selection_communication_system.handle_character_selected state user_id character_sheet |> Lwt_result.ok
   | Event.SendCharacterSelectionFailed { user_id; error } ->
       Character_system.Character_selection_communication_system.handle_character_selection_failed state user_id error |> Lwt_result.ok
   

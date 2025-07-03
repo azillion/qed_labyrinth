@@ -5,6 +5,25 @@ import { socketManager } from '@lib/socket';
 export const [character, setCharacter] = createStore({
   id: null,
   name: null,
+  health: 0,
+  max_health: 0,
+  action_points: 0,
+  max_action_points: 0,
+  core_attributes: {
+    might: 0,
+    finesse: 0,
+    wits: 0,
+    grit: 0,
+    presence: 0,
+  },
+  derived_stats: {
+    physical_power: 0,
+    spell_power: 0,
+    accuracy: 0,
+    evasion: 0,
+    armor: 0,
+    resolve: 0,
+  },
 });
 
 export const [characters, setCharacters] = createStore([]);
@@ -18,7 +37,7 @@ export const characterHandlers = {
     setLoadingCharacters(false);
   },
   'CharacterSelected': (payload) => {
-    setCharacter(payload.character);
+    setCharacter(payload.character_sheet);
   },
   'CharacterSelectionFailed': (payload) => {
     setCharacterError(payload.message);

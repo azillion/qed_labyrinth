@@ -3,6 +3,7 @@ import { Router, Route } from "@solidjs/router";
 
 import GamePage from "@pages/game";
 import MapPage from "@pages/map";
+import { CharacterSheetPage } from "@pages/character/sheet";
 
 import { setCurrentTheme } from "@stores/themeStore";
 import { socketManager, registerCoreHandlers } from '@lib/socket';
@@ -41,6 +42,7 @@ const App = (props) => {
 					<Router>
 						<Route path="/" component={GamePage} />
 						<Route path="/inventory" component={InventoryPage} />
+						<Route path="/sheet" component={CharacterSheetPage} />
 						<Route path="/map" component={MapPage} />
 					</Router>
 				</Show>

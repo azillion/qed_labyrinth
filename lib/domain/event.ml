@@ -9,6 +9,7 @@ type t =
   | CharacterCreationFailed of { user_id: string; error: string }
   | CharacterSelected of { user_id: string; character_id: string }
   | CharacterSelectionFailed of { user_id: string; error: string }
+  | LoadCharacterIntoECS of { user_id: string; character_id: string }
   | CharacterListRequested of { user_id: string }
   | CharacterList of { user_id: string; characters: (string * string) list }
   
@@ -16,7 +17,7 @@ type t =
   | SendCharacterList of { user_id: string; characters: Types.list_character list }
   | SendCharacterCreated of { user_id: string; character: Types.list_character }
   | SendCharacterCreationFailed of { user_id: string; error: Yojson.Safe.t }
-  | SendCharacterSelected of { user_id: string; character: Types.character }
+  | SendCharacterSelected of { user_id: string; character_sheet: Types.character_sheet }
   | SendCharacterSelectionFailed of { user_id: string; error: Yojson.Safe.t }
 
   (* Area management events *)

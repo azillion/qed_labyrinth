@@ -1,13 +1,29 @@
-type character = {
+type core_attributes = {
+  might : int;
+  finesse : int;
+  wits : int;
+  grit : int;
+  presence : int;
+} [@@deriving yojson]
+
+type derived_stats = {
+  physical_power : int;
+  spell_power : int;
+  accuracy : int;
+  evasion : int;
+  armor : int;
+  resolve : int;
+} [@@deriving yojson]
+
+type character_sheet = {
   id : string;
   name : string;
-  location_id : string;
   health : int;
   max_health : int;
-  mana : int;
-  max_mana : int;
-  level : int;
-  experience : int;
+  action_points : int;
+  max_action_points : int;
+  core_attributes : core_attributes;
+  derived_stats : derived_stats;
 } [@@deriving yojson]
 
 type list_character = {

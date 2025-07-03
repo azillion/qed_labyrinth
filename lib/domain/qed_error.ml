@@ -13,6 +13,8 @@ type t =
   (* character errors *)
   | CharacterNotFound
   | NameTaken
+  (* logic errors *)
+  | LogicError of string
   (* communication errors *)
   | InvalidMessageType
   | InvalidSenderId
@@ -40,6 +42,7 @@ let to_string = function
   | AreaNotFound       -> "Area not found"
   | CharacterNotFound  -> "Character not found"
   | NameTaken          -> "Name taken"
+  | LogicError s       -> "Logic error: " ^ s
   | InvalidMessageType -> "Invalid message type"
   | InvalidSenderId    -> "Invalid sender ID"
   | InvalidContent     -> "Invalid content"

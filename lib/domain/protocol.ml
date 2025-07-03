@@ -19,6 +19,7 @@ type client_message =
   | RequestWorldGeneration
   | RequestWorldDeletion
   | RequestStatusFrame
+  | RequestCharacterSheet
   | Help
   | Unknown of string
 [@@deriving yojson]
@@ -47,7 +48,7 @@ type server_message =
   | CharacterListFailed of error_response
   | CharacterCreated of { character : Types.list_character }
   | CharacterCreationFailed of error_response
-  | CharacterSelected of { character : Types.character }
+  | CharacterSelected of { character_sheet : Types.character_sheet }
   | CharacterSelectionFailed of error_response
   | Area of { area : Types.area }
   | Status of { status : Types.status }
