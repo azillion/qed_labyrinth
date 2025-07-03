@@ -1,5 +1,7 @@
 open Base
 open Lwt.Syntax
+module Account_system = Qed_domain.Account_system
+module Components = Qed_domain.Components
 
 let error_response ~status error =
   Dream.json ~status
@@ -21,22 +23,21 @@ let handle_login body =
   match body with
   | `Assoc [ ("username", `String username); ("password", `String password) ]
     -> (
-      let* result = User.authenticate ~username ~password in
+      let* result = Account_system.authenticate ~username ~password in
       match result with
-      | Ok user -> (
-          match Jwt.generate_token user.User.id with
+      | Ok (user_entity_id, role) -> (
+          let user_id_str = Uuidm.to_string user_entity_id in
+          match Jwt.generate_token user_id_str with
           | Ok token -> (
               let expires_at =
-                Ptime.add_span (Ptime_clock.now ())
-                  (Ptime.Span.of_int_s (24 * 60 * 60))
-                |> Option.value_exn
+                Some (Unix.time () +. (24.0 *. 60.0 *. 60.0))
               in
               let* token_result =
-                User.update_token ~user_id:user.User.id ~token:(Some token)
-                  ~expires_at:(Some expires_at)
+                Account_system.update_token ~user_entity_id ~token:(Some token)
+                  ~expires_at
               in
               match token_result with
-              | Ok () -> user_response ~token ~role:(User.string_of_role user.User.role)  
+              | Ok () -> user_response ~token ~role:(Components.UserProfileComponent.string_of_role role)
               | Error _ ->
                   error_response ~status:`Internal_Server_Error
                     "Failed to store token")
@@ -69,22 +70,21 @@ let handle_register body =
       else if not (is_valid_email email) then
         error_response ~status:`Bad_Request "Invalid email"
       else
-        let* register_result = User.register ~username ~password ~email in
+        let* register_result = Account_system.register ~username ~password ~email in
         match register_result with
-        | Ok user -> (
-            match Jwt.generate_token user.id with
+        | Ok (user_entity_id, role) -> (
+            let user_id_str = Uuidm.to_string user_entity_id in
+            match Jwt.generate_token user_id_str with
             | Ok token -> (
                 let expires_at =
-                  Ptime.add_span (Ptime_clock.now ())
-                    (Ptime.Span.of_int_s (24 * 60 * 60))
-                  |> Option.value_exn
+                  Some (Unix.time () +. (24.0 *. 60.0 *. 60.0))
                 in
                 let* token_result =
-                  User.update_token ~user_id:user.id ~token:(Some token)
-                    ~expires_at:(Some expires_at)
+                  Account_system.update_token ~user_entity_id ~token:(Some token)
+                    ~expires_at
                 in
                 match token_result with
-                | Ok () -> user_response ~token ~role:(User.string_of_role user.role)
+                | Ok () -> user_response ~token ~role:(Components.UserProfileComponent.string_of_role role)
                 | Error _ ->
                     error_response ~status:`Internal_Server_Error
                       "Failed to store token")
@@ -107,18 +107,18 @@ let handle_logout request (app_state : Qed_domain.State.t) =
       let verify_result = Jwt.verify_token token in
       match verify_result with
       | Ok user_id -> (
-          let* user_result = Qed_domain.User.find_by_id user_id in
-          match user_result with
-          | Ok _ ->
-              let* _ =
-                Qed_domain.User.update_token ~user_id ~token:None
-                  ~expires_at:None
-              in
+          let user_entity_id = Uuidm.of_string user_id |> Option.value_exn in
+          let* token_result =
+            Account_system.update_token ~user_entity_id ~token:None
+              ~expires_at:None
+          in
+          match token_result with
+          | Ok () ->
               let () =
                 Qed_domain.Connection_manager.remove_client
                   app_state.connection_manager user_id
               in
               Dream.json ~status:`No_Content ""
-          | Error _ -> error_response ~status:`Unauthorized "User not found")
+          | Error _ -> error_response ~status:`Unauthorized "Failed to logout")
       | Error _ -> error_response ~status:`Unauthorized "Invalid token")
   | _ -> error_response ~status:`Unauthorized "No authorization token"

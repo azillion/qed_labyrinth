@@ -13,25 +13,23 @@ let is_valid_token request : (unit, Dream.response) Lwt_result.t =
       let verify_result = Jwt.verify_token token in
       match verify_result with
       | Ok user_id -> (
-          let* user_result = User.find_by_id user_id in
-          match user_result with
-          | Ok user -> (
-              let now = Ptime_clock.now () in
-              match (user.token, user.token_expires_at) with
+          let user_entity_id = Uuidm.of_string user_id |> Option.value_exn in
+          let* auth_comp_opt = Ecs.AuthenticationStorage.get user_entity_id in
+          match auth_comp_opt with
+          | Some auth_comp -> (
+              let now = Unix.time () in
+              match (auth_comp.token, auth_comp.token_expires_at) with
               | Some db_token, Some expires_at
                 when String.equal db_token token
-                     && Ptime.is_later expires_at ~than:now ->
+                     && Float.( > ) expires_at now ->
                   Lwt.return_ok ()
               | _, None | None, _ | Some _, Some _ ->
                   Lwt.return_error
                     (error_response ~status:`Unauthorized
                        "Token invalid or expired"))
-          | Error Qed_error.UserNotFound ->
+          | _ ->
               Lwt.return_error
                 (error_response ~status:`Unauthorized "User not found")
-          | Error _ ->
-              Lwt.return_error
-                (error_response ~status:`Internal_Server_Error "Database error")
           )
       | Error `TokenExpired ->
           Lwt.return_error

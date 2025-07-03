@@ -126,6 +126,9 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
         let* () = C.exec (create_component_table "senders") () in
         let* () = C.exec (create_component_table "areas") () in
         let* () = C.exec (create_component_table "exits") () in
+        let* () = C.exec (create_component_table "authentications") () in
+        let* () = C.exec (create_component_table "user_profiles") () in
+        let* () = C.exec (create_component_table "communications") () in
 
         (* legacy tables *)
         let* () = C.exec create_users_table () in

@@ -55,21 +55,13 @@ module System = struct
           Communication_system.System.get_character_name char_entity_id |> Lwt.map (Result.of_option ~error:CharacterNotFound)
         in
         
-        (* Announce departure to everyone in the old room BEFORE moving *)
-        let direction_str = Components.ExitComponent.direction_to_string direction in
-        let departure_msg_content = Printf.sprintf "%s has left, heading %s." char_name direction_str in
-        let* departure_msg =
-          Communication.create ~message_type:System ~sender_id:None ~content:departure_msg_content ~area_id:(Some current_area_id)
-        in
-        let* () = Infra.Queue.push state.event_queue (Event.Announce { area_id = current_area_id; message = departure_msg }) |> Lwt_result.ok in
-        
         (* Now, update the character's position *)
         let new_pos_comp = { position_comp with area_id = new_area_id } in
         let* () = Ecs.CharacterPositionStorage.set char_entity_id new_pos_comp |> Lwt_result.ok in
 
         (* Queue PlayerMoved event for arrival announcements and other consequences *)
         let* () = Infra.Queue.push state.event_queue
-          (Event.PlayerMoved { user_id; old_area_id = current_area_id; new_area_id; direction }) |> Lwt_result.ok in
+          (Event.PlayerMoved { user_id; char_name; old_area_id = current_area_id; new_area_id; direction }) |> Lwt_result.ok in
 
         (* DEBUG *)
         Stdio.printf "[MOVE] Queued PlayerMoved event for user %s\n" user_id;

@@ -93,6 +93,11 @@ module Entity = struct
     let deleted = get_pending_deletions () in
     List.iter deleted ~f:(fun id -> Hashtbl.remove entities id);
     deleted
+
+  (* Register a pre-defined entity UUID that was not created via create *)
+  let register id =
+    if not (Hashtbl.mem entities id) then
+      Hashtbl.set entities ~key:id ~data:Active
 end
 
 (* Component interface *)
@@ -283,6 +288,9 @@ module CharacterPositionStorage = MakeComponentStorage(CharacterPositionComponen
 module DescriptionStorage = MakeComponentStorage(DescriptionComponent)
 module AreaStorage = MakeComponentStorage(AreaComponent)
 module ExitStorage = MakeComponentStorage(ExitComponent)
+module AuthenticationStorage = MakeComponentStorage(AuthenticationComponent)
+module UserProfileStorage = MakeComponentStorage(UserProfileComponent)
+module CommunicationStorage = MakeComponentStorage(CommunicationComponent)
 
 (* World module *)
 module World = struct
@@ -321,6 +329,9 @@ module World = struct
         let* () = DescriptionStorage.load_from_db () in
         let* () = AreaStorage.load_from_db () in
         let* () = ExitStorage.load_from_db () in
+        let* () = CommunicationStorage.load_from_db () in
+        let* () = AuthenticationStorage.load_from_db () in
+        let* () = UserProfileStorage.load_from_db () in
         (* Load other component storages here *)
 
         Lwt.return_ok ()
@@ -334,6 +345,9 @@ module World = struct
       let* () = DescriptionStorage.sync_to_db (module Db) in
       let* () = AreaStorage.sync_to_db (module Db) in
       let* () = ExitStorage.sync_to_db (module Db) in
+      let* () = CommunicationStorage.sync_to_db (module Db) in
+      let* () = AuthenticationStorage.sync_to_db (module Db) in
+      let* () = UserProfileStorage.sync_to_db (module Db) in
       (* Sync other component storages here *)
       
       let deleted = Entity.cleanup_deleted () in

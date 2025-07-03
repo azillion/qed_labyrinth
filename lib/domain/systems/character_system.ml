@@ -2,13 +2,13 @@
 
 module Character_list_system = struct
 
-  let handle_character_list_requested state user_id =
+  let handle_character_list_requested (state : State.t) user_id =
     let open Lwt_result.Syntax in
     let* character_components = Ecs.CharacterStorage.all () |> Lwt_result.ok in
     match character_components with
     | [] ->
         (* No characters found, queue an empty list event *)
-        let* () = Infra.Queue.push state.State.event_queue (Event.SendCharacterList { user_id; characters = [] }) |> Lwt_result.ok in
+        let* () = Infra.Queue.push state.event_queue (Event.SendCharacterList { user_id; characters = [] }) |> Lwt_result.ok in
         Lwt_result.return ()
     | character_components ->
         (* Filter characters by user_id *)
@@ -43,7 +43,7 @@ module Character_list_system = struct
         in
         
         (* Queue the event to send character list to the client *)
-        let%lwt () = Infra.Queue.push state.State.event_queue (Event.SendCharacterList { user_id; characters }) in
+        let%lwt () = Infra.Queue.push state.event_queue (Event.SendCharacterList { user_id; characters }) in
         Lwt_result.return ()
 
   (* System implementation for ECS *)
@@ -57,8 +57,8 @@ end
 module Character_list_communication_system = struct
   (* Handles sending character list to clients *)
   
-  let handle_character_list state user_id characters =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_character_list (state : State.t) user_id characters =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         (* Send character list to the client *)
@@ -76,7 +76,7 @@ module Character_list_communication_system = struct
 end
 
 module Character_creation_system = struct
-  let handle_create_character state user_id name description starting_area_id =
+  let handle_create_character (state : State.t) user_id name description starting_area_id =
     let open Lwt_result.Syntax in
     (* Create a new entity *)
     let* entity_id = Ecs.Entity.create () |> Lwt.map (Result.map_error (fun _ -> Qed_error.DatabaseError "Failed to create entity")) in
@@ -105,25 +105,33 @@ module Character_creation_system = struct
     let%lwt () = Ecs.CharacterPositionStorage.set entity_id pos_comp in
     
     (* Find the client to update state *)
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         (* Update client state *)
         Client.set_character client entity_id_str;
-        Connection_manager.add_to_room state.State.connection_manager 
+        Connection_manager.add_to_room state.connection_manager 
           ~client_id:client.Client.id 
           ~room_id:starting_area_id;
         
-        (* Queue an event to send response to client *)
-        let list_character : Types.list_character = {
+        (* Queue events to inform client *)
+        let list_character : Types.list_character = { id = entity_id_str; name } in
+        let character_full : Types.character = {
           id = entity_id_str;
-          name
-        } in  
-        let%lwt () = Infra.Queue.push state.State.event_queue (
-          Event.SendCharacterCreated { user_id; character = list_character }
-        ) in
+          name;
+          location_id = starting_area_id;
+          health = 100;
+          max_health = 100;
+          mana = 100;
+          max_mana = 100;
+          level = 1;
+          experience = 0;
+        } in
+        (* Send both CharacterCreated (list form) and CharacterSelected (full) so UI can proceed *)
+        let* () = Infra.Queue.push state.event_queue (Event.SendCharacterCreated { user_id; character = list_character }) |> Lwt_result.ok in
+        let* () = Infra.Queue.push state.event_queue (Event.SendCharacterSelected { user_id; character = character_full }) |> Lwt_result.ok in
         (* Send initial area info using AreaQuery event *)
-        let%lwt () = Infra.Queue.push state.State.event_queue (
+        let%lwt () = Infra.Queue.push state.event_queue (
           Event.AreaQuery { user_id; area_id = starting_area_id }
         ) in
         Lwt_result.return ()
@@ -139,15 +147,15 @@ end
 module Character_creation_communication_system = struct
   (* Handles sending character creation responses to clients *)
   
-  let handle_character_created state user_id character =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_character_created (state : State.t) user_id character =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         client.Client.send (Protocol.CharacterCreated { character })
     | None -> Lwt.return_unit
 
-  let handle_character_creation_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_character_creation_failed (state : State.t) user_id error =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         client.Client.send (Protocol.CharacterCreationFailed { error })
@@ -161,7 +169,7 @@ module Character_creation_communication_system = struct
 end
 
 module Character_selection_system = struct
-  let handle_character_selected state user_id character_id =
+  let handle_character_selected (state : State.t) user_id character_id =
     (* Check if character exists and belongs to the user *)
     match Uuidm.of_string character_id with
     | None ->
@@ -209,24 +217,24 @@ module Character_selection_system = struct
                   } in
                   
                   (* Find the client *)
-                  let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+                  let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
                   match client_opt with
                   | Some client ->
                       (* Update client state *)
                       Client.set_character client character_id;
                       
                       (* Add to character's current room *)
-                      Connection_manager.add_to_room state.State.connection_manager
+                      Connection_manager.add_to_room state.connection_manager
                         ~client_id:client.Client.id
                         ~room_id:location_id;
                       
                       (* Queue event to send character data to client *)
-                      let%lwt () = Infra.Queue.push state.State.event_queue (
+                      let%lwt () = Infra.Queue.push state.event_queue (
                         Event.SendCharacterSelected { user_id; character }
                       ) in
                       
                       (* Send area info using AreaQuery event *)
-                      let%lwt () = Infra.Queue.push state.State.event_queue (
+                      let%lwt () = Infra.Queue.push state.event_queue (
                         Event.AreaQuery { user_id; area_id = location_id }
                       ) in
                       
@@ -245,8 +253,8 @@ end
 module Character_selection_communication_system = struct
   (* Handles sending character selection responses to clients *)
   
-  let handle_character_selected state user_id character =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_character_selected (state : State.t) user_id character =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         begin
@@ -261,8 +269,8 @@ module Character_selection_communication_system = struct
         Stdio.eprintf "[ERROR] Client not found for user: %s when sending CharacterSelected\n" user_id;
         Lwt.return_unit
 
-  let handle_character_selection_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_character_selection_failed (state : State.t) user_id error =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         begin

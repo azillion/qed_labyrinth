@@ -6,15 +6,14 @@ let send_error (client : Client.t) error =
   client.send (Protocol.CommandFailed { error })
 
 let send_success (client : Client.t) message =
-  let%lwt msg =
-    Communication.create ~message_type:Communication.CommandSuccess
-      ~sender_id:None ~content:message ~area_id:None
-  in
-  match msg with
-  | Ok msg ->
-      client.send
-        (Protocol.CommandSuccess { message = Types.chat_message_of_model msg })
-  | Error _ -> Lwt.return_unit
+  let msg = {
+    Types.sender_id = None;
+    message_type = Types.CommandSuccess;
+    content = message;
+    timestamp = Unix.time ();
+    area_id = None;
+  } in
+  client.send (Protocol.CommandSuccess { message = msg })
 
 (* let with_super_admin_check (client : Client.t) (f : Character.t -> unit Lwt.t) =
   match client.auth_state with
@@ -43,12 +42,3 @@ let with_character_check (client : Client.t) (f : Character.t -> unit Lwt.t) =
       | Error _ -> Lwt.return_unit 
       | Ok character -> f character) *)
 
-let get_area_by_id_opt (area_id : string) =
-  match%lwt Area.find_by_id area_id with
-  | Error _ -> Lwt.return_none
-  | Ok area -> (
-      match%lwt Area.get_exits area with
-      | Error _ -> Lwt.return_none
-      | Ok exits ->
-          let area' = Types.area_of_model area exits in
-          Lwt.return_some area')

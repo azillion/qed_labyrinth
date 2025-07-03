@@ -14,7 +14,7 @@ type client_message =
   | SendSystem of { message : string }
   | RequestChatHistory
   | Command of { command : string }
-  | Move of { direction : Area.direction }
+  | Move of { direction : Components.ExitComponent.direction }
   | RequestAdminMap
   | RequestWorldGeneration
   | RequestWorldDeletion
@@ -25,12 +25,12 @@ type client_message =
 
 let parse_command command =
   match command with
-  | "/n" | "/north" -> Move { direction = Area.North }
-  | "/s" | "/south" -> Move { direction = Area.South }
-  | "/e" | "/east" -> Move { direction = Area.East }
-  | "/w" | "/west" -> Move { direction = Area.West }
-  | "/u" | "/up" -> Move { direction = Area.Up }
-  | "/d" | "/down" -> Move { direction = Area.Down }
+  | "/n" | "/north" -> Move { direction = Components.ExitComponent.North }
+  | "/s" | "/south" -> Move { direction = Components.ExitComponent.South }
+  | "/e" | "/east" -> Move { direction = Components.ExitComponent.East }
+  | "/w" | "/west" -> Move { direction = Components.ExitComponent.West }
+  | "/u" | "/up" -> Move { direction = Components.ExitComponent.Up }
+  | "/d" | "/down" -> Move { direction = Components.ExitComponent.Down }
   | "/world generate" -> RequestWorldGeneration
   | "/world delete" -> RequestWorldDeletion
   | "/help" -> Help

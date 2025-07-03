@@ -30,7 +30,6 @@ type exit = {
   direction : string;
 } [@@deriving yojson]
 
-val exit_of_model : Area.exit -> exit
 
 type area = {
   id : string;
@@ -43,18 +42,22 @@ type area = {
   moisture : float option;
 } [@@deriving yojson]
 
-val area_of_model : Area.t -> Area.exit list -> area
 
 (* chat types *)
+type message_type = 
+  | Chat
+  | System
+  | CommandSuccess
+  | CommandError
+  [@@deriving yojson]
+
 type chat_message = {
   sender_id : string option;
-  message_type : Communication.message_type;
+  message_type : message_type;
   content : string;
   timestamp : float;
   area_id : string option;
 } [@@deriving yojson]
-
-val chat_message_of_model : Communication.t -> chat_message
 
 (* map types *)
 type connection = {

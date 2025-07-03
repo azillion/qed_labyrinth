@@ -84,13 +84,13 @@ module Handler : Client_handler.S = struct
         (match client.Client.auth_state with
         | Authenticated { user_id; _ } ->
             let event = Event.Say { user_id; content = message } in
-            Infra.Queue.push state.State.event_queue event
+            Infra.Queue.push state.event_queue event
         | Anonymous -> Lwt.return_unit)
     | SendEmote { message } ->
         (match client.Client.auth_state with
         | Authenticated { user_id; _ } ->
             let event = Event.Emote { user_id; content = message } in
-            Infra.Queue.push state.State.event_queue event
+            Infra.Queue.push state.event_queue event
         | Anonymous -> Lwt.return_unit)
     | _ -> Lwt.return_unit
 end

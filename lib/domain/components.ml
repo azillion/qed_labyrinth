@@ -86,3 +86,46 @@ module ExitComponent = struct
     | Up -> Down
     | Down -> Up
 end
+
+module AuthenticationComponent = struct
+  type t = {
+    entity_id: string;
+    username: string;
+    password_hash: string;
+    token: string option;
+    token_expires_at: float option; (* Unix timestamp *)
+  } [@@deriving yojson]
+
+  let table_name = "authentications"
+end
+
+module UserProfileComponent = struct
+  type role = Player | Admin | SuperAdmin [@@deriving yojson]
+
+  let string_of_role = function
+    | Player -> "player"
+    | Admin -> "admin"
+    | SuperAdmin -> "super admin"
+
+  type t = {
+    entity_id: string;
+    email: string;
+    role: role;
+    created_at: float; (* Unix timestamp *)
+  } [@@deriving yojson]
+
+  let table_name = "user_profiles"
+end
+
+module CommunicationComponent = struct
+  type t = {
+    entity_id: string;
+    area_id: string option;
+    sender_id: string option;
+    message_type: Types.message_type;
+    content: string;
+    timestamp: float;
+  } [@@deriving yojson]
+
+  let table_name = "communications"
+end

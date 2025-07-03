@@ -140,7 +140,7 @@ module Handler : Client_handler.S = struct
                  { error = Qed_error.to_yojson error })) *)
 
   (* Main message handler *)
-  let handle state client msg =
+  let handle (state : State.t) client msg =
     let open Protocol in
     match msg with
     | CreateCharacter { name } -> (
@@ -154,35 +154,27 @@ module Handler : Client_handler.S = struct
             description = ""; (* Default empty description *)
             starting_area_id = "00000000-0000-0000-0000-000000000000" (* Default starting area *)
           } in
-          Infra.Queue.push state.State.event_queue event)
+          Infra.Queue.push state.event_queue event)
     | SelectCharacter { character_id } ->
         (* handle_character_select state client character_id *)
         (match client.Client.auth_state with
         | Client.Anonymous -> Lwt.return_unit
         | Client.Authenticated { user_id; _ } ->
-            let%lwt () = Infra.Queue.push state.State.event_queue (Event.CharacterSelected { user_id; character_id }) in
+            let%lwt () = Infra.Queue.push state.event_queue (Event.CharacterSelected { user_id; character_id }) in
             Lwt.return_unit)
     | ListCharacters ->
         (* | ListCharacters -> handle_character_list client *)
         (match client.Client.auth_state with
         | Client.Anonymous -> Lwt.return_unit
         | Client.Authenticated { user_id; _ } ->
-            let%lwt () = Infra.Queue.push state.State.event_queue (Event.CharacterListRequested { user_id }) in
+            let%lwt () = Infra.Queue.push state.event_queue (Event.CharacterListRequested { user_id }) in
             Lwt.return_unit)
     | Move { direction } ->
         (match client.Client.auth_state with
         | Client.Anonymous -> Lwt.return_unit (* Do nothing if not authenticated *)
         | Client.Authenticated { user_id; _ } ->
-            let direction' =
-              match direction with
-              | Area.North -> Components.ExitComponent.North
-              | Area.South -> Components.ExitComponent.South
-              | Area.East -> Components.ExitComponent.East
-              | Area.West -> Components.ExitComponent.West
-              | Area.Up -> Components.ExitComponent.Up
-              | Area.Down -> Components.ExitComponent.Down
-            in
+            let direction' = direction in
             let event = Event.Move { user_id; direction = direction' } in
-            Infra.Queue.push state.State.event_queue event)
+            Infra.Queue.push state.event_queue event)
     | _ -> Lwt.return_unit
 end

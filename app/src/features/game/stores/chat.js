@@ -14,7 +14,7 @@ export const chatHandlers = {
     'ChatMessage': (payload) => {
         const { message } = payload;
         // Only add message if it's for current room
-        setMessages(msgs => [...msgs, message]);
+        setMessages(prev => [...prev, message]);
     },
     'ChatHistory': (payload) => {
         const { messages } = payload;
@@ -28,11 +28,11 @@ export const chatHandlers = {
     },
     'CommandSuccess': (payload) => {
         const { message } = payload;
-        setMessages(msgs => [...msgs, message]);
+        setMessages(prev => [...prev, message]);
     },
     'CommandFailed': (payload) => {
         const { error } = payload;
-        setMessages(msgs => [...msgs, {
+        setMessages(prev => [...prev, {
             sender_id: null,
             message_type: 'CommandFailed',
             content: error,

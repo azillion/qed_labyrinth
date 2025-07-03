@@ -2,14 +2,14 @@ open Lwt.Syntax
 open Base
 
 module Area_creation_system = struct
-  let handle_create_area state user_id name description x y z ?elevation ?temperature ?moisture () =
+  let handle_create_area (state : State.t) user_id name description x y z ?elevation ?temperature ?moisture () =
     (* Create a new entity for the area *)
     let* entity_id_result = Ecs.Entity.create () in
     match entity_id_result with
     | Error e -> 
         Stdio.eprintf "Failed to create area entity: %s\n" (Error.to_string_hum e);
         (* Queue event for area creation failure *)
-        let* () = Infra.Queue.push state.State.event_queue (
+        let* () = Infra.Queue.push state.event_queue (
           Event.AreaCreationFailed { 
             user_id;
             error = Qed_error.to_yojson (Qed_error.DatabaseError "Failed to create area entity") 
@@ -40,7 +40,7 @@ module Area_creation_system = struct
         let* () = Ecs.DescriptionStorage.set entity_id desc_comp in
         
         (* Queue event for area creation success *)
-        let* () = Infra.Queue.push state.State.event_queue (
+        let* () = Infra.Queue.push state.event_queue (
           Event.AreaCreated {
             user_id;
             area_id = entity_id_str
@@ -56,15 +56,15 @@ module Area_creation_system = struct
 end
 
 module Area_creation_communication_system = struct
-  let handle_area_created state user_id area_id =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_area_created (state : State.t) user_id area_id =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         (* Send area created message to client *)
         client.Client.send (Protocol.CommandSuccess {
           message = {
             Types.sender_id = None;
-            message_type = Communication.CommandSuccess;
+            message_type = Types.CommandSuccess;
             content = Printf.sprintf "Area created successfully with ID: %s" area_id;
             timestamp = Unix.time ();
             area_id = None;
@@ -72,8 +72,8 @@ module Area_creation_communication_system = struct
         })
     | None -> Lwt.return_unit
 
-  let handle_area_creation_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_area_creation_failed (state : State.t) user_id error =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         client.Client.send (Protocol.Error { error })
@@ -87,7 +87,7 @@ module Area_creation_communication_system = struct
 end
 
 module Exit_creation_system = struct
-  let handle_create_exit state user_id from_area_id to_area_id direction description hidden locked =
+  let handle_create_exit (state : State.t) user_id from_area_id to_area_id direction description hidden locked =
     (* Validate from_area_id and to_area_id exist *)
     let* from_area_valid = match Uuidm.of_string from_area_id with
       | None -> Lwt.return false
@@ -105,7 +105,7 @@ module Exit_creation_system = struct
     
     if not (from_area_valid && to_area_valid) then begin
       (* One or both areas don't exist *)
-      let* () = Infra.Queue.push state.State.event_queue (
+      let* () = Infra.Queue.push state.event_queue (
         Event.ExitCreationFailed {
           user_id;
           error = Qed_error.to_yojson Qed_error.AreaNotFound
@@ -118,7 +118,7 @@ module Exit_creation_system = struct
       match entity_id_result with
       | Error e -> 
           Stdio.eprintf "Failed to create exit entity: %s\n" (Error.to_string_hum e);
-          let* () = Infra.Queue.push state.State.event_queue (
+          let* () = Infra.Queue.push state.event_queue (
             Event.ExitCreationFailed {
               user_id;
               error = Qed_error.to_yojson (Qed_error.DatabaseError "Failed to create exit entity")
@@ -141,7 +141,7 @@ module Exit_creation_system = struct
           let* () = Ecs.ExitStorage.set entity_id exit_comp in
           
           (* Queue event for exit creation success *)
-          let* () = Infra.Queue.push state.State.event_queue (
+          let* () = Infra.Queue.push state.event_queue (
             Event.ExitCreated {
               user_id;
               exit_id = entity_id_str
@@ -182,15 +182,15 @@ module Exit_creation_system = struct
 end
 
 module Exit_creation_communication_system = struct
-  let handle_exit_created state user_id exit_id =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_exit_created (state : State.t) user_id exit_id =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         (* Send exit created message to client *)
         client.Client.send (Protocol.CommandSuccess {
           message = {
             Types.sender_id = None;
-            message_type = Communication.CommandSuccess;
+            message_type = Types.CommandSuccess;
             content = Printf.sprintf "Exit created successfully with ID: %s" exit_id;
             timestamp = Unix.time ();
             area_id = None;
@@ -198,8 +198,8 @@ module Exit_creation_communication_system = struct
         })
     | None -> Lwt.return_unit
 
-  let handle_exit_creation_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
+  let handle_exit_creation_failed (state : State.t) user_id error =
+    let client_opt = Connection_manager.find_client_by_user_id state.connection_manager user_id in
     match client_opt with
     | Some client ->
         client.Client.send (Protocol.Error { error })
@@ -230,78 +230,41 @@ module Area_query_system = struct
     in
     Lwt.return (List.filter_opt char_details)
 
-  let handle_area_query state user_id area_id =
-    let* () = Lwt_io.printl (Printf.sprintf "Area query for user %s: %s" user_id area_id) in
-    (* Get area details *)
-    match Uuidm.of_string area_id with
-    | None ->
-        let* () = Infra.Queue.push state.State.event_queue (
-          Event.AreaQueryFailed {
-            user_id;
-            error = Qed_error.to_yojson Qed_error.AreaNotFound
-          }
-        ) in
-        Lwt.return_unit
-    | Some entity_id ->
-        let* area_opt = Ecs.AreaStorage.get entity_id in
-        let* desc_opt = Ecs.DescriptionStorage.get entity_id in
-        
-        match (area_opt, desc_opt) with
-        | (Some area, Some desc) ->
-            (* Get all exits from this area *)
-            let* all_exits = Ecs.ExitStorage.all () in
-            let exits = List.filter all_exits ~f:(fun (_, exit_comp) ->
-              String.equal exit_comp.Components.ExitComponent.from_area_id area_id &&
-              not exit_comp.Components.ExitComponent.hidden
-            ) in
-            
-            (* Convert to area info model *)
-            let exit_directions = List.map exits ~f:(fun (_, exit) ->
-              Components.ExitComponent.direction_to_string exit.Components.ExitComponent.direction
-            ) in
-            
-            let area_info : Types.area = {
-              id = area_id;
-              name = desc.Components.DescriptionComponent.name;
-              description = Option.value desc.Components.DescriptionComponent.description ~default:"";
-              coordinate = Some {
-                x = area.Components.AreaComponent.x;
-                y = area.Components.AreaComponent.y;
-                z = area.Components.AreaComponent.z;
-              };
-              exits = List.map exit_directions ~f:(fun dir -> { Types.direction = dir });
-              elevation = area.Components.AreaComponent.elevation;
-              temperature = area.Components.AreaComponent.temperature;
-              moisture = area.Components.AreaComponent.moisture;
-            } in
-            
-            (* Queue event with area info *)
-            let* () = Infra.Queue.push state.State.event_queue (
-              Event.AreaQueryResult {
-                user_id;
-                area = area_info
-              }
-            ) in
-            let* () = Infra.Queue.push state.State.event_queue
-              (Event.RequestChatHistory { user_id; area_id })
-            in
-            (* Queue event to update area presence *)
-            let%lwt characters_here = find_characters_in_area area_id in
-            let%lwt () = Infra.Queue.push state.State.event_queue (
-              Event.UpdateAreaPresence {
-                area_id;
-                characters = characters_here
-              }
-            ) in
-            Lwt.return_unit
-        | _ ->
-            let* () = Infra.Queue.push state.State.event_queue (
-              Event.AreaQueryFailed {
-                user_id;
-                error = Qed_error.to_yojson Qed_error.AreaNotFound
-              }
-            ) in
-            Lwt.return_unit
+  let handle_area_query (state: State.t) user_id area_id =
+    let open Lwt_result.Syntax in
+    let* () = Lwt_io.printl (Printf.sprintf "Area query for user %s: %s" user_id area_id) |> Lwt_result.ok in
+    
+    let* entity_id = 
+        match Uuidm.of_string area_id with
+        | Some id -> Lwt.return_ok id
+        | None -> Lwt.return_error Qed_error.AreaNotFound
+    in
+
+    let* area_comp = Ecs.AreaStorage.get entity_id |> Lwt.map (Result.of_option ~error:Qed_error.AreaNotFound) in
+    let* desc_comp = Ecs.DescriptionStorage.get entity_id |> Lwt.map (Result.of_option ~error:Qed_error.AreaNotFound) in
+    let* all_exits = Ecs.ExitStorage.all () |> Lwt_result.ok in
+
+    let exits =
+      List.filter all_exits ~f:(fun (_, exit_comp) ->
+        String.equal exit_comp.from_area_id area_id && not exit_comp.hidden)
+      |> List.map ~f:(fun (_, exit_comp) -> { Types.direction = Components.ExitComponent.direction_to_string exit_comp.direction })
+    in
+
+    let area_info : Types.area = {
+      id = area_id;
+      name = desc_comp.name;
+      description = Option.value desc_comp.description ~default:"";
+      coordinate = Some { x = area_comp.x; y = area_comp.y; z = area_comp.z };
+      exits;
+      elevation = area_comp.elevation;
+      temperature = area_comp.temperature;
+      moisture = area_comp.moisture;
+    } in
+
+    let* () = Infra.Queue.push state.event_queue (Event.AreaQueryResult { user_id; area = area_info }) |> Lwt_result.ok in
+    let* () = Infra.Queue.push state.event_queue (Event.RequestChatHistory { user_id; area_id }) |> Lwt_result.ok in
+    
+    Lwt.return_ok ()
 
   let priority = 100
 
@@ -311,18 +274,14 @@ module Area_query_system = struct
 end
 
 module Area_query_communication_system = struct
-  let handle_area_query_result state user_id area =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Area { area })
+  let handle_area_query_result (state : State.t) user_id area =
+    match Connection_manager.find_client_by_user_id state.connection_manager user_id with
+    | Some client -> client.Client.send (Protocol.Area { area })
     | None -> Lwt.return_unit
 
-  let handle_area_query_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Error { error })
+  let handle_area_query_failed (state : State.t) user_id error =
+    match Connection_manager.find_client_by_user_id state.connection_manager user_id with
+    | Some client -> client.Client.send (Protocol.Error { error })
     | None -> Lwt.return_unit
 
   let priority = 50
