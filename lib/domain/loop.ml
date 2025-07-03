@@ -82,6 +82,36 @@ let process_event (state : State.t) (event : Event.t) =
       let%lwt () = Lwt_io.printl (Printf.sprintf "Area presence update for %s: %d characters" area_id (List.length characters)) in
       Lwt_result.return ()
   
+  | Event.CharacterCreated { user_id; character_id } ->
+      (* After a character has been created in the DB, look it up so we can notify the
+         client and continue the workflow. We transform the DB record into a
+         Types.list_character payload and enqueue a SendCharacterCreated event so
+         that the communication layer can deliver it. *)
+      let open Lwt_result.Syntax in
+      let* character_opt = Character.find_by_id character_id in
+      (match character_opt with
+      | None ->
+          (* This should be rare – the character was just created but we can no longer
+             find it. Treat as an error and fall back to the normal error path. *)
+          let* () = Infra.Queue.push state.State.event_queue (
+            Event.SendCharacterCreationFailed
+              { user_id; error = Qed_error.to_yojson Qed_error.CharacterNotFound }
+          ) |> Lwt_result.ok in
+          Lwt_result.return ()
+      | Some character ->
+          let list_character : Types.list_character =
+            { id = character.id; name = character.name } in
+          let* () = Infra.Queue.push state.State.event_queue (
+            Event.SendCharacterCreated { user_id; character = list_character }
+          ) |> Lwt_result.ok in
+          (* Optionally, automatically load the new character into ECS so it can be
+             used immediately. Comment this in for now to keep the flow simple. *)
+          let* () = Infra.Queue.push state.State.event_queue (
+            Event.LoadCharacterIntoECS { user_id; character_id }
+          ) |> Lwt_result.ok in
+          let%lwt () = Lwt_io.printl (Printf.sprintf "[EVENT] CharacterCreated processed for user=%s char_id=%s" user_id character_id) in
+          Lwt_result.return ())
+  
   (* Add other event handlers here as they are refactored *)
   | _ -> Lwt_result.return () (* Ignore unhandled events for now *)
 
@@ -96,7 +126,7 @@ let process_events (state : State.t) =
         | Ok () -> Lwt.return_unit (* Success, continue *)
         | Error err ->
             let err_str = Qed_error.to_string err in
-            Stdio.printf "[EVENT_ERROR] %s\n" err_str;
+            let* () = Lwt_io.printl (Printf.sprintf "[EVENT_ERROR] %s" err_str) in
             (* Queue appropriate failure events based on the original event type *)
             (match event with
             | Event.CreateCharacter { user_id; _ } ->
@@ -160,4 +190,5 @@ let run (state : State.t) =
       game_loop state
   | Error e ->
       let* () = Lwt_io.printl (Printf.sprintf "World initialization error: %s" (Base.Error.to_string_hum e)) in
+      Stdio.print_endline ("[ERROR] World initialization error: " ^ Base.Error.to_string_hum e);
       Lwt.return_unit

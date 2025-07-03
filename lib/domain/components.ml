@@ -4,7 +4,7 @@ module CharacterComponent = struct
     user_id: string;  (* Links character to the owning user *)
   } [@@deriving yojson]
 
-  let table_name = "characters"
+  let table_name = "character_entities"
 end
 
 module CharacterPositionComponent = struct

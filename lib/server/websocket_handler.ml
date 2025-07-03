@@ -30,9 +30,11 @@ let handler (state : Qed_domain.State.t) user_id websocket =
               match message with
               | Command { command } ->
                   let message' = Qed_domain.Protocol.parse_command command in
+                  Stdio.print_endline ("Received command: " ^ command);
                   let%lwt () = Infra.Queue.push state.client_message_queue { message = message'; client } in
                   process_messages ()
               | _ ->
+                  Stdio.print_endline ("Received message: " ^ msg);
                   let%lwt () = Infra.Queue.push state.client_message_queue { message; client } in
                   process_messages ())
           | Error err ->
@@ -40,6 +42,7 @@ let handler (state : Qed_domain.State.t) user_id websocket =
               process_messages ())
       | None ->
           Connection_manager.remove_client state.connection_manager client_id;
+          Stdio.print_endline ("Client disconnected: " ^ client_id);
           Lwt.return_unit
     with
     | exn ->

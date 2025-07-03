@@ -83,6 +83,23 @@ module Entity = struct
     | Some Active -> true
     | _ -> false
 
+  (* Ensure an external UUID is present in the entity catalogue.  This is
+     useful when rows are created outside the ECS (e.g. via Tier-1 relational
+     tables) and we subsequently need to attach components. *)
+  let ensure_exists (id : t) : (unit, Base.Error.t) Result.t Lwt.t =
+    let open Lwt_result.Syntax in
+    if exists id then Lwt_result.return ()
+    else
+      let db_operation (module Db : Caqti_lwt.CONNECTION) =
+        Db.exec
+          (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
+            "INSERT OR IGNORE INTO entities (id) VALUES (?)")
+          (Uuidm.to_string id)
+      in
+      let* () = Database.Pool.use db_operation in
+      Hashtbl.set entities ~key:id ~data:Active;
+      Lwt_result.return ()
+
   let get_pending_deletions () =
     Hashtbl.fold entities ~init:[] ~f:(fun ~key ~data acc ->
       match data with

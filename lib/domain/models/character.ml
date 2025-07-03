@@ -84,3 +84,19 @@ let find_by_id character_id =
   match%lwt Database.Pool.use db_operation with
   | Ok result -> Lwt_result.return result
   | Error err -> Lwt_result.fail (Qed_error.DatabaseError (Error.to_string_hum err))
+
+let find_all_by_user ~user_id =
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    let query = Caqti_request.Infix.(Caqti_type.Std.string ->* Caqti_type.Std.(t3 string string string))
+      "SELECT id, user_id, name FROM characters WHERE user_id = ?" in
+    let%lwt rows_result = Db.collect_list query user_id in
+    match rows_result with
+    | Error e -> Lwt_result.fail e
+    | Ok rows ->
+        let default_stats id = { CoreStats.character_id = id; might = 0; finesse = 0; wits = 0; grit = 0; presence = 0 } in
+        let characters = List.map rows ~f:(fun (id, uid, name) -> { id; user_id = uid; name; core_stats = default_stats id }) in
+        Lwt_result.return characters
+  in
+  match%lwt Database.Pool.use db_operation with
+  | Ok result -> Lwt_result.return result
+  | Error err -> Lwt_result.fail (Qed_error.DatabaseError (Error.to_string_hum err))

@@ -21,3 +21,5 @@ type t = {
 val create : user_id:string -> name:string -> (t, Qed_error.t) Result.t Lwt.t
 
 val find_by_id : string -> (t option, Qed_error.t) Result.t Lwt.t
+
+val find_all_by_user : user_id:string -> (t list, Qed_error.t) Result.t Lwt.t

@@ -1,5 +1,4 @@
 import { TerminalText } from "@components/ui/TerminalText";
-import { theme } from "@stores/themeStore";
 import { character } from "@features/auth/stores/character";
 
 export const CharacterSheetPage = () => {

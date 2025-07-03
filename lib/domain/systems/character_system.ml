@@ -7,9 +7,13 @@ module Character_list_system = struct
     let* character_components = Ecs.CharacterStorage.all () |> Lwt_result.ok in
     match character_components with
     | [] ->
-        (* No characters found, queue an empty list event *)
-        let* () = Infra.Queue.push state.State.event_queue (Event.SendCharacterList { user_id; characters = [] }) |> Lwt_result.ok in
-        Lwt_result.return ()
+        (* No ECS characters – pull them from Tier-1 *)
+        let* db_chars = Character.find_all_by_user ~user_id in
+        let characters =
+          Base.List.map db_chars ~f:(fun c -> Types.{ id = c.id; name = c.name })
+        in
+        Infra.Queue.push state.State.event_queue
+          (Event.SendCharacterList { user_id; characters }) |> Lwt_result.ok
     | character_components ->
         (* Filter characters by user_id *)
         let user_characters = Base.List.filter character_components ~f:(fun (_, component) ->
@@ -80,6 +84,8 @@ module Character_creation_system = struct
     let open Lwt_result.Syntax in
     (* Call the Character.create function from relational model *)
     let* character = Character.create ~user_id ~name in
+    (* Log creation for observability *)
+    Stdio.printf "[CREATE_CHARACTER] user=%s character_id=%s name=%s\n" user_id character.id name;
     (* Queue CharacterCreated event on success *)
     let%lwt () = Infra.Queue.push state.State.event_queue (
       Event.CharacterCreated { user_id; character_id = character.id }
