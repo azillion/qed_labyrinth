@@ -76,8 +76,7 @@ This defines the rules for how data moves between the Relational DB and the ECS 
 1.  Define the model in `lib/domain/models/`.
 2.  Include `t` type, Caqti `Q` module, and data access functions.
 3.  Add the `CREATE TABLE` statement to `lib/infra/database.ml`.
-4.  Add the new model file to `lib/dune`.
-5.  Integrate with systems via events and model function calls.
+4.  Integrate with systems via events and model function calls.
 
 ### Adding a New ECS Component
 1.  Define component type and `table_name` in `lib/domain/components.ml`.
