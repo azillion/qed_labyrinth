@@ -66,6 +66,7 @@ let handle_load_character state character_id =
                     } in
                     Ecs.CharacterPositionStorage.set entity_id position_component
               in
+              let%lwt () = Lwt_io.printl (Printf.sprintf "[LOAD] Position set for %s in area %s\n" character_id "000...000") in
               
               (* Call calculate_and_update_stats to compute derived stats *)
               let%lwt stats_result = Character_stat_system.calculate_and_update_stats entity_id in

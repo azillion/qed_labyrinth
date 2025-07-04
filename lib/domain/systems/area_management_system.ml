@@ -231,10 +231,11 @@ module Area_query_system = struct
     Lwt.return (List.filter_opt char_details)
 
   let handle_area_query state user_id area_id =
-    let* () = Lwt_io.printl (Printf.sprintf "Area query for user %s: %s" user_id area_id) in
+    let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Called by user %s for area %s" user_id area_id) in
     (* Get area details *)
     match Uuidm.of_string area_id with
     | None ->
+        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Invalid area_id: %s (user: %s)" area_id user_id) in
         let* () = Infra.Queue.push state.State.event_queue (
           Event.AreaQueryFailed {
             user_id;
@@ -245,21 +246,17 @@ module Area_query_system = struct
     | Some entity_id ->
         let* area_opt = Ecs.AreaStorage.get entity_id in
         let* desc_opt = Ecs.DescriptionStorage.get entity_id in
-        
-        match (area_opt, desc_opt) with
+        (match (area_opt, desc_opt) with
         | (Some area, Some desc) ->
-            (* Get all exits from this area *)
             let* all_exits = Ecs.ExitStorage.all () in
             let exits = List.filter all_exits ~f:(fun (_, exit_comp) ->
               String.equal exit_comp.Components.ExitComponent.from_area_id area_id &&
               not exit_comp.Components.ExitComponent.hidden
             ) in
-            
-            (* Convert to area info model *)
             let exit_directions = List.map exits ~f:(fun (_, exit) ->
               Components.ExitComponent.direction_to_string exit.Components.ExitComponent.direction
             ) in
-            
+            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Found area: %s (id: %s), exits: [%s]" desc.Components.DescriptionComponent.name area_id (String.concat ~sep:", " exit_directions)) in
             let area_info : Types.area = {
               id = area_id;
               name = desc.Components.DescriptionComponent.name;
@@ -274,8 +271,6 @@ module Area_query_system = struct
               temperature = area.Components.AreaComponent.temperature;
               moisture = area.Components.AreaComponent.moisture;
             } in
-            
-            (* Queue event with area info *)
             let* () = Infra.Queue.push state.State.event_queue (
               Event.AreaQueryResult {
                 user_id;
@@ -285,9 +280,9 @@ module Area_query_system = struct
             let* () = Infra.Queue.push state.State.event_queue
               (Event.RequestChatHistory { user_id; area_id })
             in
-            (* Queue event to update area presence *)
             let%lwt characters_here = find_characters_in_area area_id in
-            let%lwt () = Infra.Queue.push state.State.event_queue (
+            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Characters present in area %s: %d" area_id (List.length characters_here)) in
+            let* () = Infra.Queue.push state.State.event_queue (
               Event.UpdateAreaPresence {
                 area_id;
                 characters = characters_here
@@ -295,13 +290,14 @@ module Area_query_system = struct
             ) in
             Lwt.return_unit
         | _ ->
+            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Area or description not found for area_id: %s (user: %s)" area_id user_id) in
             let* () = Infra.Queue.push state.State.event_queue (
               Event.AreaQueryFailed {
                 user_id;
                 error = Qed_error.to_yojson Qed_error.AreaNotFound
               }
             ) in
-            Lwt.return_unit
+            Lwt.return_unit)
 
   let priority = 100
 
