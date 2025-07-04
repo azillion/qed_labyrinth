@@ -15,6 +15,7 @@ type t =
   | CharacterSelected of { user_id: string; character_id: string }
   | CharacterSelectionFailed of { user_id: string; error: string }
   | LoadCharacterIntoECS of { user_id: string; character_id: string }
+  | UnloadCharacterFromECS of { user_id: string; character_id: string }
   | CharacterListRequested of { user_id: string }
   | CharacterList of { user_id: string; characters: (string * string) list }
   

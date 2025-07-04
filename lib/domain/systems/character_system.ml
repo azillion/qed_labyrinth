@@ -125,8 +125,17 @@ end
 
 module Character_selection_system = struct
   let handle_character_selected state user_id character_id =
+    let%lwt () =
+      match State.get_active_character state user_id with
+      | Some old_entity ->
+          let old_char_id = Uuidm.to_string old_entity in
+          Infra.Queue.push state.event_queue (
+            Event.UnloadCharacterFromECS { user_id; character_id = old_char_id }
+          )
+      | None -> Lwt.return_unit
+    in
     (* Queue LoadCharacterIntoECS event *)
-    let%lwt () = Infra.Queue.push state.State.event_queue (
+    let%lwt () = Infra.Queue.push state.event_queue (
       Event.LoadCharacterIntoECS { user_id; character_id }
     ) in
     Lwt_result.return ()

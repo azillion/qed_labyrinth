@@ -1,8 +1,8 @@
 open Base
 
 module System = struct
-  let get_character_name_by_user_id user_id =
-    let%lwt char_entity_opt = Movement_system.System.find_character_by_user_id user_id in
+  let get_character_name_by_user_id state user_id =
+    let%lwt char_entity_opt = Movement_system.System.find_character_by_user_id state user_id in
     match char_entity_opt with
     | None -> Lwt.return_none
     | Some char_entity_id ->
@@ -21,7 +21,7 @@ module System = struct
     | None -> ());
 
     (* 2. Attempt to fetch the character's name for announcement purposes, but don't fail the move if we can't find it. *)
-    let* char_name_opt = get_character_name_by_user_id user_id |> Lwt.map Result.return in
+    let* char_name_opt = get_character_name_by_user_id state user_id |> Lwt.map Result.return in
 
     (* 3. Announce the arrival if we have the character's name. *)
     let* () =

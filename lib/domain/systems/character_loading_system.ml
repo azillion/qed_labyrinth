@@ -9,6 +9,17 @@ let handle_load_character state character_id =
   | Error err -> Lwt_result.fail err
   | Ok None -> Lwt_result.fail CharacterNotFound
   | Ok (Some character) ->
+      (* Before loading, unload any currently active character for this user *)
+      let%lwt () =
+        match State.get_active_character state character.user_id with
+        | Some old_entity ->
+            let old_char_id = Uuidm.to_string old_entity in
+            Infra.Queue.push state.State.event_queue (
+              Event.UnloadCharacterFromECS { user_id = character.user_id; character_id = old_char_id }
+            )
+        | None -> Lwt.return_unit
+      in
+
       (* Convert character_id string to Uuidm.t entity ID *)
       match Uuidm.of_string character_id with
       | None -> Lwt_result.fail InvalidCharacter
@@ -118,6 +129,14 @@ let handle_load_character state character_id =
                     derived_stats;
                   } in
                   
+                  (* Track as active character *)
+                  State.set_active_character state ~user_id:character.user_id ~entity_id;
+
+                  (* Update client record *)
+                  (match Connection_manager.find_client_by_user_id state.State.connection_manager character.user_id with
+                  | Some client -> Client.set_character client character_id
+                  | None -> ());
+
                   (* Queue SendCharacterSelected event *)
                   let%lwt () = Infra.Queue.push state.State.event_queue (
                     Event.SendCharacterSelected { user_id = character.user_id; character_sheet }

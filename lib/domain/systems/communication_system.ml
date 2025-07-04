@@ -2,13 +2,16 @@ open Base
 open Qed_error
 
 module System = struct
-  let find_character_by_user_id user_id =
-    let%lwt characters = Ecs.CharacterStorage.all () in
-    Lwt.return (List.find_map characters ~f:(fun (entity_id, comp) ->
-      if String.equal comp.Components.CharacterComponent.user_id user_id then
-        Some entity_id
-      else
-        None))
+  let find_character_by_user_id state user_id =
+    match Base.Hashtbl.find state.State.active_characters user_id with
+    | Some entity_id -> Lwt.return (Some entity_id)
+    | None ->
+        let%lwt characters = Ecs.CharacterStorage.all () in
+        Lwt.return (List.find_map characters ~f:(fun (entity_id, comp) ->
+          if String.equal comp.Components.CharacterComponent.user_id user_id then
+            Some entity_id
+          else
+            None))
 
   let get_character_name entity_id =
     let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
@@ -17,23 +20,34 @@ module System = struct
   let get_character_position entity_id =
     Ecs.CharacterPositionStorage.get entity_id
 
-  let find_user_ids_in_area area_id =
+  let find_user_ids_in_area state area_id =
     let%lwt all_positions = Ecs.CharacterPositionStorage.all () in
+    (* Characters physically present in the area *)
     let characters_in_area =
       List.filter all_positions ~f:(fun (_, pos) -> String.equal pos.area_id area_id)
       |> List.map ~f:fst
     in
+
+    (* Map to user_ids only if this entity is the user's active character *)
     let%lwt user_ids =
-      Lwt_list.map_s (fun char_id ->
+      Lwt_list.filter_map_s (fun char_id ->
         let%lwt char_comp_opt = Ecs.CharacterStorage.get char_id in
-        Lwt.return (Option.map char_comp_opt ~f:(fun c -> c.user_id))
+        match char_comp_opt with
+        | None -> Lwt.return_none
+        | Some char_comp ->
+            (match State.get_active_character state char_comp.user_id with
+            | Some active_eid when Uuidm.equal active_eid char_id ->
+                Lwt.return (Some char_comp.user_id)
+            | _ -> Lwt.return_none)
       ) characters_in_area
     in
-    Lwt.return (List.filter_opt user_ids)
+    (* Dedupe user ids to avoid duplicate messages when somehow duplicates slip through *)
+    let unique_user_ids = Base.List.dedup_and_sort user_ids ~compare:String.compare in
+    Lwt.return unique_user_ids
 
   let handle_say state user_id content =
     let open Lwt_result.Syntax in
-    let* char_entity_id = find_character_by_user_id user_id |> Lwt.map (Result.of_option ~error:CharacterNotFound) in
+    let* char_entity_id = find_character_by_user_id state user_id |> Lwt.map (Result.of_option ~error:CharacterNotFound) in
     let* char_pos = get_character_position char_entity_id |> Lwt.map (Result.of_option ~error:(ServerError "Character has no position")) in
     let area_id = char_pos.area_id in
 
@@ -48,7 +62,7 @@ module System = struct
 
   let handle_announce state area_id message =
     let open Lwt.Syntax in
-    let* user_ids = find_user_ids_in_area area_id in
+    let* user_ids = find_user_ids_in_area state area_id in
     let* () =
       Lwt_list.iter_s (fun user_id ->
         Infra.Queue.push state.State.event_queue (Event.Tell { user_id; message })

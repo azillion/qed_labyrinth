@@ -40,6 +40,8 @@ let process_event (state : State.t) (event : Event.t) =
       Character_system.Character_selection_system.handle_character_selected state user_id character_id
   | Event.LoadCharacterIntoECS { user_id = _; character_id } ->
       Character_loading_system.handle_load_character state character_id
+  | Event.UnloadCharacterFromECS { user_id; character_id } ->
+      Character_unloading_system.handle_unload_character state user_id character_id
   
   | Event.SendCharacterList { user_id; characters } ->
       Character_system.Character_list_communication_system.handle_character_list state user_id characters |> Lwt_result.ok

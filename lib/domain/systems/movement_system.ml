@@ -2,19 +2,23 @@ open Base
 open Qed_error
 
 module System = struct
-  let find_character_by_user_id user_id =
-    let%lwt characters = Ecs.CharacterStorage.all () in
-    Lwt.return (List.find_map characters ~f:(fun (entity_id, comp) ->
-      if String.equal comp.Components.CharacterComponent.user_id user_id then
-        Some entity_id
-      else
-        None))
+  let find_character_by_user_id state user_id =
+    match Base.Hashtbl.find state.State.active_characters user_id with
+    | Some entity_id -> Lwt.return (Some entity_id)
+    | None ->
+        (* Fallback scan *)
+        let%lwt characters = Ecs.CharacterStorage.all () in
+        Lwt.return (List.find_map characters ~f:(fun (entity_id, comp) ->
+          if String.equal comp.Components.CharacterComponent.user_id user_id then
+            Some entity_id
+          else
+            None))
 
   let handle_move (state : State.t) user_id direction =
     let open Lwt_result.Syntax in
     
     let* char_entity_id =
-      find_character_by_user_id user_id |> Lwt.map (Result.of_option ~error:CharacterNotFound)
+      find_character_by_user_id state user_id |> Lwt.map (Result.of_option ~error:CharacterNotFound)
     in
     let* position_comp =
       Ecs.CharacterPositionStorage.get char_entity_id |> Lwt.map (Result.of_option ~error:(ServerError "Character has no position"))
