@@ -6,7 +6,7 @@ type auth_message =
   | Logout
 
 type client_message =
-  | CreateCharacter of { name : string }
+  | CreateCharacter of { name : string; might : int; finesse : int; wits : int; grit : int; presence : int }
   | SelectCharacter of { character_id : string }
   | ListCharacters
   | SendChat of { message : string }

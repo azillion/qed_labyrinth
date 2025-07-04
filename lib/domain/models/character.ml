@@ -47,10 +47,10 @@ module Q = struct
       "SELECT character_id, might, finesse, wits, grit, presence FROM character_core_stats WHERE character_id = ?"
 end
 
-let create ~user_id ~name =
+let create ~user_id ~name ~might ~finesse ~wits ~grit ~presence =
   let character_id = Uuidm.to_string (uuid ()) in
   let character = (character_id, user_id, name) in
-  let core_stats = { CoreStats.character_id; might = 5; finesse = 5; wits = 5; grit = 5; presence = 5 } in
+  let core_stats = { CoreStats.character_id; might; finesse; wits; grit; presence } in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     let%lwt result1 = Db.exec Q.insert_character character in
     match result1 with

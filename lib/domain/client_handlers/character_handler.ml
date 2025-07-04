@@ -143,7 +143,7 @@ module Handler : Client_handler.S = struct
   let handle state client msg =
     let open Protocol in
     match msg with
-    | CreateCharacter { name } -> (
+    | CreateCharacter { name; might; finesse; wits; grit; presence } -> (
       match client.Client.auth_state with
       | Client.Anonymous -> Lwt.return_unit (* Do nothing if not authenticated *)
       | Client.Authenticated { user_id; _ } ->
@@ -152,7 +152,12 @@ module Handler : Client_handler.S = struct
             user_id; 
             name; 
             description = ""; (* Default empty description *)
-            starting_area_id = "00000000-0000-0000-0000-000000000000" (* Default starting area *)
+            starting_area_id = "00000000-0000-0000-0000-000000000000"; (* Default starting area *)
+            might;
+            finesse;
+            wits;
+            grit;
+            presence;
           } in
           Infra.Queue.push state.State.event_queue event)
     | SelectCharacter { character_id } ->

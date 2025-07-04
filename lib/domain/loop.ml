@@ -34,8 +34,8 @@ let process_event (state : State.t) (event : Event.t) =
   match event with
   | Event.CharacterListRequested { user_id } ->
       Character_system.Character_list_system.handle_character_list_requested state user_id
-  | Event.CreateCharacter { user_id; name; description; starting_area_id } ->
-      Character_system.Character_creation_system.handle_create_character state user_id name description starting_area_id
+  | Event.CreateCharacter { user_id; name; description; starting_area_id; might; finesse; wits; grit; presence } ->
+      Character_system.Character_creation_system.handle_create_character state user_id name description starting_area_id might finesse wits grit presence
   | Event.CharacterSelected { user_id; character_id } ->
       Character_system.Character_selection_system.handle_character_selected state user_id character_id
   | Event.LoadCharacterIntoECS { user_id = _; character_id } ->

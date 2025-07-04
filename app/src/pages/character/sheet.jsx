@@ -1,10 +1,13 @@
 import { TerminalText } from "@components/ui/TerminalText";
 import { character } from "@features/auth/stores/character";
+import { NavBar } from "@components/shared/NavBar";
 
 export const CharacterSheetPage = () => {
     return (
-        <div class={`min-h-screen bg-gray-900 text-green-400 font-mono p-6`}>
-            <TerminalText class="text-2xl mb-6">Character Sheet</TerminalText>
+        <div class={`min-h-screen bg-gray-900 text-green-400 font-mono`}>
+            <NavBar />
+            <div class="p-6">
+                <TerminalText class="text-2xl mb-6">Character Sheet</TerminalText>
             
             <div class="mb-8">
                 <TerminalText class="text-xl mb-4">Core Attributes</TerminalText>
@@ -27,6 +30,7 @@ export const CharacterSheetPage = () => {
                     <TerminalText>Armor: {character.derived_stats.armor}</TerminalText>
                     <TerminalText>Resolve: {character.derived_stats.resolve}</TerminalText>
                 </div>
+            </div>
             </div>
         </div>
     );

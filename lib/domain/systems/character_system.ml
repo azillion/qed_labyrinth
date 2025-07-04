@@ -80,10 +80,10 @@ module Character_list_communication_system = struct
 end
 
 module Character_creation_system = struct
-  let handle_create_character state user_id name _description _starting_area_id =
+  let handle_create_character state user_id name _description _starting_area_id might finesse wits grit presence =
     let open Lwt_result.Syntax in
     (* Call the Character.create function from relational model *)
-    let* character = Character.create ~user_id ~name in
+    let* character = Character.create ~user_id ~name ~might ~finesse ~wits ~grit ~presence in
     (* Log creation for observability *)
     Stdio.printf "[CREATE_CHARACTER] user=%s character_id=%s name=%s\n" user_id character.id name;
     (* Queue CharacterCreated event on success *)

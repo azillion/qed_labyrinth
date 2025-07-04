@@ -4,6 +4,11 @@ type t =
       name: string;
       description: string;
       starting_area_id: string;
+      might: int;
+      finesse: int;
+      wits: int;
+      grit: int;
+      presence: int;
     }
   | CharacterCreated of { user_id: string; character_id: string }
   | CharacterCreationFailed of { user_id: string; error: string }
