@@ -18,6 +18,25 @@ let handler (state : Qed_domain.State.t) user_id websocket =
   Client.set_authenticated client user_id;
   Connection_manager.add_client state.connection_manager client;
 
+  (*
+    After a successful connection, check if the user has an active character in the world state.
+    If so, re-send their state. Otherwise, send them their character list.
+  *)
+  let () =
+    Lwt.async (fun () ->
+      let%lwt () = Lwt_unix.sleep 0.1 in
+      match Qed_domain.State.get_active_character state user_id with
+      | Some entity_id ->
+          let character_id = Uuidm.to_string entity_id in
+          let%lwt () = Lwt_io.printl (Printf.sprintf "Rehydrating state for user %s, character %s" user_id character_id) in
+          Infra.Queue.push state.client_message_queue
+            { message = Qed_domain.Protocol.SelectCharacter { character_id }; client }
+      | None ->
+          let%lwt () = Lwt_io.printl (Printf.sprintf "User %s reconnected at character select. Sending list." user_id) in
+          Infra.Queue.push state.client_message_queue { message = Qed_domain.Protocol.ListCharacters; client }
+    )
+  in
+
   let rec process_messages () =
     try
       match%lwt Dream.receive websocket with
