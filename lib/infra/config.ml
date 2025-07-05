@@ -4,11 +4,19 @@ let getenv_default var default = try Sys.getenv_exn var with _ -> default
 
 module Database : sig
   type t = {
-    db_path : string;
+    host : string;
+    port : int;
+    user : string;
+    password : string;
+    dbname : string;
   }
 
   val create :
-    ?db_path:string ->
+    ?host:string ->
+    ?port:int ->
+    ?user:string ->
+    ?password:string ->
+    ?dbname:string ->
     unit ->
     t
 
@@ -16,18 +24,27 @@ module Database : sig
   val to_uri : t -> Uri.t
 end = struct
   type t = {
-    db_path : string;
+    host : string;
+    port : int;
+    user : string;
+    password : string;
+    dbname : string;
   }
 
-  let create ?(db_path="qed_labyrinth.sqlite3") () =
-    { db_path }
+  let create ?(host="localhost") ?(port=5432) ?(user="postgres") ?(password="") ?(dbname="qed_labyrinth") () =
+    { host; port; user; password; dbname }
 
   let from_env () =
-    let db_path = getenv_default "QED_DATABASE_PATH" "qed_labyrinth.sqlite3" in
-    { db_path }
+    let host = getenv_default "QED_DB_HOST" "localhost" in
+    let port = getenv_default "QED_DB_PORT" "5432" |> Int.of_string in
+    let user = getenv_default "QED_DB_USER" "postgres" in
+    let password = getenv_default "QED_DB_PASSWORD" "" in
+    let dbname = getenv_default "QED_DB_NAME" "qed_labyrinth" in
+    { host; port; user; password; dbname }
 
   let to_uri t =
-    Uri.make ~scheme:"sqlite3" ~path:t.db_path ()
+    let userinfo = if String.is_empty t.password then t.user else t.user ^ ":" ^ t.password in
+    Uri.make ~scheme:"postgresql" ~userinfo ~host:t.host ~port:t.port ~path:("/" ^ t.dbname) ()
 end
 
 type t = { database : Database.t; server_port : int; server_interface : string }

@@ -44,7 +44,7 @@ module Starting_area_initialization_system = struct
             let db_operation (module Db : Caqti_lwt.CONNECTION) =
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-                  "INSERT OR IGNORE INTO entities (id) VALUES (?)")
+                  "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
                 starting_area_id
               in
               
@@ -52,7 +52,7 @@ module Starting_area_initialization_system = struct
               let area_json = area_comp |> [%to_yojson: Components.AreaComponent.t] |> Yojson.Safe.to_string in
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT OR REPLACE INTO areas (entity_id, data) VALUES (?, ?)")
+                  "INSERT INTO area_components (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
                 (starting_area_id, area_json)
               in
               
@@ -60,8 +60,17 @@ module Starting_area_initialization_system = struct
               let desc_json = desc_comp |> [%to_yojson: Components.DescriptionComponent.t] |> Yojson.Safe.to_string in
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT OR REPLACE INTO descriptions (entity_id, data) VALUES (?, ?)")
+                  "INSERT INTO descriptions (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
                 (starting_area_id, desc_json)
+              in
+              
+              (* Also insert into the relational areas table for foreign key references *)
+              let* _ = Db.exec 
+                (Caqti_request.Infix.(Caqti_type.(t6 string string string int int int) ->. Caqti_type.unit)
+                  "INSERT INTO areas (id, name, description, x, y, z) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING")
+                (starting_area_id, "The Ancient Oak Meadow", 
+                 "An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree's vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.\nThe meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass.",
+                 0, 0, 0)
               in
               
               Lwt.return_ok ()
@@ -73,6 +82,8 @@ module Starting_area_initialization_system = struct
                 Stdio.eprintf "Failed to create entity for starting area: %s\n" (Error.to_string_hum e);
                 Lwt.return_unit
             | Ok () ->
+                (* Ensure the entity is registered in the ECS entity catalogue before adding components *)
+                let* _ = Ecs.Entity.ensure_exists entity_id in
                 (* Add the components to our ECS storage *)
                 let* () = Ecs.AreaStorage.set entity_id area_comp in
                 let* () = Ecs.DescriptionStorage.set entity_id desc_comp in
@@ -122,7 +133,7 @@ module Starting_area_initialization_system = struct
             let db_operation (module Db : Caqti_lwt.CONNECTION) =
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-                  "INSERT OR IGNORE INTO entities (id) VALUES (?)")
+                  "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
                 second_area_id
               in
               
@@ -130,7 +141,7 @@ module Starting_area_initialization_system = struct
               let area_json = area_comp |> [%to_yojson: Components.AreaComponent.t] |> Yojson.Safe.to_string in
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT OR REPLACE INTO areas (entity_id, data) VALUES (?, ?)")
+                  "INSERT INTO area_components (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
                 (second_area_id, area_json)
               in
               
@@ -138,8 +149,17 @@ module Starting_area_initialization_system = struct
               let desc_json = desc_comp |> [%to_yojson: Components.DescriptionComponent.t] |> Yojson.Safe.to_string in
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT OR REPLACE INTO descriptions (entity_id, data) VALUES (?, ?)")
+                  "INSERT INTO descriptions (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
                 (second_area_id, desc_json)
+              in
+              
+              (* Also insert into the relational areas table for foreign key references *)
+              let* _ = Db.exec 
+                (Caqti_request.Infix.(Caqti_type.(t6 string string string int int int) ->. Caqti_type.unit)
+                  "INSERT INTO areas (id, name, description, x, y, z) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING")
+                (second_area_id, "The Whispering Grove", 
+                 "A dense grove of ancient trees stands before you, their branches intertwined like the fingers of old friends. The air is thick with the scent of pine and earth, and a gentle breeze carries whispers through the leaves. Sunlight filters through the canopy in golden shafts, illuminating patches of moss-covered ground where small flowers bloom in the shadows.",
+                 0, 1, 0)
               in
               
               Lwt.return_ok ()
@@ -151,6 +171,8 @@ module Starting_area_initialization_system = struct
                 Stdio.eprintf "Failed to create entity for second area: %s\n" (Error.to_string_hum e);
                 Lwt.return_unit
             | Ok () ->
+                (* Ensure the entity is registered in the ECS entity catalogue before adding components *)
+                let* _ = Ecs.Entity.ensure_exists entity_id in
                 (* Add the components to our ECS storage *)
                 let* () = Ecs.AreaStorage.set entity_id area_comp in
                 let* () = Ecs.DescriptionStorage.set entity_id desc_comp in
@@ -217,12 +239,12 @@ module Starting_area_initialization_system = struct
                 (* Insert exit entities *)
                 let* _ = Db.exec 
                   (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-                    "INSERT OR IGNORE INTO entities (id) VALUES (?)")
+                    "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
                   exit_entity_id_str
                 in
                 let* _ = Db.exec 
                   (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-                    "INSERT OR IGNORE INTO entities (id) VALUES (?)")
+                    "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
                   recip_exit_entity_id_str
                 in
                 
@@ -230,14 +252,14 @@ module Starting_area_initialization_system = struct
                 let exit_json = exit_comp |> [%to_yojson: Components.ExitComponent.t] |> Yojson.Safe.to_string in
                 let* _ = Db.exec 
                   (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                    "INSERT OR REPLACE INTO exits (entity_id, data) VALUES (?, ?)")
+                    "INSERT INTO exits (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
                   (exit_entity_id_str, exit_json)
                 in
                 
                 let recip_exit_json = recip_exit_comp |> [%to_yojson: Components.ExitComponent.t] |> Yojson.Safe.to_string in
                 let* _ = Db.exec 
                   (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                    "INSERT OR REPLACE INTO exits (entity_id, data) VALUES (?, ?)")
+                    "INSERT INTO exits (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
                   (recip_exit_entity_id_str, recip_exit_json)
                 in
                 

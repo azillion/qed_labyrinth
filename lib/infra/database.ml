@@ -75,13 +75,11 @@ module Schema = struct
   let create_starting_area_entry =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| INSERT INTO areas (id, name, description, x, y, z, climate_elevation, climate_temperature, climate_moisture)
-         SELECT '00000000-0000-0000-0000-000000000000', 'The Ancient Oak Meadow', 
+         VALUES ('00000000-0000-0000-0000-000000000000', 'The Ancient Oak Meadow', 
            'An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree''s vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.
 The meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass.',
-           0, 0, 0, 0.0, 0.0, 0.0
-         WHERE NOT EXISTS (
-           SELECT 1 FROM areas WHERE id = '00000000-0000-0000-0000-000000000000'
-         ) |}
+           0, 0, 0, 0.0, 0.0, 0.0)
+         ON CONFLICT (id) DO NOTHING |}
 
   let create_comm_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
@@ -127,11 +125,12 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
         let* () = C.exec (create_component_table "levels") () in
         let* () = C.exec (create_component_table "messages") () in
         let* () = C.exec (create_component_table "senders") () in
-        let* () = C.exec (create_component_table "areas") () in
+        let* () = C.exec (create_component_table "area_components") () in
         let* () = C.exec (create_component_table "exits") () in
 
         (* Tier-1 relational tables *)
         let* () = C.exec create_users_table () in
+        let* () = C.exec create_areas_table () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
           "CREATE TABLE IF NOT EXISTS characters (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL UNIQUE, FOREIGN KEY(user_id) REFERENCES users(id))") () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
@@ -139,6 +138,9 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
 
         (* communications table used for chat and system messages *)
         let* () = C.exec create_comm_table () in
+
+        (* Create starting area entry *)
+        let* () = C.exec create_starting_area_entry () in
 
         Lwt.return_ok ())
       (fun _ -> failwith "Database error")

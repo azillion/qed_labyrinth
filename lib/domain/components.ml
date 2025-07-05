@@ -37,7 +37,7 @@ module AreaComponent = struct
     moisture: float option;
   } [@@deriving yojson]
 
-  let table_name = "areas"
+  let table_name = "area_components"
 end
 
 module ExitComponent = struct

@@ -38,6 +38,8 @@ World State
 
    - OCaml
    - Dune build system
+   - PostgreSQL
+   - Redis
    - Language model API access
 
 1. **Installation**

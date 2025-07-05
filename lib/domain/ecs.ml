@@ -93,7 +93,7 @@ module Entity = struct
       let db_operation (module Db : Caqti_lwt.CONNECTION) =
         Db.exec
           (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-            "INSERT OR IGNORE INTO entities (id) VALUES (?)")
+            "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
           (Uuidm.to_string id)
       in
       let* () = Database.Pool.use db_operation in

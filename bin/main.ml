@@ -2,7 +2,7 @@ open Base
 open Infra
 
 let () =
-  let config = Config.Database.create () in
+  let config = Config.Database.from_env () in
   match Lwt_main.run (Database.Pool.connect config) with
   | Error err ->
       Stdio.prerr_endline

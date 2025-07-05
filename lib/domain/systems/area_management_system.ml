@@ -244,8 +244,11 @@ module Area_query_system = struct
         ) in
         Lwt.return_unit
     | Some entity_id ->
+        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] Converted area_id to entity_id: %s" (Uuidm.to_string entity_id)) in
         let* area_opt = Ecs.AreaStorage.get entity_id in
+        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] AreaStorage.get result: %s" (match area_opt with Some _ -> "Found" | None -> "Not found")) in
         let* desc_opt = Ecs.DescriptionStorage.get entity_id in
+        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] DescriptionStorage.get result: %s" (match desc_opt with Some _ -> "Found" | None -> "Not found")) in
         (match (area_opt, desc_opt) with
         | (Some area, Some desc) ->
             let* all_exits = Ecs.ExitStorage.all () in

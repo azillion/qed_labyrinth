@@ -37,6 +37,7 @@
   (caqti-driver-postgresql (>= 1.9.0)); Postgres driver
   (caqti-lwt (>= 1.9.0))             ; Async DB interface
   (caqti-driver-sqlite3 (>= 1.9.0))
+  (caqti-driver-postgresql (>= 1.9.0))
   ; (ppx_yojson_conv (>= 0.1.0))       ; Additional JSON support
   ; (qcheck :with-test)                ; Property testing for later
   ; (ppx_rapper (>= 3.1.0))             ; For SQL queries
