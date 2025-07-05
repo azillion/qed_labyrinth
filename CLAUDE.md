@@ -25,6 +25,11 @@ QED Labyrinth is a living MUD system that creates intimate social spaces powered
 - **Production server**: `cd frontend && npm start`
 - **Lint**: `cd frontend && npm run lint`
 
+### API Server (Fastify) (/api-server)
+- **Development server**: `cd api-server && npm run dev` (runs on port 3001)
+- **Build**: `cd api-server && npm run build`
+- **Production server**: `cd api-server && npm run start`
+
 ## Core Architecture Tenets
 
 Our backend uses a hybrid data model. Understanding the distinction between the Relational Database and the Entity-Component-System (ECS) is critical for all development.
@@ -69,6 +74,20 @@ This defines the rules for how data moves between the Relational DB and the ECS 
     2.  It loads transient state (current HP, inventory) from the **persisted ECS component tables**.
     3.  It runs calculation systems (like the stat calculator) to generate derived data.
 *   **Benefit:** This guarantees every session starts from a consistent state, automatically correcting any potential drift.
+
+## Shared Schemas (The Contract)
+
+The `schemas/` directory contains Protocol Buffer definitions that serve as the data contract between services. The `input.proto` file defines the structure for player commands sent from the API server to the Chronos Engine, ensuring consistent message format across the distributed system.
+
+### Code Generation
+
+The build system automatically generates OCaml modules from Protocol Buffer schemas using `ocaml-protoc` and the `pbrt` runtime library. The `schemas/dune` file contains rules that invoke `ocaml-protoc` to generate `.ml` and `.mli` files into `lib/schemas_generated/`. The generated code is exposed as the `qed_labyrinth.schemas_generated` library, making schema types directly available to the main engine code.
+
+To use generated types in your code:
+```ocaml
+open Schemas_generated.Input
+let event = { user_id = "user123"; trace_id = "trace456"; payload = Some (Move { direction = North }) }
+```
 
 ## Common Patterns
 

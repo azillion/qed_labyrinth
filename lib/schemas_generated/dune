@@ -1,0 +1,5 @@
+(library
+ (name schemas_generated)
+ (public_name qed_labyrinth.schemas_generated)
+ (modules input)
+ (libraries pbrt))

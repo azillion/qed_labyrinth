@@ -1,0 +1,4 @@
+(executable
+ (public_name test_schemas)
+ (name test_schemas)
+ (libraries qed_labyrinth))

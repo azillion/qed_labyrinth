@@ -29,6 +29,7 @@
   (ppx_deriving_yojson (>= 3.7.0))   ; JSON deriving
   (ppx_deriving (>= 5.2.1))          ; General deriving
   (digestif (>= 0.8.0))              ; Hashing
+  (pbrt (>= 3.0))                    ; Protocol buffer runtime
 
   ;; Future dependencies - uncomment as needed
   ; Network & Database - for post-MVP

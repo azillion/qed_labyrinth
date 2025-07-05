@@ -19,6 +19,7 @@
   caqti-driver-sqlite3
   uri
   uuidm
-  unix)
+  unix
+  qed_labyrinth.schemas_generated)
  (preprocess (pps ppx_let ppx_deriving_yojson))
  (modules :standard))

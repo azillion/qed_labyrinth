@@ -21,6 +21,7 @@ depends: [
   "ppx_deriving_yojson" {>= "3.7.0"}
   "ppx_deriving" {>= "5.2.1"}
   "digestif" {>= "0.8.0"}
+  "pbrt" {>= "3.0"}
   "dream" {>= "1.0.0~alpha4"}
   "caqti" {>= "1.9.0"}
   "caqti-driver-postgresql" {>= "1.9.0"}

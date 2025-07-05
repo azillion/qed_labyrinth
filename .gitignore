@@ -37,3 +37,5 @@ game_events.json
 .env
 *.sqlite3
 node_modules/
+api-server/node_modules/
+api-server/dist/

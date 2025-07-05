@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package qed.schemas.input;
+
+enum Direction {
+  UNSPECIFIED = 0;
+  NORTH = 1;
+  SOUTH = 2;
+  EAST = 3;
+  WEST = 4;
+  UP = 5;
+  DOWN = 6;
+}
+
+message MoveCommand {
+  Direction direction = 1;
+}
+
+message SayCommand {
+  string content = 1;
+}
+
+message PlayerCommand {
+  oneof command {
+    MoveCommand move = 1;
+    SayCommand say = 2;
+  }
+}
+
+message InputEvent {
+  string user_id = 1;
+  string trace_id = 2;
+  PlayerCommand payload = 3;
+}
