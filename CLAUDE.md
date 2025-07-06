@@ -110,3 +110,31 @@ let event = { user_id = "user123"; trace_id = "trace456"; payload = Some (Move {
 1.  Define event type in `lib/domain/event.ml`.
 2.  Add a handler case in `lib/domain/loop.ml`'s `process_event` function.
 3.  Create or modify systems to handle and queue the event.
+
+### Schema Development (Protocol Buffers)
+The system uses Protocol Buffers for message serialization between the API server and the OCaml engine. Schemas are defined in the `schemas/` directory and automatically generate OCaml code.
+
+**Schema Files:**
+- `schemas/input.proto` - Defines commands sent from API server to engine
+- `schemas/output.proto` - Defines events sent from engine to API server
+
+**Auto-Generation:**
+The build system automatically regenerates OCaml modules from Protocol Buffer schemas using `ocaml-protoc`. When you modify any `.proto` file, the generated code in `lib/schemas_generated/` is automatically updated on the next build.
+
+**Usage in Code:**
+```ocaml
+(* Decode incoming Redis message *)
+let proto_event = Schemas_generated.Input.decode_pb_input_event (Pbrt.Decoder.of_string message_content) in
+
+(* Create outgoing message *)
+let output_event = Schemas_generated.Output.{
+  target_user_ids = [user_id];
+  payload = Chat_message { sender_name = "System"; content = "Hello"; message_type = "System" };
+} in
+```
+
+**Adding New Message Types:**
+1. Edit the appropriate `.proto` file in `schemas/`
+2. Run `dune build` to regenerate OCaml code
+3. Update any conversion functions in `lib/domain/loop.ml`
+4. Update message handlers in the engine and API server

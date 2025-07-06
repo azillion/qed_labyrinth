@@ -9,6 +9,7 @@
   uuidm
   dream
   redis-lwt
+  redis
   pbrt
   cohttp
   cohttp-lwt-unix
