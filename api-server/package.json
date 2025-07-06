@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "nodemon",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "proto:gen": "protoc --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --ts_out=./src/schemas_generated -I=../schemas ../schemas/input.proto ../schemas/output.proto"
   },
   "author": "Tenebrous Labs",
   "dependencies": {
@@ -25,6 +26,7 @@
     "@types/ws": "^8.18.1",
     "nodemon": "^3.1.4",
     "ts-node": "^10.9.2",
+    "ts-protoc-gen": "^0.15.0",
     "typescript": "^5.5.3"
   }
 }

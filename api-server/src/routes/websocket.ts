@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { connectionManager } from '../connectionManager';
+import { publishPlayerCommand } from '../services/commandService';
 
 export async function websocketRoutes(server: FastifyInstance, options: any, done: () => void) {
   server.get('/websocket', { websocket: true }, (connection: any, req: FastifyRequest) => {
@@ -20,9 +21,37 @@ export async function websocketRoutes(server: FastifyInstance, options: any, don
         connectionManager.remove(userId);
       });
       
-      connection.socket.on('message', (message: Buffer) => {
-        console.log('Received message:', message.toString());
-        connection.socket.send(message.toString());
+      connection.socket.on('message', async (message: Buffer) => {
+        try {
+          // Parse the incoming message as JSON
+          const messageText = message.toString();
+          const commandData = JSON.parse(messageText);
+          
+          // Validate command format (expect array like ['Move', { direction: 'NORTH' }])
+          if (!Array.isArray(commandData) || commandData.length !== 2) {
+            console.error('Invalid command format:', commandData);
+            connection.socket.send(JSON.stringify({ error: 'Invalid command format' }));
+            return;
+          }
+          
+          const [commandType, commandPayload] = commandData;
+          
+          // Create command object for the service
+          const command = {
+            type: commandType,
+            payload: commandPayload
+          };
+          
+          // Publish the command to Redis
+          await publishPlayerCommand(userId, command);
+          
+          // Send acknowledgment back to client
+          connection.socket.send(JSON.stringify({ status: 'command_received', type: commandType }));
+          
+        } catch (error) {
+          console.error('Error processing command:', error);
+          connection.socket.send(JSON.stringify({ error: 'Failed to process command' }));
+        }
       });
       
     } catch (error) {

@@ -29,6 +29,7 @@ QED Labyrinth is a living MUD system that creates intimate social spaces powered
 - **Development server**: `cd api-server && npm run dev` (runs on port 3001)
 - **Build**: `cd api-server && npm run build`
 - **Production server**: `cd api-server && npm run start`
+- **Generate Protobuf schemas**: `sh ./generate-schemas.sh` (must be run whenever .proto files are changed)
 
 ## Core Architecture Tenets
 
