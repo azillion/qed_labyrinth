@@ -1,13 +1,15 @@
 (executable
- (name main)
+ (name chronos_engine)
  (public_name qed_labyrinth)
  (preprocess (pps lwt_ppx ppx_yojson_conv))
  (libraries
-  qed_labyrinth.server
   qed_labyrinth.infra
   qed_labyrinth.llm
+  qed_labyrinth.domain
   uuidm
   dream
+  redis-lwt
+  pbrt
   cohttp
   cohttp-lwt-unix
   lwt

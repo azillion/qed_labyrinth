@@ -311,11 +311,21 @@ end
 
 module Area_query_communication_system = struct
   let handle_area_query_result state user_id area =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Area { area })
-    | None -> Lwt.return_unit
+    let open Lwt.Syntax in
+    let exits = List.map area.Types.exits ~f:(fun exit ->
+      Schemas_generated.Output.{ direction = exit.Types.direction }
+    ) in
+    let area_update = Schemas_generated.Output.{
+      area_id = area.Types.id;
+      name = area.Types.name;
+      description = area.Types.description;
+      exits;
+    } in
+    let output_event = Schemas_generated.Output.{
+      target_user_ids = [user_id];
+      payload = Some (Area_update area_update);
+    } in
+    Publisher.publish_event state output_event
 
   let handle_area_query_failed state user_id error =
     let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in

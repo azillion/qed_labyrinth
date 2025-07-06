@@ -71,12 +71,23 @@ module System = struct
     Lwt_result.return ()
 
   let handle_tell state user_id message =
-    (match Connection_manager.find_client_by_user_id state.State.connection_manager user_id with
-    | Some client ->
-        let chat_message = Types.chat_message_of_model message in
-        client.send (Protocol.ChatMessage { message = chat_message })
-    | None -> Lwt.return_unit)
-    |> Lwt_result.ok
+    let open Lwt.Syntax in
+    let message_type_str = match message.Communication.message_type with
+      | Communication.Chat -> "Chat"
+      | Communication.System -> "System"
+      | Communication.Tell -> "Tell"
+    in
+    let chat_message = Schemas_generated.Output.{
+      sender_name = Option.value message.sender_id ~default:"System";
+      content = message.content;
+      message_type = message_type_str;
+    } in
+    let output_event = Schemas_generated.Output.{
+      target_user_ids = [user_id];
+      payload = Some (Chat_message chat_message);
+    } in
+    let* () = Publisher.publish_event state output_event in
+    Lwt_result.return ()
 end
 
 module Chat_history_system = struct

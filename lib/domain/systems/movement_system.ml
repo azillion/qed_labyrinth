@@ -45,8 +45,7 @@ module System = struct
 
     match exit_opt with
     | None ->
-        let* () = Infra.Queue.push state.event_queue
-          (Event.SendMovementFailed { user_id; reason = "You can't go that way." }) |> Lwt_result.ok in
+        let* () = Publisher.publish_system_message_to_user state user_id "You can't go that way." |> Lwt_result.ok in
         Lwt.return_ok ()
     | Some (_, exit_comp) ->
         let new_area_id = exit_comp.to_area_id in

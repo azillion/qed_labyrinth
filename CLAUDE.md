@@ -10,7 +10,7 @@ QED Labyrinth is a living MUD system that creates intimate social spaces powered
 
 ### OCaml Backend
 - **Build**: `dune build`
-- **Run server**: `dune exec qed_labyrinth`
+- **Run engine**: `dune exec chronos_engine`
 - **Run tests**: `dune runtest`
 - **Install dependencies**: `opam install . --deps-only`
 
@@ -46,13 +46,15 @@ The relational DB is the **System of Record for Templates and Permanent Identity
 *   **It's Permanent, Rarely-Changing Character Data:** Data that defines who a character *is* (e.g., their allocated core stats, their known languages, their reputation).
 *   **We Need to Run Global Queries:** The data needs to be searched or aggregated across all characters, even those offline (e.g., "find all members of a guild").
 
-#### **2. Entity-Component-System (The "Live World Simulation")**
-The ECS is the **System of Record for Instances and Transient State**.
+#### **2. Entity-Component-System (The "Redis-Backed Live World Cache")**
+The ECS is the **System of Record for Instances and Transient State**, backed by Redis for resilience and persistence.
 
 **Use an ECS Component When:**
 *   **It's a Unique Instance:** The data represents a *specific thing* existing in the world right now (e.g., a specific Iron Sword, entity ID `1234-abcd`, lying on the ground).
 *   **It's Transient, High-Volatility Data:** The data changes frequently during the game loop (e.g., current HP, position, active spell effects).
 *   **We Need to Query it Locally:** The data is for interactions within a single area (e.g., "find all entities with health within 10 meters").
+
+**Redis-Backed Resilience:** The ECS maintains all live world state in Redis, providing complete resilience against engine crashes. When the engine restarts, it loads the complete live state from Redis, ensuring no loss of transient game data. Only if Redis is empty does the system fall back to loading from PostgreSQL and then populating Redis.
 
 ### Data Synchronization Doctrine
 

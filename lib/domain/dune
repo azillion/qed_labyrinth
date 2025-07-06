@@ -20,6 +20,8 @@
   caqti-driver-sqlite3
   uri
   uuidm
+  redis-lwt
+  pbrt
   unix)
  (preprocess
   (pps

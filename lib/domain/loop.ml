@@ -3,6 +3,55 @@ open Base
 
 module Queue = Infra.Queue
 
+(* Helper function to convert protobuf directions to internal directions *)
+let direction_of_proto (proto_direction : Schemas_generated.Input.direction) =
+  match proto_direction with
+  | Schemas_generated.Input.NORTH -> Components.ExitComponent.North
+  | Schemas_generated.Input.SOUTH -> Components.ExitComponent.South
+  | Schemas_generated.Input.EAST -> Components.ExitComponent.East
+  | Schemas_generated.Input.WEST -> Components.ExitComponent.West
+  | Schemas_generated.Input.NORTHEAST -> Components.ExitComponent.Northeast
+  | Schemas_generated.Input.NORTHWEST -> Components.ExitComponent.Northwest
+  | Schemas_generated.Input.SOUTHEAST -> Components.ExitComponent.Southeast
+  | Schemas_generated.Input.SOUTHWEST -> Components.ExitComponent.Southwest
+  | Schemas_generated.Input.UP -> Components.ExitComponent.Up
+  | Schemas_generated.Input.DOWN -> Components.ExitComponent.Down
+  | Schemas_generated.Input.UNSPECIFIED -> failwith "Unspecified direction"
+
+(* Main conversion function from protobuf to internal events *)
+let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
+  match proto_event.payload with
+  | None -> None
+  | Some payload ->
+      match payload with
+      | Move move_cmd ->
+          let direction = direction_of_proto move_cmd.direction in
+          Some (Event.Move { user_id = proto_event.user_id; direction })
+      | Say say_cmd ->
+          Some (Event.Say { user_id = proto_event.user_id; content = say_cmd.content })
+      | _ -> None (* Other cases will be added *)
+
+(* Redis subscriber function *)
+let subscribe_to_player_commands (state : State.t) =
+  let open Lwt.Syntax in
+  let%lwt subscription = Redis_lwt.Client.subscribe state.redis_conn ["player_commands"] in
+  Lwt_stream.iter_s (fun msg ->
+    try
+      let proto_event = Schemas_generated.Input.decode_input_event (Pbrt.Decoder.of_string msg.Redis_lwt.Client.payload) in
+      match event_of_protobuf proto_event with
+      | Some event -> 
+          Infra.Queue.push state.event_queue event;
+          Lwt.return_unit
+      | None -> 
+          Lwt_io.printl "Failed to convert protobuf message to event"
+    with
+    | exn ->
+        Lwt_io.printl (Printf.sprintf "Error processing Redis message: %s" (Base.Exn.to_string exn))
+  ) (Redis_lwt.Client.stream subscription)
+
+(* Helper function to publish events to Redis *)
+(* publish_event and publish_system_message_to_user moved to Publisher module *)
+
 let tick (state : State.t) =
   let delta = Unix.gettimeofday () -. state.last_tick in
   let* () = Lwt_unix.sleep (Float.max 0.0 (0.01 -. delta)) in
@@ -10,24 +59,6 @@ let tick (state : State.t) =
   (* let* () = Lwt_io.printl (Printf.sprintf "Tick: %f" delta) in *)
   Lwt.return_unit
 
-let process_client_messages (state : State.t) =
-  let rec process_all () =
-    match%lwt Infra.Queue.pop_opt state.client_message_queue with
-    | None -> Lwt.return_unit
-    | Some { message; client } ->
-        let* () =
-          Lwt_list.iter_s
-            (fun (module H : Client_handler.S) -> H.handle state client message)
-            Handlers.all_client_handlers
-        in
-        process_all ()
-  in
-
-  Lwt.catch
-    (fun () -> process_all ())
-    (fun exn ->
-      let* () = Lwt_io.printl (Printf.sprintf "Message processing error: %s" (Base.Exn.to_string exn)) in
-      Lwt.return_unit)
 
 (* Add this new helper function first *)
 let process_event (state : State.t) (event : Event.t) =
@@ -129,26 +160,14 @@ let process_events (state : State.t) =
         | Error err ->
             let err_str = Qed_error.to_string err in
             let* () = Lwt_io.printl (Printf.sprintf "[EVENT_ERROR] %s" err_str) in
-            (* Queue appropriate failure events based on the original event type *)
+            (* Send appropriate failure messages directly to users *)
             (match event with
             | Event.CreateCharacter { user_id; _ } ->
-                Infra.Queue.push state.event_queue (
-                  Event.SendCharacterCreationFailed { 
-                    user_id; 
-                    error = Qed_error.to_yojson err 
-                  }
-                )
+                Publisher.publish_system_message_to_user state user_id (Qed_error.to_string err)
             | Event.CharacterSelected { user_id; _ } ->
-                Infra.Queue.push state.event_queue (
-                  Event.SendCharacterSelectionFailed { 
-                    user_id; 
-                    error = Qed_error.to_yojson err 
-                  }
-                )
+                Publisher.publish_system_message_to_user state user_id (Qed_error.to_string err)
             | Event.CharacterListRequested { user_id } ->
-                Infra.Queue.push state.event_queue (
-                  Event.SendCharacterList { user_id; characters = [] }
-                )
+                Publisher.publish_system_message_to_user state user_id "Failed to retrieve character list"
             | _ -> (* For other events, just log the error *)
                 Lwt.return_unit)
         in
@@ -168,7 +187,6 @@ let rec game_loop (state : State.t) =
     (fun () ->
       let* () = Lwt_io.flush Lwt_io.stdout in
       let* () = tick state in
-      let* () = process_client_messages state in
       let* () = process_events state in
       let* () = Ecs.World.step () in
       
@@ -185,10 +203,11 @@ let rec game_loop (state : State.t) =
       game_loop state)
 
 let run (state : State.t) =
-  let* init_result = Ecs.World.init () in
+  let* init_result = Ecs.World.init state.redis_conn in
   match init_result with
   | Ok () ->
       let* () = register_ecs_systems state in
+      Lwt.async (fun () -> subscribe_to_player_commands state);
       game_loop state
   | Error e ->
       let* () = Lwt_io.printl (Printf.sprintf "World initialization error: %s" (Base.Error.to_string_hum e)) in
