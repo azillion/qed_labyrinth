@@ -86,7 +86,7 @@ module System = struct
     } in
     let output_event = Schemas_generated.Output.{
       target_user_ids = [user_id];
-      payload = Some (Chat_message chat_message);
+      payload = Chat_message chat_message;
     } in
     let* () = Publisher.publish_event state output_event in
     Lwt_result.return ()

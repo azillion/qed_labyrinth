@@ -288,7 +288,7 @@ module Area_query_communication_system = struct
     } in
     let output_event = Schemas_generated.Output.{
       target_user_ids = [user_id];
-      payload = Some (Area_update area_update);
+      payload = Area_update area_update;
     } in
     Publisher.publish_event state output_event
 

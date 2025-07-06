@@ -4,10 +4,9 @@ open Base
 
 let publish_event (state : State.t) (event : Schemas_generated.Output.output_event) =
   let open Lwt.Syntax in
-  let serialized =
-    Schemas_generated.Output.encode_output_event event
-    |> Pbrt.Encoder.to_string
-  in
+  let encoder = Pbrt.Encoder.create () in
+  Schemas_generated.Output.encode_pb_output_event event encoder;
+  let serialized = Pbrt.Encoder.to_string encoder in
   let* _ = Redis_lwt.Client.publish state.State.redis_conn "engine_events" serialized in
   Lwt.return_unit
 
@@ -19,6 +18,6 @@ let publish_system_message_to_user (state : State.t) (user_id : string) (content
   } in
   let output_event = Schemas_generated.Output.{
     target_user_ids = [user_id];
-    payload = Some (Chat_message chat_message);
+    payload = Chat_message chat_message;
   } in
   publish_event state output_event 
