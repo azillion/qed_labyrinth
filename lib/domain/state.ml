@@ -3,7 +3,7 @@ open Base
 type t = {
   mutable last_tick : float;
   event_queue: Event.t Infra.Queue.t;
-  redis_conn: Redis_lwt.Client.t;
+  redis_conn: Redis_lwt.Client.connection;
   (** Map of user_id -> currently active character entity *)
   active_characters: (string, Uuidm.t) Base.Hashtbl.t;
 }

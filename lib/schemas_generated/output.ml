@@ -1,5 +1,3 @@
-open Pbrt
-
 (* Types mirrored from .mli *)
 
 type chat_message = {

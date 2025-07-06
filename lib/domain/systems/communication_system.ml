@@ -75,7 +75,9 @@ module System = struct
     let message_type_str = match message.Communication.message_type with
       | Communication.Chat -> "Chat"
       | Communication.System -> "System"
-      | Communication.Tell -> "Tell"
+      | Communication.Emote -> "Emote"
+      | Communication.CommandSuccess -> "CommandSuccess"
+      | Communication.CommandFailed -> "CommandFailed"
     in
     let chat_message = Schemas_generated.Output.{
       sender_name = Option.value message.sender_id ~default:"System";
@@ -99,10 +101,7 @@ module Chat_history_system = struct
     let%lwt () = Infra.Queue.push state.event_queue (Event.SendChatHistory { user_id; messages = chat_messages }) in
     Lwt.return_ok ()
 
-  let handle_send_chat_history (state: State.t) user_id messages =
-    (match Connection_manager.find_client_by_user_id state.connection_manager user_id with
-    | Some client ->
-        client.send (Protocol.ChatHistory { messages })
-    | None -> Lwt.return_unit)
-    |> Lwt_result.ok
+  let handle_send_chat_history (_state: State.t) _user_id _messages =
+    (* This functionality is now handled by the API server via Redis events *)
+    Lwt_result.return ()
 end

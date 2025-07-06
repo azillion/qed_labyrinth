@@ -1,5 +1,4 @@
 open Base
-open Lwt.Syntax
 
 (* Publishing helper functions extracted from Loop *)
 

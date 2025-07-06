@@ -133,10 +133,6 @@ let handle_load_character state character_id =
                   (* Track as active character *)
                   State.set_active_character state ~user_id:character.user_id ~entity_id;
 
-                  (* Update client record *)
-                  (match Connection_manager.find_client_by_user_id state.State.connection_manager character.user_id with
-                  | Some client -> Client.set_character client character_id
-                  | None -> ());
 
                   (* Queue SendCharacterSelected event *)
                   let%lwt () = Infra.Queue.push state.State.event_queue (

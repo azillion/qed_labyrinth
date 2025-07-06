@@ -6,17 +6,13 @@ module Queue = Infra.Queue
 (* Helper function to convert protobuf directions to internal directions *)
 let direction_of_proto (proto_direction : Schemas_generated.Input.direction) =
   match proto_direction with
-  | Schemas_generated.Input.NORTH -> Components.ExitComponent.North
-  | Schemas_generated.Input.SOUTH -> Components.ExitComponent.South
-  | Schemas_generated.Input.EAST -> Components.ExitComponent.East
-  | Schemas_generated.Input.WEST -> Components.ExitComponent.West
-  | Schemas_generated.Input.NORTHEAST -> Components.ExitComponent.Northeast
-  | Schemas_generated.Input.NORTHWEST -> Components.ExitComponent.Northwest
-  | Schemas_generated.Input.SOUTHEAST -> Components.ExitComponent.Southeast
-  | Schemas_generated.Input.SOUTHWEST -> Components.ExitComponent.Southwest
-  | Schemas_generated.Input.UP -> Components.ExitComponent.Up
-  | Schemas_generated.Input.DOWN -> Components.ExitComponent.Down
-  | Schemas_generated.Input.UNSPECIFIED -> failwith "Unspecified direction"
+  | Schemas_generated.Input.North -> Components.ExitComponent.North
+  | Schemas_generated.Input.South -> Components.ExitComponent.South
+  | Schemas_generated.Input.East -> Components.ExitComponent.East
+  | Schemas_generated.Input.West -> Components.ExitComponent.West
+  | Schemas_generated.Input.Up -> Components.ExitComponent.Up
+  | Schemas_generated.Input.Down -> Components.ExitComponent.Down
+  | Schemas_generated.Input.Unspecified -> failwith "Unspecified direction"
 
 (* Main conversion function from protobuf to internal events *)
 let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
@@ -29,25 +25,38 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
           Some (Event.Move { user_id = proto_event.user_id; direction })
       | Say say_cmd ->
           Some (Event.Say { user_id = proto_event.user_id; content = say_cmd.content })
-      | _ -> None (* Other cases will be added *)
 
 (* Redis subscriber function *)
 let subscribe_to_player_commands (state : State.t) =
   let open Lwt.Syntax in
-  let%lwt subscription = Redis_lwt.Client.subscribe state.redis_conn ["player_commands"] in
-  Lwt_stream.iter_s (fun msg ->
-    try
-      let proto_event = Schemas_generated.Input.decode_input_event (Pbrt.Decoder.of_string msg.Redis_lwt.Client.payload) in
-      match event_of_protobuf proto_event with
-      | Some event -> 
-          Infra.Queue.push state.event_queue event;
+  (* Subscribe to the player_commands channel *)
+  let* () = Redis_lwt.Client.subscribe state.redis_conn ["player_commands"] in
+  (* Get the reply stream from the connection *)
+  let reply_stream = Redis_lwt.Client.stream state.redis_conn in
+  (* Process incoming messages *)
+  Lwt_stream.iter_s (fun replies ->
+    let* () = Lwt_list.iter_s (fun reply ->
+      match reply with
+      | `Multibulk [`Bulk (Some "message"); `Bulk (Some _channel); `Bulk (Some message_content)] ->
+          (* This is a pub/sub message *)
+          (try
+            let proto_event = Schemas_generated.Input.decode_pb_input_event (Pbrt.Decoder.of_string message_content) in
+            match event_of_protobuf proto_event with
+            | Some event -> 
+                Infra.Queue.push state.event_queue event
+            | None -> 
+                Stdio.eprintf "Failed to convert protobuf message to event\n";
+                Lwt.return_unit
+          with
+          | exn ->
+              Stdio.eprintf "Error processing Redis message: %s\n" (Base.Exn.to_string exn);
+              Lwt.return_unit)
+      | _ -> 
+          (* Ignore other reply types (like subscription confirmations) *)
           Lwt.return_unit
-      | None -> 
-          Lwt_io.printl "Failed to convert protobuf message to event"
-    with
-    | exn ->
-        Lwt_io.printl (Printf.sprintf "Error processing Redis message: %s" (Base.Exn.to_string exn))
-  ) (Redis_lwt.Client.stream subscription)
+    ) replies in
+    Lwt.return_unit
+  ) reply_stream
 
 (* Helper function to publish events to Redis *)
 (* publish_event and publish_system_message_to_user moved to Publisher module *)
@@ -74,16 +83,21 @@ let process_event (state : State.t) (event : Event.t) =
   | Event.UnloadCharacterFromECS { user_id; character_id } ->
       Character_unloading_system.handle_unload_character state user_id character_id
   
-  | Event.SendCharacterList { user_id; characters } ->
-      Character_system.Character_list_communication_system.handle_character_list state user_id characters |> Lwt_result.ok
-  | Event.SendCharacterCreated { user_id; character } ->
-      Character_system.Character_creation_communication_system.handle_character_created state user_id character |> Lwt_result.ok
-  | Event.SendCharacterCreationFailed { user_id; error } ->
-      Character_system.Character_creation_communication_system.handle_character_creation_failed state user_id error |> Lwt_result.ok
-  | Event.SendCharacterSelected { user_id; character_sheet } ->
-      Character_system.Character_selection_communication_system.handle_character_selected state user_id character_sheet |> Lwt_result.ok
-  | Event.SendCharacterSelectionFailed { user_id; error } ->
-      Character_system.Character_selection_communication_system.handle_character_selection_failed state user_id error |> Lwt_result.ok
+  | Event.SendCharacterList { user_id = _; characters = _ } ->
+      (* Character list is now handled by the API server via Redis events *)
+      Lwt_result.return ()
+  | Event.SendCharacterCreated { user_id = _; character = _ } ->
+      (* Character creation response is now handled by the API server via Redis events *)
+      Lwt_result.return ()
+  | Event.SendCharacterCreationFailed { user_id = _; error = _ } ->
+      (* Character creation failure response is now handled by the API server via Redis events *)
+      Lwt_result.return ()
+  | Event.SendCharacterSelected { user_id = _; character_sheet = _ } ->
+      (* Character selection response is now handled by the API server via Redis events *)
+      Lwt_result.return ()
+  | Event.SendCharacterSelectionFailed { user_id = _; error = _ } ->
+      (* Character selection failure response is now handled by the API server via Redis events *)
+      Lwt_result.return ()
   
   | Event.AreaQuery { user_id; area_id } ->
       Area_management_system.Area_query_system.handle_area_query state user_id area_id |> Lwt_result.ok
@@ -95,10 +109,9 @@ let process_event (state : State.t) (event : Event.t) =
   | Event.PlayerMoved { user_id; old_area_id; new_area_id; direction } ->
       Presence_system.System.handle_player_moved state user_id old_area_id new_area_id direction
   | Event.SendMovementFailed { user_id; reason } ->
-      (* This is a communication event, so it's okay to just send *)
-      (match Connection_manager.find_client_by_user_id state.connection_manager user_id with
-      | Some client -> client.send (Protocol.CommandFailed { error = reason }) |> Lwt_result.ok
-      | None -> Lwt_result.return ())
+      (* Movement failure response is now handled by the API server via Redis events *)
+      let* () = Publisher.publish_system_message_to_user state user_id reason in
+      Lwt_result.return ()
   
   | Event.Say { user_id; content } ->
       Communication_system.System.handle_say state user_id content

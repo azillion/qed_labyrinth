@@ -1,6 +1,5 @@
 open Base
 open Infra
-open Redis_lwt
 
 let () =
   let config = Config.Database.from_env () in
@@ -10,7 +9,10 @@ let () =
         ("Failed to connect to database: " ^ Error.to_string_hum err);
       Stdlib.exit 1
   | Ok () -> 
-      let redis = Client.create () in
-      let app_state = Qed_domain.State.create redis in
       Stdio.print_endline "Database connected successfully";
-      Lwt_main.run (Qed_domain.Loop.run app_state)
+      Lwt_main.run (
+        let open Lwt.Syntax in
+        let* redis = Redis_lwt.Client.connect { host = "127.0.0.1"; port = 6379 } in
+        let app_state = Qed_domain.State.create redis in
+        Qed_domain.Loop.run app_state
+      )

@@ -57,27 +57,10 @@ end
 
 module Area_creation_communication_system = struct
   let handle_area_created state user_id area_id =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        (* Send area created message to client *)
-        client.Client.send (Protocol.CommandSuccess {
-          message = {
-            Types.sender_id = None;
-            message_type = Communication.CommandSuccess;
-            content = Printf.sprintf "Area created successfully with ID: %s" area_id;
-            timestamp = Unix.time ();
-            area_id = None;
-          }
-        })
-    | None -> Lwt.return_unit
+    Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Area created successfully with ID: %s" area_id)
 
   let handle_area_creation_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Error { error })
-    | None -> Lwt.return_unit
+    Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error)
 
   let priority = 50
 
@@ -183,27 +166,10 @@ end
 
 module Exit_creation_communication_system = struct
   let handle_exit_created state user_id exit_id =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        (* Send exit created message to client *)
-        client.Client.send (Protocol.CommandSuccess {
-          message = {
-            Types.sender_id = None;
-            message_type = Communication.CommandSuccess;
-            content = Printf.sprintf "Exit created successfully with ID: %s" exit_id;
-            timestamp = Unix.time ();
-            area_id = None;
-          }
-        })
-    | None -> Lwt.return_unit
+    Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Exit created successfully with ID: %s" exit_id)
 
   let handle_exit_creation_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Error { error })
-    | None -> Lwt.return_unit
+    Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error)
 
   let priority = 50
 
@@ -311,7 +277,6 @@ end
 
 module Area_query_communication_system = struct
   let handle_area_query_result state user_id area =
-    let open Lwt.Syntax in
     let exits = List.map area.Types.exits ~f:(fun exit ->
       Schemas_generated.Output.{ direction = exit.Types.direction }
     ) in
@@ -328,11 +293,7 @@ module Area_query_communication_system = struct
     Publisher.publish_event state output_event
 
   let handle_area_query_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Error { error })
-    | None -> Lwt.return_unit
+    Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error)
 
   let priority = 50
 

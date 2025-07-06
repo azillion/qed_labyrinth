@@ -1,10 +1,9 @@
 open Base
 open Lwt.Syntax
 open Infra
-open Redis_lwt
 
 (* Global Redis connection reference *)
-let redis_conn_ref : Redis_lwt.Client.t option ref = ref None
+let redis_conn_ref : Redis_lwt.Client.connection option ref = ref None
 
 (* Entity module *)
 module Entity = struct
@@ -209,7 +208,7 @@ module MakeComponentStorage (C : Component) : ComponentStorage
         (match !redis_conn_ref with
         | Some redis ->
             let entity_id_str = Uuidm.to_string entity in
-            let%lwt _ = Redis_lwt.Client.hdel redis C.table_name [entity_id_str] in
+            let%lwt _ = Redis_lwt.Client.hdel redis C.table_name entity_id_str in
             Lwt.return_unit
         | None -> Lwt.return_unit)
       in
@@ -315,7 +314,7 @@ module MakeComponentStorage (C : Component) : ComponentStorage
             | Error e ->
                 Stdio.eprintf "Failed to load %s: %s\n" C.table_name (Error.to_string_hum e);
                 Lwt.return_unit)
-        | redis_pairs ->
+        | _ ->
             (* Load from Redis data *)
             let rec process_pairs = function
               | [] -> Lwt.return_unit
@@ -336,7 +335,8 @@ module MakeComponentStorage (C : Component) : ComponentStorage
                   Stdio.eprintf "Odd number of Redis hash fields for %s\n" C.table_name;
                   Lwt.return_unit
             in
-            process_pairs redis_data)
+            let redis_data_flattened = List.fold_left redis_data ~init:[] ~f:(fun acc (key, value) -> value :: key :: acc) |> List.rev in
+            process_pairs redis_data_flattened)
     | None ->
         (* No Redis connection, fallback to PostgreSQL only *)
         let db_operation (module Db : Caqti_lwt.CONNECTION) =

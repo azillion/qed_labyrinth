@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-QED Labyrinth is a living MUD system that creates intimate social spaces powered by autonomous agents. The system consists of an OCaml backend with a hybrid data model (Relational DB + ECS) and multiple frontend clients.
+QED Labyrinth is a living MUD system that creates intimate social spaces powered by autonomous agents. The system consists of an OCaml backend with a hybrid data model (Relational DB + ECS) and multiple frontend clients. The OCaml core engine now operates as a headless service, receiving commands and publishing state changes via Redis.
 
 ## Development Commands
 

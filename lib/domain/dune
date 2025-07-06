@@ -22,6 +22,7 @@
   uuidm
   redis-lwt
   pbrt
+  qed_labyrinth.schemas_generated
   unix)
  (preprocess
   (pps
