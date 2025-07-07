@@ -4,6 +4,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import { authRoutes } from './routes/auth';
 import { websocketRoutes } from './routes/websocket';
 import { jwtConfig } from './config';
+import { startEgressService } from './services/egressService';
 
 const server = Fastify({
   logger: true,
@@ -30,5 +31,7 @@ const start = async () => {
     process.exit(1);
   }
 };
+
+startEgressService();
 
 start();

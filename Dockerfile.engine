@@ -1,0 +1,40 @@
+# Build stage
+FROM ocaml/opam:ocaml-5.1-debian-12 AS builder
+
+# Install system dependencies
+RUN sudo apt-get update && \
+    sudo apt-get install -y \
+    protobuf-compiler \
+    libev-dev \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+# Set up working directory
+WORKDIR /home/opam/app
+
+# Copy project files
+COPY --chown=opam:opam dune-project .
+COPY --chown=opam:opam *.opam .
+COPY --chown=opam:opam lib/ lib/
+COPY --chown=opam:opam bin/ bin/
+COPY --chown=opam:opam schemas/ schemas/
+
+# Install OCaml dependencies
+RUN opam install . --deps-only --with-test
+
+# Build the release executable
+RUN dune build --profile=release
+
+# Production stage
+FROM debian:12-slim
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    libev4 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled executable from builder stage
+COPY --from=builder /home/opam/app/_build/default/bin/chronos_engine.exe /usr/local/bin/chronos_engine.exe
+
+# Set the command to run the engine
+CMD ["/usr/local/bin/chronos_engine.exe"]

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${QED_DB_USER}
+      POSTGRES_PASSWORD: ${QED_DB_PASSWORD}
+      POSTGRES_DB: ${QED_DB_NAME}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+
+  chronos_engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.engine
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      QED_DB_HOST: postgres
+      QED_DB_PORT: 5432
+      QED_DB_USER: ${QED_DB_USER}
+      QED_DB_PASSWORD: ${QED_DB_PASSWORD}
+      QED_DB_NAME: ${QED_DB_NAME}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  api_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      QED_DB_HOST: postgres
+      QED_DB_PORT: 5432
+      QED_DB_USER: ${QED_DB_USER}
+      QED_DB_PASSWORD: ${QED_DB_PASSWORD}
+      QED_DB_NAME: ${QED_DB_NAME}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3001:3001"
+
+volumes:
+  pg_data:

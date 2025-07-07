@@ -139,3 +139,7 @@ let output_event = Schemas_generated.Output.{
 2. Run `dune build` to regenerate OCaml code
 3. Update any conversion functions in `lib/domain/loop.ml`
 4. Update message handlers in the engine and API server
+
+## Deployment
+
+The project is deployed via a GitHub Actions workflow that automatically builds and pushes Docker images to GitHub Container Registry (ghcr.io). Upon successful image builds, the workflow connects to the production server via SSH and uses `docker-compose` to pull and deploy the latest container versions. This ensures zero-downtime deployments with atomic service updates.
