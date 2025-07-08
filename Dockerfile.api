@@ -1,5 +1,8 @@
 # Build stage
-FROM node:20-slim AS builder
+FROM --platform=linux/amd64 node:20-slim AS builder
+
+# Install protobuf compiler
+RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -13,20 +16,26 @@ RUN npm install
 # Copy source code
 COPY api-server/ ./
 
+# Copy schemas directory for protobuf generation
+COPY schemas/ ../schemas/
+
+# Generate protobuf schemas first
+RUN sh ./generate-schemas.sh
+
 # Build TypeScript
 RUN npm run build
 
 # Production stage
-FROM node:20-slim
+FROM --platform=linux/amd64 node:20-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json
-COPY --from=builder /app/package.json ./
+# Copy package files
+COPY --from=builder /app/package.json /app/package-lock.json ./
 
-# Copy node_modules from builder
-COPY --from=builder /app/node_modules ./node_modules
+# Install production dependencies only (this will rebuild native modules)
+RUN npm ci --only=production
 
 # Copy compiled code from builder
 COPY --from=builder /app/dist ./dist

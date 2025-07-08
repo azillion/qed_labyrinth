@@ -22,8 +22,11 @@ const App = (props) => {
 
 	createEffect(() => {
 		const token = authToken();
+		console.log('Auth token changed:', token ? 'Token exists' : 'No token');
 		if (token) {
+			console.log('Token length:', token.length);
 			if (!socketManager.getSocket() || socketManager.getSocket()?.readyState === WebSocket.CLOSED) {
+				console.log('Initializing socket connection...');
 				socketManager.manuallyDisconnected = false;
 				socketManager.initialize();
 			}

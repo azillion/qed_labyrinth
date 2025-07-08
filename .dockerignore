@@ -1,0 +1,11 @@
+# Exclude all host-side node_modules
+**/node_modules
+
+# VSC / editor noise
+.vscode
+.idea
+.DS_Store
+
+# Build artifacts
+_build
+dist 

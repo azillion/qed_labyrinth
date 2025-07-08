@@ -30,6 +30,12 @@
   (ppx_deriving (>= 5.2.1))          ; General deriving
   (digestif (>= 0.8.0))              ; Hashing
   (pbrt (>= 3.0))                    ; Protocol buffer runtime
+  (ocaml-protoc (>= 3.0))            ; Protocol buffer compiler
+  dream                              ; Web framework
+  lwt_ppx                            ; Lwt syntax extension
+  cohttp-lwt-unix                    ; HTTP client
+  jose                               ; JWT library
+  ppx_yojson_conv                    ; JSON conversion
 
   ;; Future dependencies - uncomment as needed
   ; Network & Database - for post-MVP

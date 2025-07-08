@@ -7,15 +7,18 @@
     "build": "tsc",
     "dev": "nodemon",
     "start": "node dist/index.js",
-    "proto:gen": "protoc --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --ts_out=./src/schemas_generated -I=../schemas ../schemas/input.proto ../schemas/output.proto"
+    "proto:gen": "grpc_tools_node_protoc --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts --js_out=import_style=commonjs,binary:./src/schemas_generated --grpc_out=grpc_js:./src/schemas_generated --ts_out=./src/schemas_generated -I ../schemas ../schemas/input.proto ../schemas/output.proto"
   },
   "author": "Tenebrous Labs",
   "dependencies": {
-    "@fastify/jwt": "^8.0.1",
-    "@fastify/websocket": "^10.0.1",
+    "@fastify/cors": "^11.0.1",
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/websocket": "^11.1.0",
+    "@types/google-protobuf": "^3.15.12",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
-    "fastify": "^4.28.1",
+    "fastify": "^5.4.0",
+    "google-protobuf": "^3.21.4",
     "pg": "^8.12.0",
     "redis": "^4.6.15"
   },
@@ -24,6 +27,7 @@
     "@types/node": "^20.14.9",
     "@types/pg": "^8.11.6",
     "@types/ws": "^8.18.1",
+    "grpc-tools": "^1.13.0",
     "nodemon": "^3.1.4",
     "ts-node": "^10.9.2",
     "ts-protoc-gen": "^0.15.0",

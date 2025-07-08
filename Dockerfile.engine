@@ -1,11 +1,15 @@
 # Build stage
-FROM ocaml/opam:ocaml-5.1-debian-12 AS builder
+FROM ocaml/opam:debian-12-ocaml-5.1 AS builder
 
 # Install system dependencies
 RUN sudo apt-get update && \
     sudo apt-get install -y \
     protobuf-compiler \
     libev-dev \
+    pkg-config \
+    libgmp-dev \
+    libpq-dev \
+    libsqlite3-dev \
     && sudo rm -rf /var/lib/apt/lists/*
 
 # Set up working directory
@@ -22,7 +26,7 @@ COPY --chown=opam:opam schemas/ schemas/
 RUN opam install . --deps-only --with-test
 
 # Build the release executable
-RUN dune build --profile=release
+RUN eval $(opam env) && dune build --profile=release
 
 # Production stage
 FROM debian:12-slim
@@ -31,6 +35,8 @@ FROM debian:12-slim
 RUN apt-get update && \
     apt-get install -y \
     libev4 \
+    libsqlite3-0 \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled executable from builder stage

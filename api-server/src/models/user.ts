@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import pool from '../db';
+import { randomUUID } from 'crypto';
 
 export interface User {
   id: string;
@@ -7,12 +8,11 @@ export interface User {
   email: string;
   password_hash: string;
   created_at: Date;
-  updated_at: Date;
 }
 
 export async function findByUsername(username: string): Promise<User | null> {
   const result = await pool.query(
-    'SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = $1',
+    'SELECT id, username, email, password_hash, created_at FROM users WHERE username = $1',
     [username]
   );
   
@@ -29,9 +29,10 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export async function createUser(username: string, email: string, hashedPassword: string): Promise<User> {
+  const id = randomUUID();
   const result = await pool.query(
-    'INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, password_hash, created_at, updated_at',
-    [username, email, hashedPassword]
+    'INSERT INTO users (id, username, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, username, email, password_hash, created_at',
+    [id, username, email, hashedPassword]
   );
   
   return result.rows[0];

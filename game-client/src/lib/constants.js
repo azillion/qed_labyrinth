@@ -5,7 +5,7 @@ export const DEBUG = import.meta.env.VITE_DEBUG
 	: true;
 
 export const GAME_NAME = import.meta.env.VITE_GAME_NAME || "Iron Psalm";
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "ws://localhost:3001/websocket";
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001/websocket";
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export const ENDPOINTS = {

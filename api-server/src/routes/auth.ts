@@ -12,7 +12,7 @@ interface RegisterRequest {
   password: string;
 }
 
-export async function authRoutes(server: FastifyInstance, options: any, done: () => void) {
+export async function authRoutes(server: FastifyInstance, options: any) {
   server.post('/login', async (request: FastifyRequest<{ Body: LoginRequest }>, reply: FastifyReply) => {
     const { username, password } = request.body;
     
@@ -67,6 +67,4 @@ export async function authRoutes(server: FastifyInstance, options: any, done: ()
       return reply.status(500).send({ error: 'Internal server error' });
     }
   });
-  
-  done();
 }
