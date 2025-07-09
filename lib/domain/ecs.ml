@@ -75,7 +75,7 @@ module Entity = struct
     | Ok ids ->
         List.iter ids ~f:(fun id ->
           Hashtbl.set entities ~key:id ~data:Active);
-        Lwt.return_ok ()
+        Lwt.return_ok ids
     | Error e -> Lwt.return_error e
 
   let destroy id =
@@ -129,7 +129,7 @@ module type ComponentStorage = sig
   val remove : Entity.t -> unit Lwt.t            (* Made Lwt.t for async *)
   val all : unit -> (Entity.t * component) list Lwt.t
   val sync_to_db : (module Caqti_lwt.CONNECTION) -> (unit, 'err) Result.t Lwt.t
-  val load_from_db : unit -> unit Lwt.t
+  val load_from_db : Entity.t list -> unit Lwt.t
   val clear_modified : unit -> unit
   val get_modified : unit -> Entity.t list
 end
@@ -224,6 +224,24 @@ module MakeComponentStorage (C : Component) : ComponentStorage
   
   let get_modified () = Hash_set.to_list modified
 
+  (* Helper function to fetch a single entity's component from PostgreSQL *)
+  let find_one_from_db (module Db : Caqti_lwt.CONNECTION) entity_id =
+    let* result = Db.find_opt
+      (Caqti_request.Infix.(Caqti_type.string ->? Caqti_type.string)
+        ("SELECT data FROM " ^ C.table_name ^ " WHERE entity_id = ?"))
+      (Uuidm.to_string entity_id)
+    in
+    match result with
+    | Ok (Some json_str) ->
+        (match json_str |> Yojson.Safe.from_string |> [%of_yojson: C.t] with
+        | Ok component -> Lwt_result.return (Some component)
+        | Error err ->
+            Stdio.eprintf "Failed to parse component %s for entity %s: %s\n"
+              C.table_name (Uuidm.to_string entity_id) err;
+            Lwt_result.return None)
+    | Ok None -> Lwt_result.return None
+    | Error e -> Lwt_result.fail e
+
   (* Sync changes to database *)
   let sync_to_db (module Db : Caqti_lwt.CONNECTION) =
     let modified_list = get_modified () in
@@ -272,100 +290,50 @@ module MakeComponentStorage (C : Component) : ComponentStorage
     Lwt.return_ok ()
 
   (* Load components from database *)
-  let load_from_db () =
-    (* First, try to load all components from Redis *)
+  let load_from_db (entity_ids : Entity.t list) =
     match !redis_conn_ref with
-    | Some redis ->
-        let* redis_data = Redis_lwt.Client.hgetall redis C.table_name in
-        (match redis_data with
-        | [] ->
-            (* Redis is empty, load from PostgreSQL and populate Redis *)
-            let db_operation (module Db : Caqti_lwt.CONNECTION) =
-              let* result = Db.collect_list
-                (Caqti_request.Infix.(Caqti_type.unit ->* Caqti_type.(t2 string string))
-                  ("SELECT entity_id, data FROM " ^ C.table_name))
-                ()
-              in
-              match result with
-              | Ok components -> Lwt_result.return components
-              | Error e -> Lwt_result.fail e
-            in
-            
-            let* result = Database.Pool.use db_operation in
-            (match result with
-            | Ok components ->
-                let* () = Lwt_list.iter_s (fun (entity_id_str, json_str) ->
-                  match Uuidm.of_string entity_id_str with
-                  | Some entity_id ->
-                      (match json_str |> Yojson.Safe.from_string |> [%of_yojson: C.t] with
-                      | Ok component -> 
-                          Hashtbl.set store ~key:entity_id ~data:component;
-                          (* Populate Redis *)
-                          let* _ = Redis_lwt.Client.hset redis C.table_name entity_id_str json_str in
-                          Lwt.return_unit
-                      | Error err -> 
-                          Stdio.eprintf "Failed to parse %s: %s\n" C.table_name err;
-                          Lwt.return_unit)
-                  | None ->
-                      Stdio.eprintf "Invalid entity UUID: %s\n" entity_id_str;
-                      Lwt.return_unit
-                ) components in
-                Lwt.return_unit
-            | Error e ->
-                Stdio.eprintf "Failed to load %s: %s\n" C.table_name (Error.to_string_hum e);
-                Lwt.return_unit)
-        | _ ->
-            (* Load from Redis data *)
-            let rec process_pairs = function
-              | [] -> Lwt.return_unit
-              | entity_id_str :: json_str :: rest ->
-                  (match Uuidm.of_string entity_id_str with
-                  | Some entity_id ->
-                      (match json_str |> Yojson.Safe.from_string |> [%of_yojson: C.t] with
-                      | Ok component -> 
-                          Hashtbl.set store ~key:entity_id ~data:component;
-                          process_pairs rest
-                      | Error err -> 
-                          Stdio.eprintf "Failed to parse %s from Redis: %s\n" C.table_name err;
-                          process_pairs rest)
-                  | None ->
-                      Stdio.eprintf "Invalid entity UUID from Redis: %s\n" entity_id_str;
-                      process_pairs rest)
-              | [_] ->
-                  Stdio.eprintf "Odd number of Redis hash fields for %s\n" C.table_name;
-                  Lwt.return_unit
-            in
-            let redis_data_flattened = List.fold_left redis_data ~init:[] ~f:(fun acc (key, value) -> value :: key :: acc) |> List.rev in
-            process_pairs redis_data_flattened)
     | None ->
-        (* No Redis connection, fallback to PostgreSQL only *)
-        let db_operation (module Db : Caqti_lwt.CONNECTION) =
-          let* result = Db.collect_list
-            (Caqti_request.Infix.(Caqti_type.unit ->* Caqti_type.(t2 string string))
-              ("SELECT entity_id, data FROM " ^ C.table_name))
-            ()
-          in
-          match result with
-          | Ok components -> Lwt_result.return components
-          | Error e -> Lwt_result.fail e
-        in
-        
-        let* result = Database.Pool.use db_operation in
-        match result with
-        | Ok components ->
-            List.iter components ~f:(fun (entity_id_str, json_str) ->
-              match Uuidm.of_string entity_id_str with
-              | Some entity_id ->
-                  (match json_str |> Yojson.Safe.from_string |> [%of_yojson: C.t] with
-                  | Ok component -> Hashtbl.set store ~key:entity_id ~data:component
-                  | Error err -> 
-                      Stdio.eprintf "Failed to parse %s: %s\n" C.table_name err)
-              | None ->
-                  Stdio.eprintf "Invalid entity UUID: %s\n" entity_id_str);
-            Lwt.return_unit
-        | Error e ->
-            Stdio.eprintf "Failed to load %s: %s\n" C.table_name (Error.to_string_hum e);
-            Lwt.return_unit
+        Stdio.eprintf "Cannot load components for %s: Redis not connected\n" C.table_name;
+        Lwt.return_unit
+    | Some redis ->
+        Lwt_list.iter_s (fun entity_id ->
+          let entity_id_str = Uuidm.to_string entity_id in
+          let* redis_result = Redis_lwt.Client.hget redis C.table_name entity_id_str in
+          match redis_result with
+          | Some json_str ->
+              (* Cache hit: Load from Redis *)
+              (match json_str |> Yojson.Safe.from_string |> [%of_yojson: C.t] with
+              | Ok component ->
+                  Hashtbl.set store ~key:entity_id ~data:component;
+                  Lwt.return_unit
+              | Error err ->
+                  Stdio.eprintf "Failed to parse Redis component %s for %s: %s\n"
+                    C.table_name entity_id_str err;
+                  Lwt.return_unit)
+          | None ->
+              (* Cache miss: Load from PostgreSQL and populate cache *)
+              let db_operation (module Db : Caqti_lwt.CONNECTION) =
+                let* comp_opt = find_one_from_db (module Db) entity_id in
+                match comp_opt with
+                | Ok (Some component) ->
+                    Hashtbl.set store ~key:entity_id ~data:component;
+                    (* Populate Redis *)
+                    let new_json_str = component |> [%to_yojson: C.t] |> Yojson.Safe.to_string in
+                    let* _ = Redis_lwt.Client.hset redis C.table_name entity_id_str new_json_str in
+                    Lwt.return_ok ()
+                | Ok None ->
+                    (* This is not an error; the entity simply might not have this component. *)
+                    Lwt.return_ok ()
+                | Error e -> Lwt_result.fail e
+              in
+              let* result = Database.Pool.use db_operation in
+              match result with
+              | Ok () -> Lwt.return_unit
+              | Error e ->
+                  Stdio.eprintf "Failed to load component %s for %s from DB: %s\n"
+                    C.table_name entity_id_str (Error.to_string_hum e);
+                  Lwt.return_unit
+        ) entity_ids
 end
 
 (* Example component *)
@@ -424,16 +392,16 @@ module World = struct
     redis_conn_ref := Some redis_conn;
     let* result = Entity.load_all () in
     match result with
-    | Ok () ->
-        let* () = CharacterStorage.load_from_db () in
-        let* () = CharacterPositionStorage.load_from_db () in
-        let* () = DescriptionStorage.load_from_db () in
-        let* () = CoreStatsStorage.load_from_db () in
-        let* () = DerivedStatsStorage.load_from_db () in
-        let* () = HealthStorage.load_from_db () in
-        let* () = ActionPointsStorage.load_from_db () in
-        let* () = AreaStorage.load_from_db () in
-        let* () = ExitStorage.load_from_db () in
+    | Ok entity_ids ->
+        let* () = CharacterStorage.load_from_db entity_ids in
+        let* () = CharacterPositionStorage.load_from_db entity_ids in
+        let* () = DescriptionStorage.load_from_db entity_ids in
+        let* () = CoreStatsStorage.load_from_db entity_ids in
+        let* () = DerivedStatsStorage.load_from_db entity_ids in
+        let* () = HealthStorage.load_from_db entity_ids in
+        let* () = ActionPointsStorage.load_from_db entity_ids in
+        let* () = AreaStorage.load_from_db entity_ids in
+        let* () = ExitStorage.load_from_db entity_ids in
         (* Load other component storages here *)
 
         Lwt.return_ok ()
