@@ -47,23 +47,7 @@ module Starting_area_initialization_system = struct
                   "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
                 starting_area_id
               in
-              
-              (* Directly insert into the areas table *)
-              let area_json = area_comp |> [%to_yojson: Components.AreaComponent.t] |> Yojson.Safe.to_string in
-              let* _ = Db.exec 
-                (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT INTO area_components (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
-                (starting_area_id, area_json)
-              in
-              
-              (* Directly insert into the descriptions table *)
-              let desc_json = desc_comp |> [%to_yojson: Components.DescriptionComponent.t] |> Yojson.Safe.to_string in
-              let* _ = Db.exec 
-                (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT INTO descriptions (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
-                (starting_area_id, desc_json)
-              in
-              
+
               (* Also insert into the relational areas table for foreign key references *)
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.(t6 string string string int int int) ->. Caqti_type.unit)
@@ -136,23 +120,7 @@ module Starting_area_initialization_system = struct
                   "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
                 second_area_id
               in
-              
-              (* Directly insert into the areas table *)
-              let area_json = area_comp |> [%to_yojson: Components.AreaComponent.t] |> Yojson.Safe.to_string in
-              let* _ = Db.exec 
-                (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT INTO area_components (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
-                (second_area_id, area_json)
-              in
-              
-              (* Directly insert into the descriptions table *)
-              let desc_json = desc_comp |> [%to_yojson: Components.DescriptionComponent.t] |> Yojson.Safe.to_string in
-              let* _ = Db.exec 
-                (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                  "INSERT INTO descriptions (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
-                (second_area_id, desc_json)
-              in
-              
+
               (* Also insert into the relational areas table for foreign key references *)
               let* _ = Db.exec 
                 (Caqti_request.Infix.(Caqti_type.(t6 string string string int int int) ->. Caqti_type.unit)

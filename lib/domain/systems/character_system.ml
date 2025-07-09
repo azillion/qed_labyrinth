@@ -4,72 +4,26 @@ module Character_list_system = struct
 
   let handle_character_list_requested state user_id =
     let open Lwt_result.Syntax in
-    let* character_components = Ecs.CharacterStorage.all () |> Lwt_result.ok in
-    match character_components with
-    | [] ->
-        (* No ECS characters – pull them from Tier-1 *)
-        let* db_chars = Character.find_all_by_user ~user_id in
-        let characters =
-          Base.List.map db_chars ~f:(fun c -> Types.{ id = c.id; name = c.name })
-        in
-        (* Publish character list via protobuf *)
-        let pb_characters =
-          Base.List.map characters ~f:(fun (c : Types.list_character) ->
-            (Schemas_generated.Output.{ id = c.id; name = c.name }
-              : Schemas_generated.Output.list_character))
-        in
-        let character_list_msg : Schemas_generated.Output.character_list = { characters = pb_characters } in
-        let output_event : Schemas_generated.Output.output_event = {
-          target_user_ids = [user_id];
-          payload = Character_list character_list_msg;
-        } in
-        let* () = Publisher.publish_event state output_event |> Lwt_result.ok in
-        Lwt_result.return ()
-    | character_components ->
-        (* Filter characters by user_id *)
-        let user_characters = Base.List.filter character_components ~f:(fun (_, component) ->
-          String.equal component.Components.CharacterComponent.user_id user_id
-        ) in
-        
-        (* Get description and position components for each character *)
-        let%lwt characters_with_details = Lwt_list.map_s (fun (entity_id, _char_component) ->
-          let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
-          let%lwt pos_opt = Ecs.CharacterPositionStorage.get entity_id in
-          
-          match desc_opt with
-          | Some desc -> 
-              let _location_id = match pos_opt with
-                | Some pos -> pos.Components.CharacterPositionComponent.area_id
-                | None -> "00000000-0000-0000-0000-000000000000" (* Default starting area *)
-              in
-              
-              let entity_id_str = Uuidm.to_string entity_id in
-              let list_character : Types.list_character = {
-                id = entity_id_str;
-                name = desc.Components.DescriptionComponent.name
-              } in
-              Lwt.return (Some list_character)
-          | None -> Lwt.return None
-        ) user_characters in
-        
-        (* Filter out None values and convert to protocol format *)
-        let characters = 
-          Base.List.filter_map characters_with_details ~f:(fun char_opt -> char_opt)
-        in
-        (* Convert characters to protobuf *)
-        let pb_characters =
-          Base.List.map characters ~f:(fun (c : Types.list_character) ->
-            (Schemas_generated.Output.{ id = c.id; name = c.name }
-              : Schemas_generated.Output.list_character))
-        in
-        let character_list_msg : Schemas_generated.Output.character_list =
-          { characters = pb_characters }
-        in
-        let output_event : Schemas_generated.Output.output_event =
-          { target_user_ids = [user_id]; payload = Character_list character_list_msg }
-        in
-        let* () = Publisher.publish_event state output_event |> Lwt_result.ok in
-        Lwt_result.return ()
+    (* 1. Fetch all character blueprints for the user from the relational DB. *)
+    let* db_chars = Character.find_all_by_user ~user_id in
+
+    (* 2. Convert the relational records to the protobuf format. *)
+    let pb_characters =
+      Base.List.map db_chars ~f:(fun c ->
+        (Schemas_generated.Output.{ id = c.id; name = c.name }
+          : Schemas_generated.Output.list_character))
+    in
+    let character_list_msg : Schemas_generated.Output.character_list = { characters = pb_characters } in
+    
+    (* 3. Create the final output event payload. *)
+    let output_event : Schemas_generated.Output.output_event = {
+      target_user_ids = [user_id];
+      payload = Character_list character_list_msg;
+    } in
+
+    (* 4. Publish the event to the user. *)
+    let* () = Publisher.publish_event state output_event |> Lwt.map (fun () -> Ok ()) in
+    Lwt_result.return ()
 
   (* System implementation for ECS *)
   let priority = 100

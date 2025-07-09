@@ -87,22 +87,26 @@ let find_by_id character_id =
 
 let find_all_by_user ~user_id =
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    let query = Caqti_request.Infix.(Caqti_type.Std.string ->* Caqti_type.Std.(t3 string string string))
-      "SELECT id, user_id, name FROM characters WHERE user_id = ?" in
-    let%lwt rows_result = Db.collect_list query user_id in
-    match rows_result with
-    | Error e ->
-        (* Log the database error instead of propagating it so that higher-level logic can keep working. *)
-        let () = Stdio.eprintf "[DB_ERROR] find_all_by_user: %s\n" (Caqti_error.show e) in
-        Lwt_result.return []
+    let query =
+      Caqti_request.Infix.(Caqti_type.Std.string ->*
+        Caqti_type.Std.(t8 string string string int int int int int))
+        {| SELECT c.id, c.user_id, c.name, s.might, s.finesse, s.wits, s.grit, s.presence
+           FROM characters c
+           JOIN character_core_stats s ON c.id = s.character_id
+           WHERE c.user_id = ? |}
+    in
+    let%lwt result = Db.collect_list query user_id in
+    match result with
     | Ok rows ->
-        let default_stats id = { CoreStats.character_id = id; might = 0; finesse = 0; wits = 0; grit = 0; presence = 0 } in
-        let characters = List.map rows ~f:(fun (id, uid, name) -> { id; user_id = uid; name; core_stats = default_stats id }) in
+        let characters = List.map rows ~f:(fun (id, user_id, name, might, finesse, wits, grit, presence) ->
+          let core_stats = { CoreStats.character_id = id; might; finesse; wits; grit; presence } in
+          { id; user_id; name; core_stats })
+        in
         Lwt_result.return characters
+    | Error e ->
+        Stdio.eprintf "[DB_ERROR] find_all_by_user: %s\n" (Caqti_error.show e);
+        Lwt_result.fail e
   in
   match%lwt Database.Pool.use db_operation with
-  | Ok result -> Lwt_result.return result
-  | Error err ->
-      (* Log pool/connection issues and return an empty list to avoid crashing the caller. *)
-      let () = Stdio.eprintf "[DB_POOL_ERROR] find_all_by_user: %s\n" (Error.to_string_hum err) in
-      Lwt_result.return []
+  | Ok characters -> Lwt.return_ok characters
+  | Error e -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum e))

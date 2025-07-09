@@ -44,9 +44,9 @@ module Schema = struct
            id TEXT PRIMARY KEY,
            name TEXT NOT NULL,
            description TEXT NOT NULL,
-           x INTEGER,
-           y INTEGER,
-           z INTEGER,
+           x INTEGER NOT NULL,
+           y INTEGER NOT NULL,
+           z INTEGER NOT NULL,
            climate_elevation REAL,
            climate_temperature REAL,
            climate_moisture REAL,
@@ -57,7 +57,7 @@ module Schema = struct
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       "CREATE INDEX IF NOT EXISTS areas_coords_idx ON areas(x, y, z)";
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      "CREATE UNIQUE INDEX IF NOT EXISTS areas_unique_coords_idx ON areas(x, y, z) WHERE x IS NOT NULL";
+      "CREATE UNIQUE INDEX IF NOT EXISTS areas_unique_coords_idx ON areas(x, y, z)";
   ]
 
   let create_exits_table =
@@ -126,7 +126,7 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
         let* () = C.exec (create_component_table "levels") () in
         let* () = C.exec (create_component_table "messages") () in
         let* () = C.exec (create_component_table "senders") () in
-        let* () = C.exec (create_component_table "area_components") () in
+
 
         (* Tier-1 relational tables *)
         let* () = C.exec create_users_table () in

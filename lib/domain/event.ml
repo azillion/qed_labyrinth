@@ -47,6 +47,7 @@ type t =
   | AreaQuery of { user_id: string; area_id: string }
   | AreaQueryResult of { user_id: string; area: Types.area }
   | AreaQueryFailed of { user_id: string; error: Yojson.Safe.t }
+  | LoadAreaIntoECS of { area_id: string }
 
   (* Movement events *)
   | Move of { user_id: string; direction: Components.ExitComponent.direction }

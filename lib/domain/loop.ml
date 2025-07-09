@@ -13,6 +13,7 @@ let string_of_event_type (event: Event.t) =
   | CharacterListRequested _ -> "CharacterListRequested"
   | AreaQuery _ -> "AreaQuery"
   | AreaQueryResult _ -> "AreaQueryResult"
+  | LoadAreaIntoECS _ -> "LoadAreaIntoECS"
   | PlayerMoved _ -> "PlayerMoved"
   | UpdateAreaPresence _ -> "UpdateAreaPresence"
   | AreaCreated _ -> "AreaCreated"
@@ -161,9 +162,11 @@ let process_event (state : State.t) (event : Event.t) =
       Character_unloading_system.handle_unload_character state user_id character_id
   
   | Event.AreaQuery { user_id; area_id } ->
-      Area_management_system.Area_query_system.handle_area_query state user_id area_id |> Lwt_result.ok
+      Area_management_system.Area_query_system.handle_area_query state user_id area_id
   | Event.AreaQueryResult { user_id; area } ->
-      Area_management_system.Area_query_communication_system.handle_area_query_result state user_id area |> Lwt_result.ok
+      Area_management_system.Area_query_communication_system.handle_area_query_result state user_id area
+  | Event.LoadAreaIntoECS { area_id } ->
+      Area_loading_system.handle_load_area area_id
   
   | Event.Move { user_id; direction } ->
       Movement_system.System.handle_move state user_id direction
@@ -224,15 +227,23 @@ let process_events (state : State.t) =
         | Error err ->
             let err_str = Qed_error.to_string err in
             let* () = Lwt_io.printl (Printf.sprintf "[EVENT_ERROR] %s" err_str) in
-            (* Send appropriate failure messages directly to users *)
-            (match event with
-            | Event.CreateCharacter { user_id; _ } ->
-                Publisher.publish_system_message_to_user state user_id (Qed_error.to_string err)
-            | Event.CharacterSelected { user_id; _ } ->
-                Publisher.publish_system_message_to_user state user_id (Qed_error.to_string err)
-            | Event.CharacterListRequested { user_id } ->
-                Publisher.publish_system_message_to_user state user_id "Failed to retrieve character list"
-            | _ -> (* For other events, just log the error *)
+            (* Try to extract user_id from the failed event to notify them *)
+            let user_id_opt =
+              match event with
+              | CreateCharacter { user_id; _ } -> Some user_id
+              | CharacterSelected { user_id; _ } -> Some user_id
+              | CharacterListRequested { user_id } -> Some user_id
+              | Move { user_id; _ } -> Some user_id
+              | Say { user_id; _ } -> Some user_id
+              | AreaQuery { user_id; _ } -> Some user_id
+              (* Add other user-facing events here as they are created *)
+              | _ -> None
+            in
+            (match user_id_opt with
+            | Some user_id ->
+                Publisher.publish_system_message_to_user state user_id ("Error: " ^ err_str)
+            | None ->
+                (* Event was not user-specific, so just log it. *)
                 Lwt.return_unit)
         in
         process_all ()

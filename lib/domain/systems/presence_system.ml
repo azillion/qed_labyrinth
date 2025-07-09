@@ -12,6 +12,18 @@ module System = struct
   let handle_player_moved (state : State.t) user_id _old_area_id new_area_id _direction =
     let open Lwt_result.Syntax in
 
+    (* Check if the new area is loaded, and load it if not. *)
+    let* () =
+      (match Uuidm.of_string new_area_id with
+      | None -> Lwt.return_unit
+      | Some entity_id ->
+          let%lwt is_loaded = Ecs.AreaStorage.get entity_id in
+          if Option.is_none is_loaded then
+            Infra.Queue.push state.event_queue (Event.LoadAreaIntoECS { area_id = new_area_id })
+          else
+            Lwt.return_unit) |> Lwt_result.ok
+    in
+
     (* 1. Client movement is now handled by the API server via Redis events *)
 
     (* 2. Attempt to fetch the character's name for announcement purposes, but don't fail the move if we can't find it. *)
