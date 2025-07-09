@@ -22,6 +22,9 @@ COPY --chown=opam:opam lib/ lib/
 COPY --chown=opam:opam bin/ bin/
 COPY --chown=opam:opam schemas/ schemas/
 
+# Change ownership to the opam user
+RUN chown -R opam:opam /home/opam/app
+
 # Install OCaml dependencies
 RUN opam install . --deps-only --with-test
 
