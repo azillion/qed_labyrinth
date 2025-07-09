@@ -12,23 +12,23 @@ export const CharacterSheetPage = () => {
             <div class="mb-8">
                 <TerminalText class="text-xl mb-4">Core Attributes</TerminalText>
                 <div class="ml-4 space-y-2">
-                    <TerminalText>Might: {character.core_attributes.might}</TerminalText>
-                    <TerminalText>Finesse: {character.core_attributes.finesse}</TerminalText>
-                    <TerminalText>Wits: {character.core_attributes.wits}</TerminalText>
-                    <TerminalText>Grit: {character.core_attributes.grit}</TerminalText>
-                    <TerminalText>Presence: {character.core_attributes.presence}</TerminalText>
+                    <TerminalText>Might: {character.coreAttributes.might}</TerminalText>
+                    <TerminalText>Finesse: {character.coreAttributes.finesse}</TerminalText>
+                    <TerminalText>Wits: {character.coreAttributes.wits}</TerminalText>
+                    <TerminalText>Grit: {character.coreAttributes.grit}</TerminalText>
+                    <TerminalText>Presence: {character.coreAttributes.presence}</TerminalText>
                 </div>
             </div>
 
             <div class="mb-8">
                 <TerminalText class="text-xl mb-4">Combat Stats</TerminalText>
                 <div class="ml-4 space-y-2">
-                    <TerminalText>Physical Power: {character.derived_stats.physical_power}</TerminalText>
-                    <TerminalText>Spell Power: {character.derived_stats.spell_power}</TerminalText>
-                    <TerminalText>Accuracy: {character.derived_stats.accuracy}</TerminalText>
-                    <TerminalText>Evasion: {character.derived_stats.evasion}</TerminalText>
-                    <TerminalText>Armor: {character.derived_stats.armor}</TerminalText>
-                    <TerminalText>Resolve: {character.derived_stats.resolve}</TerminalText>
+                    <TerminalText>Physical Power: {character.derivedStats.physicalPower}</TerminalText>
+                    <TerminalText>Spell Power: {character.derivedStats.spellPower}</TerminalText>
+                    <TerminalText>Accuracy: {character.derivedStats.accuracy}</TerminalText>
+                    <TerminalText>Evasion: {character.derivedStats.evasion}</TerminalText>
+                    <TerminalText>Armor: {character.derivedStats.armor}</TerminalText>
+                    <TerminalText>Resolve: {character.derivedStats.resolve}</TerminalText>
                 </div>
             </div>
             </div>

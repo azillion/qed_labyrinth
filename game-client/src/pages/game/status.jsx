@@ -11,12 +11,12 @@ export const StatusFrame = () => {
             <div class="grid grid-cols-2 gap-x-6 gap-y-2">
                 <div class="flex items-center justify-between">
                     <TerminalText class="text-sm text-gray-400">Health:</TerminalText>
-                    <TerminalText>{character.health} / {character.max_health}</TerminalText>
+                    <TerminalText>{character.health} / {character.maxHealth}</TerminalText>
                 </div>
                 
                 <div class="flex items-center justify-between">
                     <TerminalText class="text-sm text-gray-400">Action Points:</TerminalText>
-                    <TerminalText>{character.action_points} / {character.max_action_points}</TerminalText>
+                    <TerminalText>{character.actionPoints} / {character.maxActionPoints}</TerminalText>
                 </div>
             </div>
         </div>
