@@ -72,7 +72,7 @@ let subscribe_to_player_commands (state : State.t) =
   let%lwt () = Lwt_io.printl "[DEBUG] Subscribed to player_commands" in
   let reply_stream = Redis_lwt.Client.stream subscriber_conn in
   (* Helper to stringify Redis replies for debugging *)
-  let string_of_redis_reply (r : Redis_lwt.Client.reply) : string =
+  (* let string_of_redis_reply (r : Redis_lwt.Client.reply) : string =
     match r with
     | `Bulk None -> "Bulk nil"
     | `Bulk (Some s) -> Printf.sprintf "Bulk(%d)" (String.length s)
@@ -83,11 +83,11 @@ let subscribe_to_player_commands (state : State.t) =
     | `Multibulk l -> "Multibulk(len=" ^ Int.to_string (List.length l) ^ ")"
     | `Moved _ -> "Moved"
     | `Ask _ -> "Ask"
-  in
+  in *)
   Lwt_stream.iter_s (fun reply_parts ->
     (* Log summary of the parts *)
-    let parts_desc = String.concat ~sep:", " (List.map reply_parts ~f:string_of_redis_reply) in
-    let%lwt () = Lwt_io.printl ("[TRACE] Reply parts: [" ^ parts_desc ^ "]") in
+    (* let parts_desc = String.concat ~sep:", " (List.map reply_parts ~f:string_of_redis_reply) in
+    let%lwt () = Lwt_io.printl ("[TRACE] Reply parts: [" ^ parts_desc ^ "]") in *)
     match reply_parts with
     | [`Bulk (Some "message"); `Bulk (Some channel); `Bulk (Some message_content)] ->
         let%lwt () = Lwt_io.printl (Printf.sprintf "[DEBUG] Received message on channel '%s'" channel) in
@@ -138,8 +138,22 @@ let process_event (state : State.t) (event : Event.t) =
   | Event.UnloadCharacterFromECS { user_id; character_id } ->
       Character_unloading_system.handle_unload_character state user_id character_id
   
-  | Event.SendCharacterList { user_id = _; characters = _ } ->
-      (* Character list is now handled by the API server via Redis events *)
+  | Event.SendCharacterList { user_id; characters } ->
+      (* Convert to protobuf and publish to API server via Redis *)
+      let open Lwt_result.Syntax in
+      let pb_characters =
+        List.map characters ~f:(fun (c : Types.list_character) ->
+          (Schemas_generated.Output.{ id = c.id; name = c.name }
+            : Schemas_generated.Output.list_character))
+      in
+      let character_list =
+        (Schemas_generated.Output.{ characters = pb_characters }
+          : Schemas_generated.Output.character_list) in
+      let output_event = Schemas_generated.Output.{
+        target_user_ids = [user_id];
+        payload = Character_list character_list;
+      } in
+      let* () = Publisher.publish_event state output_event |> Lwt_result.ok in
       Lwt_result.return ()
   | Event.SendCharacterCreated { user_id = _; character = _ } ->
       (* Character creation response is now handled by the API server via Redis events *)

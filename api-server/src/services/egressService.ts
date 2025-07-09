@@ -27,6 +27,16 @@ export function startEgressService() {
               payload: areaUpdate.toObject()
             };
             socket.send(JSON.stringify(payload));
+          } else if (outputEvent.hasCharacterList()) {
+            const characterList = outputEvent.getCharacterList()!;
+            const obj = characterList.toObject();
+            const payload = {
+              type: 'CharacterList',
+              payload: {
+                characters: obj.charactersList ?? []
+              }
+            };
+            socket.send(JSON.stringify(payload));
           }
         }
       }

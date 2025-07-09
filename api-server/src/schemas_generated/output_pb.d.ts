@@ -85,6 +85,52 @@ export namespace AreaUpdate {
   }
 }
 
+export class ListCharacter extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
+  getName(): string;
+  setName(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListCharacter.AsObject;
+  static toObject(includeInstance: boolean, msg: ListCharacter): ListCharacter.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ListCharacter, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListCharacter;
+  static deserializeBinaryFromReader(message: ListCharacter, reader: jspb.BinaryReader): ListCharacter;
+}
+
+export namespace ListCharacter {
+  export type AsObject = {
+    id: string,
+    name: string,
+  }
+}
+
+export class CharacterList extends jspb.Message {
+  clearCharactersList(): void;
+  getCharactersList(): Array<ListCharacter>;
+  setCharactersList(value: Array<ListCharacter>): void;
+  addCharacters(value?: ListCharacter, index?: number): ListCharacter;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): CharacterList.AsObject;
+  static toObject(includeInstance: boolean, msg: CharacterList): CharacterList.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: CharacterList, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): CharacterList;
+  static deserializeBinaryFromReader(message: CharacterList, reader: jspb.BinaryReader): CharacterList;
+}
+
+export namespace CharacterList {
+  export type AsObject = {
+    charactersList: Array<ListCharacter.AsObject>,
+  }
+}
+
 export class OutputEvent extends jspb.Message {
   clearTargetUserIdsList(): void;
   getTargetUserIdsList(): Array<string>;
@@ -100,6 +146,11 @@ export class OutputEvent extends jspb.Message {
   clearAreaUpdate(): void;
   getAreaUpdate(): AreaUpdate | undefined;
   setAreaUpdate(value?: AreaUpdate): void;
+
+  hasCharacterList(): boolean;
+  clearCharacterList(): void;
+  getCharacterList(): CharacterList | undefined;
+  setCharacterList(value?: CharacterList): void;
 
   getPayloadCase(): OutputEvent.PayloadCase;
   serializeBinary(): Uint8Array;
@@ -117,12 +168,14 @@ export namespace OutputEvent {
     targetUserIdsList: Array<string>,
     chatMessage?: ChatMessage.AsObject,
     areaUpdate?: AreaUpdate.AsObject,
+    characterList?: CharacterList.AsObject,
   }
 
   export enum PayloadCase {
     PAYLOAD_NOT_SET = 0,
     CHAT_MESSAGE = 3,
     AREA_UPDATE = 4,
+    CHARACTER_LIST = 5,
   }
 }
 

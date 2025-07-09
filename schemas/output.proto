@@ -19,10 +19,20 @@ message AreaUpdate {
   repeated Exit exits = 4;
 }
 
+message ListCharacter {
+  string id = 1;
+  string name = 2;
+}
+
+message CharacterList {
+  repeated ListCharacter characters = 1;
+}
+
 message OutputEvent {
   repeated string target_user_ids = 1;
   oneof payload {
     ChatMessage chat_message = 3;
     AreaUpdate area_update = 4;
+    CharacterList character_list = 5;
   }
 }
