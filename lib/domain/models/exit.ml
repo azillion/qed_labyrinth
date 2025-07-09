@@ -50,13 +50,32 @@ module Q = struct
 end
 
 let create ~from_area_id ~to_area_id ~direction =
-  let exit_record =
+  let forward_exit =
     { id = Uuidm.to_string (uuid ()); from_area_id; to_area_id; direction }
   in
+  let reciprocal_exit =
+    {
+      id = Uuidm.to_string (uuid ());
+      from_area_id = to_area_id;
+      to_area_id = from_area_id;
+      direction = Components.ExitComponent.opposite_direction direction;
+    }
+  in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    match%lwt Db.exec Q.insert exit_record with
-    | Ok () -> Lwt_result.return exit_record
-    | Error e -> Lwt_result.fail e
+    let open Lwt_result.Syntax in
+    let* () = Db.start () in
+    match%lwt Db.exec Q.insert forward_exit with
+    | Error e -> 
+        let%lwt _ = Db.rollback () in
+        Lwt_result.fail e
+    | Ok () ->
+        match%lwt Db.exec Q.insert reciprocal_exit with
+        | Error e ->
+            let%lwt _ = Db.rollback () in
+            Lwt_result.fail e
+        | Ok () ->
+            let* () = Db.commit () in
+            Lwt_result.return forward_exit
   in
   match%lwt Database.Pool.use db_operation with
   | Ok record -> Lwt.return_ok record

@@ -52,14 +52,20 @@ let create ~user_id ~name ~might ~finesse ~wits ~grit ~presence =
   let character = (character_id, user_id, name) in
   let core_stats = { CoreStats.character_id; might; finesse; wits; grit; presence } in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    let%lwt result1 = Db.exec Q.insert_character character in
-    match result1 with
-    | Error e -> Lwt_result.fail e
+    let open Lwt_result.Syntax in
+    let* () = Db.start () in
+    match%lwt Db.exec Q.insert_character character with
+    | Error e -> 
+        let%lwt _ = Db.rollback () in
+        Lwt_result.fail e
     | Ok () ->
-        let%lwt result2 = Db.exec Q.insert_core_stats core_stats in
-        match result2 with
-        | Error e -> Lwt_result.fail e
-        | Ok () -> Lwt_result.return { id = character_id; user_id; name; core_stats }
+        match%lwt Db.exec Q.insert_core_stats core_stats with
+        | Error e ->
+            let%lwt _ = Db.rollback () in
+            Lwt_result.fail e
+        | Ok () ->
+            let* () = Db.commit () in
+            Lwt_result.return { id = character_id; user_id; name; core_stats }
   in
   match%lwt Database.Pool.use db_operation with
   | Ok result -> Lwt_result.return result

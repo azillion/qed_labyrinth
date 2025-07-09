@@ -101,15 +101,15 @@ module Exit_creation_system = struct
       ) in
       Lwt.return_unit
     end else begin
-      (* Create exit using the new Exit model *)
-      let* exit_result = Exit.create 
+      (* Create exit and its reciprocal atomically *)
+      let* exit_result = Exit.create
         ~from_area_id
         ~to_area_id
         ~direction
       in
       match exit_result with
-      | Error e -> 
-          Stdio.eprintf "Failed to create exit: %s\n" (Qed_error.to_string e);
+      | Error e ->
+          Stdio.eprintf "Failed to create exit pair: %s\n" (Qed_error.to_string e);
           let* () = Infra.Queue.push state.State.event_queue (
             Event.ExitCreationFailed {
               user_id;
@@ -118,26 +118,14 @@ module Exit_creation_system = struct
           ) in
           Lwt.return_unit
       | Ok exit_record ->
-          (* Queue event for exit creation success *)
+          (* Queue event for exit creation success. The reciprocal is already created. *)
           let* () = Infra.Queue.push state.State.event_queue (
             Event.ExitCreated {
               user_id;
               exit_id = exit_record.id
             }
           ) in
-          
-          (* Create reciprocal exit automatically *)
-          let* recip_exit_result = Exit.create
-            ~from_area_id:to_area_id  (* Swapped *)
-            ~to_area_id:from_area_id  (* Swapped *)
-            ~direction:(Components.ExitComponent.opposite_direction direction)
-          in
-          match recip_exit_result with
-          | Error e -> 
-              Stdio.eprintf "Failed to create reciprocal exit: %s\n" (Qed_error.to_string e);
-              Lwt.return_unit
-          | Ok _ ->
-              Lwt.return_unit
+          Lwt.return_unit
     end
 
   let priority = 100
