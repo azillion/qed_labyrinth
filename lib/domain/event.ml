@@ -19,13 +19,6 @@ type t =
   | CharacterListRequested of { user_id: string }
   | CharacterList of { user_id: string; characters: (string * string) list }
   
-  (* Communication events *)
-  | SendCharacterList of { user_id: string; characters: Types.list_character list }
-  | SendCharacterCreated of { user_id: string; character: Types.list_character }
-  | SendCharacterCreationFailed of { user_id: string; error: Yojson.Safe.t }
-  | SendCharacterSelected of { user_id: string; character_sheet: Types.character_sheet }
-  | SendCharacterSelectionFailed of { user_id: string; error: Yojson.Safe.t }
-
   (* Area management events *)
   | CreateArea of { 
       user_id: string; 

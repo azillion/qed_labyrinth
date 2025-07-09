@@ -133,11 +133,42 @@ let handle_load_character state character_id =
                   (* Track as active character *)
                   State.set_active_character state ~user_id:character.user_id ~entity_id;
 
+                  (* Publish CharacterSheet protobuf event to user *)
+                  let of_i = Int32.of_int in
+                  let pb_core_attributes : Schemas_generated.Output.core_attributes = {
+                    might = of_i character_sheet.core_attributes.might;
+                    finesse = of_i character_sheet.core_attributes.finesse;
+                    wits = of_i character_sheet.core_attributes.wits;
+                    grit = of_i character_sheet.core_attributes.grit;
+                    presence = of_i character_sheet.core_attributes.presence;
+                  } in
 
-                  (* Queue SendCharacterSelected event *)
-                  let%lwt () = Infra.Queue.push state.State.event_queue (
-                    Event.SendCharacterSelected { user_id = character.user_id; character_sheet }
-                  ) in
+                  let pb_derived_stats : Schemas_generated.Output.derived_stats = {
+                    physical_power = of_i character_sheet.derived_stats.physical_power;
+                    spell_power = of_i character_sheet.derived_stats.spell_power;
+                    accuracy = of_i character_sheet.derived_stats.accuracy;
+                    evasion = of_i character_sheet.derived_stats.evasion;
+                    armor = of_i character_sheet.derived_stats.armor;
+                    resolve = of_i character_sheet.derived_stats.resolve;
+                  } in
+
+                  let character_sheet_msg : Schemas_generated.Output.character_sheet = {
+                    id = character_sheet.id;
+                    name = character_sheet.name;
+                    health = of_i character_sheet.health;
+                    max_health = of_i character_sheet.max_health;
+                    action_points = of_i character_sheet.action_points;
+                    max_action_points = of_i character_sheet.max_action_points;
+                    core_attributes = Some pb_core_attributes;
+                    derived_stats = Some pb_derived_stats;
+                  } in
+
+                  let output_event : Schemas_generated.Output.output_event = {
+                    target_user_ids = [character.user_id];
+                    payload = Character_sheet character_sheet_msg;
+                  } in
+
+                  let%lwt () = Publisher.publish_event state output_event in
                   
                   (* Also send AreaQuery for client to receive area details & chat *)
                   let area_id = match _position_opt with

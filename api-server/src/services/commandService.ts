@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import redisClient from '../redisClient';
-import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction } from '../schemas_generated/input_pb';
+import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
   try {
@@ -52,6 +52,12 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
         const listCharactersCommand = new ListCharactersCommand();
         // No fields to set – empty message
         playerCommand.setListCharacters(listCharactersCommand);
+        break;
+      }
+      case 'SelectCharacter': {
+        const selectCharacterCommand = new SelectCharacterCommand();
+        selectCharacterCommand.setCharacterId(command.payload.character_id ?? command.payload.characterId);
+        playerCommand.setSelectCharacter(selectCharacterCommand);
         break;
       }
       default:

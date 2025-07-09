@@ -99,6 +99,26 @@ export namespace ListCharactersCommand {
   }
 }
 
+export class SelectCharacterCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): SelectCharacterCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: SelectCharacterCommand): SelectCharacterCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: SelectCharacterCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SelectCharacterCommand;
+  static deserializeBinaryFromReader(message: SelectCharacterCommand, reader: jspb.BinaryReader): SelectCharacterCommand;
+}
+
+export namespace SelectCharacterCommand {
+  export type AsObject = {
+    characterId: string,
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -120,6 +140,11 @@ export class PlayerCommand extends jspb.Message {
   getListCharacters(): ListCharactersCommand | undefined;
   setListCharacters(value?: ListCharactersCommand): void;
 
+  hasSelectCharacter(): boolean;
+  clearSelectCharacter(): void;
+  getSelectCharacter(): SelectCharacterCommand | undefined;
+  setSelectCharacter(value?: SelectCharacterCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -137,6 +162,7 @@ export namespace PlayerCommand {
     say?: SayCommand.AsObject,
     createCharacter?: CreateCharacterCommand.AsObject,
     listCharacters?: ListCharactersCommand.AsObject,
+    selectCharacter?: SelectCharacterCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -145,6 +171,7 @@ export namespace PlayerCommand {
     SAY = 2,
     CREATE_CHARACTER = 3,
     LIST_CHARACTERS = 4,
+    SELECT_CHARACTER = 5,
   }
 }
 

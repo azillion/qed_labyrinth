@@ -33,6 +33,7 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
       | Some (Say _) -> "Say"
       | Some (Create_character _) -> "CreateCharacter"
       | Some (List_characters) -> "ListCharacters"
+      | Some (Select_character _) -> "SelectCharacter"
       | None -> "None"
     in
     Stdio.printf "[DEBUG] Converting protobuf event with payload type: %s\n" payload_type
@@ -63,6 +64,8 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
           | _ -> None)
       | List_characters ->
           Some (Event.CharacterListRequested { user_id = proto_event.user_id })
+      | Select_character select_cmd ->
+          Some (Event.CharacterSelected { user_id = proto_event.user_id; character_id = select_cmd.character_id })
 
 (* Redis subscriber function *)
 let subscribe_to_player_commands (state : State.t) =
@@ -138,36 +141,6 @@ let process_event (state : State.t) (event : Event.t) =
   | Event.UnloadCharacterFromECS { user_id; character_id } ->
       Character_unloading_system.handle_unload_character state user_id character_id
   
-  | Event.SendCharacterList { user_id; characters } ->
-      (* Convert to protobuf and publish to API server via Redis *)
-      let open Lwt_result.Syntax in
-      let pb_characters =
-        List.map characters ~f:(fun (c : Types.list_character) ->
-          (Schemas_generated.Output.{ id = c.id; name = c.name }
-            : Schemas_generated.Output.list_character))
-      in
-      let character_list =
-        (Schemas_generated.Output.{ characters = pb_characters }
-          : Schemas_generated.Output.character_list) in
-      let output_event = Schemas_generated.Output.{
-        target_user_ids = [user_id];
-        payload = Character_list character_list;
-      } in
-      let* () = Publisher.publish_event state output_event |> Lwt_result.ok in
-      Lwt_result.return ()
-  | Event.SendCharacterCreated { user_id = _; character = _ } ->
-      (* Character creation response is now handled by the API server via Redis events *)
-      Lwt_result.return ()
-  | Event.SendCharacterCreationFailed { user_id = _; error = _ } ->
-      (* Character creation failure response is now handled by the API server via Redis events *)
-      Lwt_result.return ()
-  | Event.SendCharacterSelected { user_id = _; character_sheet = _ } ->
-      (* Character selection response is now handled by the API server via Redis events *)
-      Lwt_result.return ()
-  | Event.SendCharacterSelectionFailed { user_id = _; error = _ } ->
-      (* Character selection failure response is now handled by the API server via Redis events *)
-      Lwt_result.return ()
-  
   | Event.AreaQuery { user_id; area_id } ->
       Area_management_system.Area_query_system.handle_area_query state user_id area_id |> Lwt_result.ok
   | Event.AreaQueryResult { user_id; area } ->
@@ -206,24 +179,11 @@ let process_event (state : State.t) (event : Event.t) =
       let* character_opt = Character.find_by_id character_id in
       (match character_opt with
       | None ->
-          (* This should be rare – the character was just created but we can no longer
-             find it. Treat as an error and fall back to the normal error path. *)
-          let* () = Infra.Queue.push state.State.event_queue (
-            Event.SendCharacterCreationFailed
-              { user_id; error = Qed_error.to_yojson Qed_error.CharacterNotFound }
-          ) |> Lwt_result.ok in
+          (* Directly notify user via system message *)
+          let%lwt () = Publisher.publish_system_message_to_user state user_id "Character not found after creation" in
           Lwt_result.return ()
-      | Some character ->
-          let list_character : Types.list_character =
-            { id = character.id; name = character.name } in
-          let* () = Infra.Queue.push state.State.event_queue (
-            Event.SendCharacterCreated { user_id; character = list_character }
-          ) |> Lwt_result.ok in
-          (* Optionally, automatically load the new character into ECS so it can be
-             used immediately. Comment this in for now to keep the flow simple. *)
-          let* () = Infra.Queue.push state.State.event_queue (
-            Event.LoadCharacterIntoECS { user_id; character_id }
-          ) |> Lwt_result.ok in
+      | Some _character ->
+          (* Optionally publish character creation success; currently omitted *)
           let%lwt () = Lwt_io.printl (Printf.sprintf "[EVENT] CharacterCreated processed for user=%s char_id=%s" user_id character_id) in
           Lwt_result.return ())
   

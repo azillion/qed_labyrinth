@@ -4,20 +4,27 @@ module Character_list_system = struct
 
   let handle_character_list_requested state user_id =
     let open Lwt_result.Syntax in
-    let* () = Lwt_io.printl (Printf.sprintf "[DEBUG] Handling character list requested for user %s\n" user_id) |> Lwt_result.ok in
     let* character_components = Ecs.CharacterStorage.all () |> Lwt_result.ok in
-    let* () = Lwt_io.printl (Printf.sprintf "[DEBUG] Retrieved %d character components from ECS for user %s\n" (List.length character_components) user_id) |> Lwt_result.ok in
     match character_components with
     | [] ->
         (* No ECS characters – pull them from Tier-1 *)
         let* db_chars = Character.find_all_by_user ~user_id in
-        let* () = Lwt_io.printl (Printf.sprintf "[DEBUG] Retrieved %d characters from DB for user %s\n" (List.length db_chars) user_id) |> Lwt_result.ok in
         let characters =
           Base.List.map db_chars ~f:(fun c -> Types.{ id = c.id; name = c.name })
         in
-        let* () = Lwt_io.printl (Printf.sprintf "[DEBUG2] Sending character list to user %s\n" user_id) |> Lwt_result.ok in
-        Infra.Queue.push state.State.event_queue
-          (Event.SendCharacterList { user_id; characters }) |> Lwt_result.ok
+        (* Publish character list via protobuf *)
+        let pb_characters =
+          Base.List.map characters ~f:(fun (c : Types.list_character) ->
+            (Schemas_generated.Output.{ id = c.id; name = c.name }
+              : Schemas_generated.Output.list_character))
+        in
+        let character_list_msg : Schemas_generated.Output.character_list = { characters = pb_characters } in
+        let output_event : Schemas_generated.Output.output_event = {
+          target_user_ids = [user_id];
+          payload = Character_list character_list_msg;
+        } in
+        let* () = Publisher.publish_event state output_event |> Lwt_result.ok in
+        Lwt_result.return ()
     | character_components ->
         (* Filter characters by user_id *)
         let user_characters = Base.List.filter character_components ~f:(fun (_, component) ->
@@ -49,10 +56,19 @@ module Character_list_system = struct
         let characters = 
           Base.List.filter_map characters_with_details ~f:(fun char_opt -> char_opt)
         in
-        
-        (* Queue the event to send character list to the client *)
-        let* () = Lwt_io.printl (Printf.sprintf "[DEBUG] Sending character list from ECS (%d characters) to user %s\n" (List.length characters) user_id) |> Lwt_result.ok in
-        let%lwt () = Infra.Queue.push state.State.event_queue (Event.SendCharacterList { user_id; characters }) in
+        (* Convert characters to protobuf *)
+        let pb_characters =
+          Base.List.map characters ~f:(fun (c : Types.list_character) ->
+            (Schemas_generated.Output.{ id = c.id; name = c.name }
+              : Schemas_generated.Output.list_character))
+        in
+        let character_list_msg : Schemas_generated.Output.character_list =
+          { characters = pb_characters }
+        in
+        let output_event : Schemas_generated.Output.output_event =
+          { target_user_ids = [user_id]; payload = Character_list character_list_msg }
+        in
+        let* () = Publisher.publish_event state output_event |> Lwt_result.ok in
         Lwt_result.return ()
 
   (* System implementation for ECS *)

@@ -131,6 +131,134 @@ export namespace CharacterList {
   }
 }
 
+export class CoreAttributes extends jspb.Message {
+  getMight(): number;
+  setMight(value: number): void;
+
+  getFinesse(): number;
+  setFinesse(value: number): void;
+
+  getWits(): number;
+  setWits(value: number): void;
+
+  getGrit(): number;
+  setGrit(value: number): void;
+
+  getPresence(): number;
+  setPresence(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): CoreAttributes.AsObject;
+  static toObject(includeInstance: boolean, msg: CoreAttributes): CoreAttributes.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: CoreAttributes, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): CoreAttributes;
+  static deserializeBinaryFromReader(message: CoreAttributes, reader: jspb.BinaryReader): CoreAttributes;
+}
+
+export namespace CoreAttributes {
+  export type AsObject = {
+    might: number,
+    finesse: number,
+    wits: number,
+    grit: number,
+    presence: number,
+  }
+}
+
+export class DerivedStats extends jspb.Message {
+  getPhysicalPower(): number;
+  setPhysicalPower(value: number): void;
+
+  getSpellPower(): number;
+  setSpellPower(value: number): void;
+
+  getAccuracy(): number;
+  setAccuracy(value: number): void;
+
+  getEvasion(): number;
+  setEvasion(value: number): void;
+
+  getArmor(): number;
+  setArmor(value: number): void;
+
+  getResolve(): number;
+  setResolve(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DerivedStats.AsObject;
+  static toObject(includeInstance: boolean, msg: DerivedStats): DerivedStats.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: DerivedStats, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DerivedStats;
+  static deserializeBinaryFromReader(message: DerivedStats, reader: jspb.BinaryReader): DerivedStats;
+}
+
+export namespace DerivedStats {
+  export type AsObject = {
+    physicalPower: number,
+    spellPower: number,
+    accuracy: number,
+    evasion: number,
+    armor: number,
+    resolve: number,
+  }
+}
+
+export class CharacterSheet extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
+  getName(): string;
+  setName(value: string): void;
+
+  getHealth(): number;
+  setHealth(value: number): void;
+
+  getMaxHealth(): number;
+  setMaxHealth(value: number): void;
+
+  getActionPoints(): number;
+  setActionPoints(value: number): void;
+
+  getMaxActionPoints(): number;
+  setMaxActionPoints(value: number): void;
+
+  hasCoreAttributes(): boolean;
+  clearCoreAttributes(): void;
+  getCoreAttributes(): CoreAttributes | undefined;
+  setCoreAttributes(value?: CoreAttributes): void;
+
+  hasDerivedStats(): boolean;
+  clearDerivedStats(): void;
+  getDerivedStats(): DerivedStats | undefined;
+  setDerivedStats(value?: DerivedStats): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): CharacterSheet.AsObject;
+  static toObject(includeInstance: boolean, msg: CharacterSheet): CharacterSheet.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: CharacterSheet, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): CharacterSheet;
+  static deserializeBinaryFromReader(message: CharacterSheet, reader: jspb.BinaryReader): CharacterSheet;
+}
+
+export namespace CharacterSheet {
+  export type AsObject = {
+    id: string,
+    name: string,
+    health: number,
+    maxHealth: number,
+    actionPoints: number,
+    maxActionPoints: number,
+    coreAttributes?: CoreAttributes.AsObject,
+    derivedStats?: DerivedStats.AsObject,
+  }
+}
+
 export class OutputEvent extends jspb.Message {
   clearTargetUserIdsList(): void;
   getTargetUserIdsList(): Array<string>;
@@ -152,6 +280,11 @@ export class OutputEvent extends jspb.Message {
   getCharacterList(): CharacterList | undefined;
   setCharacterList(value?: CharacterList): void;
 
+  hasCharacterSheet(): boolean;
+  clearCharacterSheet(): void;
+  getCharacterSheet(): CharacterSheet | undefined;
+  setCharacterSheet(value?: CharacterSheet): void;
+
   getPayloadCase(): OutputEvent.PayloadCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): OutputEvent.AsObject;
@@ -169,6 +302,7 @@ export namespace OutputEvent {
     chatMessage?: ChatMessage.AsObject,
     areaUpdate?: AreaUpdate.AsObject,
     characterList?: CharacterList.AsObject,
+    characterSheet?: CharacterSheet.AsObject,
   }
 
   export enum PayloadCase {
@@ -176,6 +310,7 @@ export namespace OutputEvent {
     CHAT_MESSAGE = 3,
     AREA_UPDATE = 4,
     CHARACTER_LIST = 5,
+    CHARACTER_SHEET = 6,
   }
 }
 

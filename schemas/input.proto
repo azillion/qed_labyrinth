@@ -31,12 +31,17 @@ message CreateCharacterCommand {
 
 message ListCharactersCommand {}
 
+message SelectCharacterCommand {
+  string character_id = 1;
+}
+
 message PlayerCommand {
   oneof command {
     MoveCommand            move            = 1;
     SayCommand             say             = 2;
     CreateCharacterCommand create_character = 3;
     ListCharactersCommand  list_characters = 4;
+    SelectCharacterCommand select_character = 5;
   }
 }
 
