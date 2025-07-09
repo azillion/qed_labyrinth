@@ -87,7 +87,7 @@ let handle_load_character state character_id =
             | None -> (100, 100) (* Fallback values *)
           in
           
-          let (mana, max_mana) = match action_points_opt with
+          let (action_points, max_action_points) = match action_points_opt with
             | Some ap -> (ap.current, ap.max)
             | None -> (100, 100) (* Fallback values *)
           in
@@ -120,8 +120,8 @@ let handle_load_character state character_id =
             name = character_name;
             health;
             max_health;
-            action_points = mana; (* Using mana as action_points for now *)
-            max_action_points = max_mana;
+            action_points;
+            max_action_points;
             core_attributes;
             derived_stats;
           } in
