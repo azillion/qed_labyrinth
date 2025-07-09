@@ -207,7 +207,9 @@ let process_event (state : State.t) (event : Event.t) =
           Lwt_result.return ())
   
   (* Add other event handlers here as they are refactored *)
-  | _ -> Lwt_result.return () (* Ignore unhandled events for now *)
+  | _ -> 
+    let* () = Lwt_io.printl (Printf.sprintf "[WARNING] Unhandled event: %s" (string_of_event_type event)) in
+    Lwt_result.return () (* Ignore unhandled events for now *)
 
 (* Replace the old process_events with this new one *)
 let process_events (state : State.t) =
