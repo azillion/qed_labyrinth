@@ -183,7 +183,7 @@ module Area_query_system = struct
     in
     Lwt.return (List.filter_opt char_details)
 
-  let handle_area_query state user_id area_id =
+  let rec handle_area_query state user_id area_id =
     let open Lwt_result.Syntax in
     let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Called by user %s for area %s" user_id area_id)) in
     (* Get area details *)
@@ -241,6 +241,17 @@ module Area_query_system = struct
               }
             )) in
             Lwt_result.return ()
+        | (Some _area, None) ->
+            (* Description missing: derive from relational blueprint (relational DB) and cache it in ECS *)
+            let* area_model = Area.find_by_id area_id in
+            let desc_comp = Components.DescriptionComponent.{
+              entity_id = area_id;
+              name = area_model.name;
+              description = Some area_model.description;
+            } in
+            let* () = wrap_ok (Ecs.DescriptionStorage.set entity_id desc_comp) in
+            (* Retry handling with newly loaded description *)
+            handle_area_query state user_id area_id
         | _ ->
             let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Area or description not found for area_id: %s (user: %s)" area_id user_id)) in
             let* () = wrap_ok (Infra.Queue.push state.State.event_queue (

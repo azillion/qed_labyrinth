@@ -392,10 +392,7 @@ module World = struct
     let* result = Entity.load_all () in
     match result with
     | Ok entity_ids ->
-        let* () = CharacterStorage.load_from_db entity_ids in
         let* () = CharacterPositionStorage.load_from_db entity_ids in
-        let* () = DescriptionStorage.load_from_db entity_ids in
-        let* () = CoreStatsStorage.load_from_db entity_ids in
         let* () = DerivedStatsStorage.load_from_db entity_ids in
         let* () = HealthStorage.load_from_db entity_ids in
         let* () = ActionPointsStorage.load_from_db entity_ids in
@@ -408,10 +405,7 @@ module World = struct
   let sync_to_db () =
     let db_operation (module Db : Caqti_lwt.CONNECTION) =
       let (let*) = Lwt_result.bind in
-      let* () = CharacterStorage.sync_to_db (module Db) in
       let* () = CharacterPositionStorage.sync_to_db (module Db) in
-      let* () = DescriptionStorage.sync_to_db (module Db) in
-      let* () = CoreStatsStorage.sync_to_db (module Db) in
       let* () = DerivedStatsStorage.sync_to_db (module Db) in
       let* () = HealthStorage.sync_to_db (module Db) in
       let* () = ActionPointsStorage.sync_to_db (module Db) in

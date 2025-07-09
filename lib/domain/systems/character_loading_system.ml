@@ -70,17 +70,14 @@ let handle_load_character state character_id =
           let* () = Character_stat_system.calculate_and_update_stats entity_id in
           
           (* Construct Types.character_sheet record from loaded components *)
+          let* _position_opt = wrap_val (Ecs.CharacterPositionStorage.get entity_id) in
+          
+          (* Get the components that were just created by calculate_and_update_stats *)
           let* health_opt = wrap_val (Ecs.HealthStorage.get entity_id) in
           let* action_points_opt = wrap_val (Ecs.ActionPointsStorage.get entity_id) in
-          let* _position_opt = wrap_val (Ecs.CharacterPositionStorage.get entity_id) in
-          let* desc_opt = wrap_val (Ecs.DescriptionStorage.get entity_id) in
-          let* core_stats_opt = wrap_val (Ecs.CoreStatsStorage.get entity_id) in
           let* derived_stats_opt = wrap_val (Ecs.DerivedStatsStorage.get entity_id) in
           
-          let character_name = match desc_opt with
-            | Some desc -> desc.Components.DescriptionComponent.name
-            | None -> character.name (* Fallback to character.name *)
-          in
+          let character_name = character.name in
           
           let (health, max_health) = match health_opt with
             | Some h -> (h.current, h.max)
@@ -92,16 +89,13 @@ let handle_load_character state character_id =
             | None -> (100, 100) (* Fallback values *)
           in
           
-          let core_attributes = match core_stats_opt with
-            | Some cs -> Types.{
-                might = cs.Components.CoreStatsComponent.might;
-                finesse = cs.finesse;
-                wits = cs.wits;
-                grit = cs.grit;
-                presence = cs.presence;
-              }
-            | None -> Types.{ might = 5; finesse = 5; wits = 5; grit = 5; presence = 5 } (* Fallback *)
-          in
+          let core_attributes = Types.{
+              might = core_stats_component.Components.CoreStatsComponent.might;
+              finesse = core_stats_component.finesse;
+              wits = core_stats_component.wits;
+              grit = core_stats_component.grit;
+              presence = core_stats_component.presence;
+            } in
           
           let derived_stats = match derived_stats_opt with
             | Some ds -> Types.{

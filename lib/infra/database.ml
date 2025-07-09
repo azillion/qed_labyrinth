@@ -115,10 +115,7 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
         let* () = C.exec create_entities_table () in
 
         (* component tables *)
-        let* () = C.exec (create_component_table "character_entities") () in
         let* () = C.exec (create_component_table "character_positions") () in
-        let* () = C.exec (create_component_table "descriptions") () in
-        let* () = C.exec (create_component_table "core_stats") () in
         let* () = C.exec (create_component_table "derived_stats") () in
         let* () = C.exec (create_component_table "healths") () in
         let* () = C.exec (create_component_table "action_points") () in
