@@ -1,7 +1,7 @@
 import { redisSubscriber } from '../redisClient';
 import { connectionManager } from '../connectionManager';
 import { OutputEvent } from '../schemas_generated/output_pb';
-import { CharacterList, CharacterSheet } from '../schemas_generated/output_pb';
+import { CharacterList, CharacterSheet, ChatHistory } from '../schemas_generated/output_pb';
 
 export function startEgressService() {
   // The third argument `true` tells node-redis to deliver messages as Buffer instead of string
@@ -36,6 +36,13 @@ export function startEgressService() {
               payload: {
                 characters: obj.charactersList ?? []
               }
+            };
+            socket.send(JSON.stringify(payload));
+          } else if (outputEvent.hasChatHistory && outputEvent.hasChatHistory()) {
+            const chatHistory = outputEvent.getChatHistory()!;
+            const payload = {
+              type: 'ChatHistory',
+              payload: chatHistory.toObject()
             };
             socket.send(JSON.stringify(payload));
           } else if (outputEvent.hasCharacterSheet()) {

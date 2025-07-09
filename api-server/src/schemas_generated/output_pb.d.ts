@@ -31,6 +31,28 @@ export namespace ChatMessage {
   }
 }
 
+export class ChatHistory extends jspb.Message {
+  clearMessagesList(): void;
+  getMessagesList(): Array<ChatMessage>;
+  setMessagesList(value: Array<ChatMessage>): void;
+  addMessages(value?: ChatMessage, index?: number): ChatMessage;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ChatHistory.AsObject;
+  static toObject(includeInstance: boolean, msg: ChatHistory): ChatHistory.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ChatHistory, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ChatHistory;
+  static deserializeBinaryFromReader(message: ChatHistory, reader: jspb.BinaryReader): ChatHistory;
+}
+
+export namespace ChatHistory {
+  export type AsObject = {
+    messagesList: Array<ChatMessage.AsObject>,
+  }
+}
+
 export class Exit extends jspb.Message {
   getDirection(): string;
   setDirection(value: string): void;
@@ -265,6 +287,11 @@ export class OutputEvent extends jspb.Message {
   setTargetUserIdsList(value: Array<string>): void;
   addTargetUserIds(value: string, index?: number): string;
 
+  hasChatHistory(): boolean;
+  clearChatHistory(): void;
+  getChatHistory(): ChatHistory | undefined;
+  setChatHistory(value?: ChatHistory): void;
+
   hasChatMessage(): boolean;
   clearChatMessage(): void;
   getChatMessage(): ChatMessage | undefined;
@@ -299,6 +326,7 @@ export class OutputEvent extends jspb.Message {
 export namespace OutputEvent {
   export type AsObject = {
     targetUserIdsList: Array<string>,
+    chatHistory?: ChatHistory.AsObject,
     chatMessage?: ChatMessage.AsObject,
     areaUpdate?: AreaUpdate.AsObject,
     characterList?: CharacterList.AsObject,
@@ -307,6 +335,7 @@ export namespace OutputEvent {
 
   export enum PayloadCase {
     PAYLOAD_NOT_SET = 0,
+    CHAT_HISTORY = 2,
     CHAT_MESSAGE = 3,
     AREA_UPDATE = 4,
     CHARACTER_LIST = 5,

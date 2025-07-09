@@ -101,7 +101,36 @@ module Chat_history_system = struct
     let%lwt () = Infra.Queue.push state.event_queue (Event.SendChatHistory { user_id; messages = chat_messages }) in
     Lwt.return_ok ()
 
-  let handle_send_chat_history (_state: State.t) _user_id _messages =
-    (* This functionality is now handled by the API server via Redis events *)
+  (* Publish the requested chat history to the user as a single payload *)
+  let handle_send_chat_history (state : State.t) (user_id : string) (messages : Types.chat_message list) =
+    let open Lwt.Syntax in
+
+    (* Transform each domain chat_message into its protobuf equivalent *)
+    let pb_messages = List.map messages ~f:(fun (msg : Types.chat_message) ->
+      let message_type_str = match msg.message_type with
+        | Communication.Chat -> "Chat"
+        | Communication.System -> "System"
+        | Communication.Emote -> "Emote"
+        | Communication.CommandSuccess -> "CommandSuccess"
+        | Communication.CommandFailed -> "CommandFailed"
+      in
+      Schemas_generated.Output.{
+        sender_name = Option.value msg.sender_id ~default:"System";
+        content = msg.content;
+        message_type = message_type_str;
+      }
+    ) in
+
+    (* Bundle into ChatHistory message *)
+    let chat_history_msg : Schemas_generated.Output.chat_history = {
+      messages = pb_messages;
+    } in
+
+    let output_event : Schemas_generated.Output.output_event = {
+      target_user_ids = [user_id];
+      payload = Chat_history chat_history_msg;
+    } in
+
+    let* () = Publisher.publish_event state output_event in
     Lwt_result.return ()
 end
