@@ -70,14 +70,6 @@ val find_by_coordinates : x:int -> y:int -> z:int -> (t, Qed_error.t) result Lwt
 val exists : x:int -> y:int -> z:int -> (bool, Qed_error.t) result Lwt.t
 
 val get_exits : t -> (exit list, Qed_error.t) result Lwt.t
-val create_exit :
-  from_area_id:string ->
-  to_area_id:string ->
-  direction:direction ->
-  description:string option ->
-  hidden:bool ->
-  locked:bool ->
-  (exit, Qed_error.t) result Lwt.t
 
 val find_exits : area_id:string -> (exit list, Qed_error.t) result Lwt.t
 val direction_equal : direction -> direction -> bool

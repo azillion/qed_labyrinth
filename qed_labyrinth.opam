@@ -21,11 +21,19 @@ depends: [
   "ppx_deriving_yojson" {>= "3.7.0"}
   "ppx_deriving" {>= "5.2.1"}
   "digestif" {>= "0.8.0"}
-  "dream" {>= "1.0.0~alpha4"}
+  "pbrt" {>= "3.0"}
+  "ocaml-protoc" {>= "3.0"}
+  "dream"
+  "lwt_ppx"
+  "cohttp-lwt-unix"
+  "jose"
+  "ppx_yojson_conv"
   "caqti" {>= "1.9.0"}
   "caqti-driver-postgresql" {>= "1.9.0"}
   "caqti-lwt" {>= "1.9.0"}
   "caqti-driver-sqlite3" {>= "1.9.0"}
+  "caqti-driver-postgresql" {>= "1.9.0"}
+  "redis-lwt" {>= "0.4"}
   "odoc" {with-doc}
 ]
 build: [

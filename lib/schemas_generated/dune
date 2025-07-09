@@ -1,0 +1,21 @@
+(rule
+ (targets input.ml input.mli)
+ (deps ../../schemas/input.proto)
+ (action
+  (run ocaml-protoc --binary --ml_out . ../../schemas/input.proto)))
+
+(rule
+ (targets output.ml output.mli)
+ (deps ../../schemas/output.proto)
+ (action
+  (run ocaml-protoc --binary --ml_out . ../../schemas/output.proto)))
+
+(library
+ (name schemas_generated)
+ (public_name qed_labyrinth.schemas_generated)
+ (modules input output)
+ (libraries pbrt))
+
+(alias
+ (name schemas)
+ (deps input.ml input.mli output.ml output.mli))

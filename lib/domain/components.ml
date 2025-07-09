@@ -37,10 +37,11 @@ module AreaComponent = struct
     moisture: float option;
   } [@@deriving yojson]
 
-  let table_name = "areas"
+  let table_name = "area_components"
 end
 
 module ExitComponent = struct
+  (* Only the types and helper functions needed by other modules *)
   type direction = 
     | North 
     | South 
@@ -49,18 +50,6 @@ module ExitComponent = struct
     | Up 
     | Down [@@deriving yojson]
     
-  type t = {
-    entity_id: string;
-    from_area_id: string;
-    to_area_id: string;
-    direction: direction;
-    description: string option;
-    hidden: bool;
-    locked: bool;
-  } [@@deriving yojson]
-
-  let table_name = "exits"
-  
   let direction_to_string = function
     | North -> "north"
     | South -> "south"
@@ -86,6 +75,7 @@ module ExitComponent = struct
     | Up -> Down
     | Down -> Up
 end
+
 
 module CoreStatsComponent = struct
   type t = {

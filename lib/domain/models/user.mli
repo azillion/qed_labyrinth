@@ -18,10 +18,7 @@ type t = {
   role : role;
 }
 
-val register :
-  username:string -> password:string -> email:string -> (t, Qed_error.t) result Lwt.t
 
-val authenticate : username:string -> password:string -> (t, Qed_error.t) result Lwt.t
 val find_by_id : string -> (t, Qed_error.t) result Lwt.t
 val find_by_username : string -> (t, Qed_error.t) result Lwt.t
 

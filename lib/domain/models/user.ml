@@ -1,3 +1,14 @@
+(**
+  User model and data access.
+
+  This module provides functions to interact with the `users` table in the database.
+  It is responsible for data access operations like finding users by ID or username.
+  
+  IMPORTANT: This module does NOT handle authentication (password checking) or user
+  registration. That logic is the sole responsibility of the `api-server`.
+  The engine trusts that the `userId` it receives in commands is authenticated.
+*)
+
 open Lwt.Syntax
 open Infra
 open Qed_error
@@ -30,26 +41,7 @@ type t = {
   role : role;
 }
 
-let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
 
-let hash_password password =
-  Digestif.SHA256.digest_string password |> Digestif.SHA256.to_hex
-
-let create ~username ~password ~email ~role =
-  let id = Uuidm.to_string (uuid ()) in
-  let password_hash = hash_password password in
-  let created_at = Ptime_clock.now () in
-  {
-    id;
-    username;
-    password_hash;
-    email;
-    created_at;
-    deleted_at = None;
-    token = None;
-    token_expires_at = None;
-    role;
-  }
 
 module Q = struct
   open Caqti_request.Infix
@@ -111,11 +103,6 @@ module Q = struct
     in
     custom ~encode ~decode rep
 
-  let insert =
-    (user_type ->. unit)
-      {| INSERT INTO users (id, username, password_hash, email, created_at, deleted_at, token, token_expires_at, role)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) |}
-
   let find_by_id =
     (string ->? user_type)
       "SELECT * FROM users WHERE id = ? AND deleted_at IS NULL"
@@ -123,10 +110,6 @@ module Q = struct
   let find_by_username =
     (string ->? user_type)
       "SELECT * FROM users WHERE username = ? AND deleted_at IS NULL"
-
-  let find_by_email =
-    (string ->? user_type)
-      "SELECT * FROM users WHERE email = ? AND deleted_at IS NULL"
 
   let update_token =
     (t3 (option string) (option ptime) string ->. unit)
@@ -141,53 +124,7 @@ module Q = struct
          WHERE id = ? AND deleted_at IS NULL |}
 end
 
-let register ~username ~password ~email =
-  let open Base in
-  let open Lwt_result.Syntax in
-  let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    let* existing_user = Db.find_opt Q.find_by_username username in
-    match existing_user with
-    | Some _ ->
-        Lwt_result.return
-          (`UsernameTaken : [ `UsernameTaken | `EmailTaken | `Success of t ])
-    | None ->
-        let* existing_email = Db.find_opt Q.find_by_email email in
-        match existing_email with
-        | Some _ -> Lwt_result.return `EmailTaken
-        | None ->
-            let user = create ~username ~password ~email ~role:Player in
-            let* () = Db.exec Q.insert user in
-            Lwt_result.return (`Success user)
-  in
-  let%lwt result = Database.Pool.use db_operation in
-  match result with
-  | Ok (`Success user) -> Lwt.return_ok user
-  | Ok `UsernameTaken -> Lwt.return_error UsernameTaken
-  | Ok `EmailTaken -> Lwt.return_error EmailTaken
-  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
 
-let authenticate ~username ~password =
-  let open Base in
-  let open Lwt_result.Syntax in
-  let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    let* user_result = Db.find_opt Q.find_by_username username in
-    match user_result with
-    | None ->
-        Lwt_result.return
-          (`UserNotFound : [ `UserNotFound | `Success of t | `InvalidPassword ])
-    | Some user ->
-        let password_hash = hash_password password in
-        if String.equal user.password_hash password_hash then
-          Lwt_result.return (`Success user)
-        else
-          Lwt_result.return `InvalidPassword
-  in
-  let%lwt result = Database.Pool.use db_operation in
-  match result with
-  | Ok (`Success user) -> Lwt.return_ok user
-  | Ok `UserNotFound -> Lwt.return_error UserNotFound
-  | Ok `InvalidPassword -> Lwt.return_error InvalidPassword
-  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
 
 let find_by_id id =
   let open Base in

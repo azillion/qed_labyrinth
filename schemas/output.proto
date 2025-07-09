@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package qed.schemas.output;
+
+message ChatMessage {
+  string sender_name = 1;
+  string content = 2;
+  string message_type = 3;
+}
+
+// Represents a batch of chat messages (e.g., recent history for an area)
+message ChatHistory {
+  repeated ChatMessage messages = 1;
+}
+
+message Exit {
+  string direction = 1;
+}
+
+message AreaUpdate {
+  string area_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated Exit exits = 4;
+}
+
+message ListCharacter {
+  string id = 1;
+  string name = 2;
+}
+
+message CharacterList {
+  repeated ListCharacter characters = 1;
+}
+
+message CoreAttributes {
+  int32 might = 1;
+  int32 finesse = 2;
+  int32 wits = 3;
+  int32 grit = 4;
+  int32 presence = 5;
+}
+
+message DerivedStats {
+  int32 physical_power = 1;
+  int32 spell_power = 2;
+  int32 accuracy = 3;
+  int32 evasion = 4;
+  int32 armor = 5;
+  int32 resolve = 6;
+}
+
+message CharacterSheet {
+  string id = 1;
+  string name = 2;
+  int32 health = 3;
+  int32 max_health = 4;
+  int32 action_points = 5;
+  int32 max_action_points = 6;
+  CoreAttributes core_attributes = 7;
+  DerivedStats derived_stats = 8;
+}
+
+message OutputEvent {
+  repeated string target_user_ids = 1;
+  oneof payload {
+    ChatHistory chat_history = 2;
+    ChatMessage chat_message = 3;
+    AreaUpdate area_update = 4;
+    CharacterList character_list = 5;
+    CharacterSheet character_sheet = 6;
+  }
+}

@@ -28,13 +28,28 @@ export class SocketManager {
             console.error('No auth token available');
             return;
         }
+        
+        console.log('Using token for WebSocket connection:', token.substring(0, 50) + '...');
 
         try {
-            const ws = new WebSocket(`${SOCKET_URL}?token=${encodeURIComponent(token)}`);
-            ws.onopen = () => this.handleOpen(ws);
-            ws.onclose = (e) => this.handleClose(e);
+            const wsUrl = `${SOCKET_URL}?token=${encodeURIComponent(token)}`;
+            console.log('Creating WebSocket connection to:', wsUrl);
+            
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connection opened');
+                this.handleOpen(ws);
+            };
+            ws.onclose = (e) => {
+                console.log('WebSocket connection closed:', e.code, e.reason);
+                this.handleClose(e);
+            };
             ws.onmessage = (e) => this.handleMessage(e);
-            ws.onerror = (e) => this.handleError(e);
+            ws.onerror = (e) => {
+                console.error('WebSocket error:', e);
+                this.handleError(e);
+            };
 
             this.socket[1](ws);
             this.connectionStatus[1]('connecting');
@@ -125,18 +140,29 @@ export class SocketManager {
             }
 
             const data = JSON.parse(event.data);
-            const [type, payload] = Array.isArray(data) ? data : [Object.keys(data)[0], data[Object.keys(data)[0]]];
+            
+            // Handle command acknowledgements from the server
+            if (data.status === 'command_received') {
+                DEBUG && console.log('Received ack for command:', data.type);
+                return;
+            }
 
-            DEBUG && console.log('Received:', type, payload);
+            // Handle standard data messages from the server
+            if (data && data.type && data.payload !== undefined) {
+                const { type, payload } = data;
+                DEBUG && console.log('Received:', type, payload);
 
-            const handler = this.handlers.get(type);
-            if (handler) {
-                handler(payload);
+                const handler = this.handlers.get(type);
+                if (handler) {
+                    handler(payload);
+                } else {
+                    console.warn('No handler registered for message type:', type);
+                }
             } else {
-                console.warn('No handler registered for message type:', type);
+                console.warn('Unknown message format received:', data);
             }
         } catch (error) {
-            console.error('Error handling message:', error);
+            console.error('Error handling message:', error, 'Raw Data:', event.data);
         }
     }
 

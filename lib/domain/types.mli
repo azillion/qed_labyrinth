@@ -46,7 +46,7 @@ type exit = {
   direction : string;
 } [@@deriving yojson]
 
-val exit_of_model : Area.exit -> exit
+val exit_of_model : Exit.t -> exit
 
 type area = {
   id : string;
@@ -59,7 +59,7 @@ type area = {
   moisture : float option;
 } [@@deriving yojson]
 
-val area_of_model : Area.t -> Area.exit list -> area
+val area_of_model : Area.t -> Exit.t list -> area
 
 (* chat types *)
 type chat_message = {

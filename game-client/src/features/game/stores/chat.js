@@ -12,13 +12,25 @@ export const [error, setError] = createSignal(null);
 // Message handlers that will be registered with WebSocket system
 export const chatHandlers = {
     'ChatMessage': (payload) => {
-        const { message } = payload;
-        // Only add message if it's for current room
-        setMessages(msgs => [...msgs, message]);
+        // payload is a single message object coming from protobuf .toObject()
+        // Fields: senderName, content, messageType
+        const msg = {
+            sender_name: payload.senderName,
+            content: payload.content,
+            message_type: payload.messageType,
+            timestamp: Date.now()
+        };
+        setMessages(msgs => [...msgs, msg]);
     },
     'ChatHistory': (payload) => {
-        const { messages } = payload;
-        setMessages(messages);
+        // Expect payload.messagesList from protobuf object
+        const msgs = (payload.messagesList || []).map(m => ({
+            sender_name: m.senderName,
+            content: m.content,
+            message_type: m.messageType,
+            timestamp: Date.now()
+        }));
+        setMessages(msgs);
         setIsLoading(false);
         setError(null);
     },
@@ -47,7 +59,7 @@ export const chatActions = {
     sendMessage: async (content) => {
         try {
             setError(null);
-            socketManager.send('SendChat', { message: content });
+            socketManager.send('Say', { content: content });
         } catch (error) {
             setError(error.message);
             throw error;
@@ -73,7 +85,33 @@ export const chatActions = {
     },
     command: async (content) => {
         try {
-            socketManager.send('Command', { command: content });
+            // Parse the command
+            const parts = content.trim().split(' ');
+            const command = parts[0].toLowerCase();
+            
+            // Handle movement commands
+            if (command === '/north' || command === '/n') {
+                socketManager.send('Move', { direction: 'NORTH' });
+            } else if (command === '/south' || command === '/s') {
+                socketManager.send('Move', { direction: 'SOUTH' });
+            } else if (command === '/east' || command === '/e') {
+                socketManager.send('Move', { direction: 'EAST' });
+            } else if (command === '/west' || command === '/w') {
+                socketManager.send('Move', { direction: 'WEST' });
+            } else if (command === '/up' || command === '/u') {
+                socketManager.send('Move', { direction: 'UP' });
+            } else if (command === '/down' || command === '/d') {
+                socketManager.send('Move', { direction: 'DOWN' });
+            } else if (command === '/say') {
+                // Handle say command
+                const message = parts.slice(1).join(' ');
+                if (message) {
+                    socketManager.send('Say', { content: message });
+                }
+            } else {
+                // Unknown command - could add error handling here
+                setError(`Unknown command: ${command}`);
+            }
         } catch (error) {
             setError(error.message);
             throw error;

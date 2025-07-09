@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package qed.schemas.input;
+
+enum Direction {
+  UNSPECIFIED = 0;
+  NORTH = 1;
+  SOUTH = 2;
+  EAST = 3;
+  WEST = 4;
+  UP = 5;
+  DOWN = 6;
+}
+
+message MoveCommand {
+  Direction direction = 1;
+}
+
+message SayCommand {
+  string content = 1;
+}
+
+message CreateCharacterCommand {
+  string name = 1;
+  int32 might = 2;
+  int32 finesse = 3;
+  int32 wits = 4;
+  int32 grit = 5;
+  int32 presence = 6;
+}
+
+message ListCharactersCommand {}
+
+message SelectCharacterCommand {
+  string character_id = 1;
+}
+
+message PlayerCommand {
+  oneof command {
+    MoveCommand            move            = 1;
+    SayCommand             say             = 2;
+    CreateCharacterCommand create_character = 3;
+    ListCharactersCommand  list_characters = 4;
+    SelectCharacterCommand select_character = 5;
+  }
+}
+
+message InputEvent {
+  string user_id = 1;
+  string trace_id = 2;
+  PlayerCommand payload = 3;
+}

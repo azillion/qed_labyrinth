@@ -45,6 +45,17 @@ module System = struct
     let unique_user_ids = Base.List.dedup_and_sort user_ids ~compare:String.compare in
     Lwt.return unique_user_ids
 
+  let get_sender_name state sender_id =
+    match sender_id with
+    | None -> Lwt.return "System"
+    | Some user_id ->
+        let%lwt char_entity_id_opt = find_character_by_user_id state user_id in
+        match char_entity_id_opt with
+        | None -> Lwt.return "Unknown"
+        | Some char_entity_id ->
+            let%lwt name_opt = get_character_name char_entity_id in
+            Lwt.return (Option.value name_opt ~default:"Unknown")
+
   let handle_say state user_id content =
     let open Lwt_result.Syntax in
     let* char_entity_id = find_character_by_user_id state user_id |> Lwt.map (Result.of_option ~error:CharacterNotFound) in
@@ -57,26 +68,40 @@ module System = struct
     in
 
     (* Announce the persisted message *)
-    let* () = Infra.Queue.push state.State.event_queue (Event.Announce { area_id; message }) |> Lwt_result.ok in
+    let* () = Error_utils.wrap_ok (Infra.Queue.push state.State.event_queue (Event.Announce { area_id; message })) in
     Lwt.return_ok ()
 
   let handle_announce state area_id message =
-    let open Lwt.Syntax in
-    let* user_ids = find_user_ids_in_area state area_id in
-    let* () =
+    let open Lwt_result.Syntax in
+    let* user_ids = find_user_ids_in_area state area_id |> Lwt.map (fun u -> Ok u) in
+    let* () = Error_utils.wrap_ok (
       Lwt_list.iter_s (fun user_id ->
-        Infra.Queue.push state.State.event_queue (Event.Tell { user_id; message })
-      ) user_ids
+        Infra.Queue.push state.event_queue (Event.Tell { user_id; message })
+      ) user_ids)
     in
     Lwt_result.return ()
 
   let handle_tell state user_id message =
-    (match Connection_manager.find_client_by_user_id state.State.connection_manager user_id with
-    | Some client ->
-        let chat_message = Types.chat_message_of_model message in
-        client.send (Protocol.ChatMessage { message = chat_message })
-    | None -> Lwt.return_unit)
-    |> Lwt_result.ok
+    let open Lwt_result.Syntax in
+    let message_type_str = match message.Communication.message_type with
+      | Communication.Chat -> "Chat"
+      | Communication.System -> "System"
+      | Communication.Emote -> "Emote"
+      | Communication.CommandSuccess -> "CommandSuccess"
+      | Communication.CommandFailed -> "CommandFailed"
+    in
+    let* sender_name = get_sender_name state message.sender_id |> Lwt.map (fun n -> Ok n) in
+    let chat_message = Schemas_generated.Output.{
+      sender_name;
+      content = message.content;
+      message_type = message_type_str;
+    } in
+    let output_event = Schemas_generated.Output.{
+      target_user_ids = [user_id];
+      payload = Chat_message chat_message;
+    } in
+    let* () = Publisher.publish_event state output_event in
+    Lwt_result.return ()
 end
 
 module Chat_history_system = struct
@@ -88,10 +113,37 @@ module Chat_history_system = struct
     let%lwt () = Infra.Queue.push state.event_queue (Event.SendChatHistory { user_id; messages = chat_messages }) in
     Lwt.return_ok ()
 
-  let handle_send_chat_history (state: State.t) user_id messages =
-    (match Connection_manager.find_client_by_user_id state.connection_manager user_id with
-    | Some client ->
-        client.send (Protocol.ChatHistory { messages })
-    | None -> Lwt.return_unit)
-    |> Lwt_result.ok
+  (* Publish the requested chat history to the user as a single payload *)
+  let handle_send_chat_history (state : State.t) (user_id : string) (messages : Types.chat_message list) =
+    let open Lwt_result.Syntax in
+
+    (* Transform each domain chat_message into its protobuf equivalent *)
+    let%lwt pb_messages = Lwt_list.map_s (fun (msg : Types.chat_message) ->
+      let message_type_str = match msg.message_type with
+        | Communication.Chat -> "Chat"
+        | Communication.System -> "System"
+        | Communication.Emote -> "Emote"
+        | Communication.CommandSuccess -> "CommandSuccess"
+        | Communication.CommandFailed -> "CommandFailed"
+      in
+      let%lwt sender_name = System.get_sender_name state msg.sender_id in
+      Lwt.return Schemas_generated.Output.{
+        sender_name;
+        content = msg.content;
+        message_type = message_type_str;
+      }
+    ) messages in
+
+    (* Bundle into ChatHistory message *)
+    let chat_history_msg : Schemas_generated.Output.chat_history = {
+      messages = pb_messages;
+    } in
+
+    let output_event : Schemas_generated.Output.output_event = {
+      target_user_ids = [user_id];
+      payload = Chat_history chat_history_msg;
+    } in
+
+    let* () = Publisher.publish_event state output_event in
+    Lwt_result.return ()
 end

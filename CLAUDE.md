@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-QED Labyrinth is a living MUD system that creates intimate social spaces powered by autonomous agents. The system consists of an OCaml backend with a hybrid data model (Relational DB + ECS) and multiple frontend clients.
+QED Labyrinth is a living MUD system that creates intimate social spaces powered by autonomous agents. The system consists of an OCaml backend with a hybrid data model (Relational DB + ECS) and multiple frontend clients. The OCaml core engine now operates as a headless service, receiving commands and publishing state changes via Redis.
 
 ## Development Commands
 
 ### OCaml Backend
 - **Build**: `dune build`
-- **Run server**: `dune exec qed_labyrinth`
+- **Run engine**: `dune exec chronos_engine`
 - **Run tests**: `dune runtest`
 - **Install dependencies**: `opam install . --deps-only`
 
@@ -24,6 +24,12 @@ QED Labyrinth is a living MUD system that creates intimate social spaces powered
 - **Build**: `cd frontend && npm run build`
 - **Production server**: `cd frontend && npm start`
 - **Lint**: `cd frontend && npm run lint`
+
+### API Server (Fastify) (/api-server)
+- **Development server**: `cd api-server && npm run dev` (runs on port 3001)
+- **Build**: `cd api-server && npm run build`
+- **Production server**: `cd api-server && npm run start`
+- **Generate Protobuf schemas**: `sh ./generate-schemas.sh` (must be run whenever .proto files are changed)
 
 ## Core Architecture Tenets
 
@@ -41,13 +47,15 @@ The relational DB is the **System of Record for Templates and Permanent Identity
 *   **It's Permanent, Rarely-Changing Character Data:** Data that defines who a character *is* (e.g., their allocated core stats, their known languages, their reputation).
 *   **We Need to Run Global Queries:** The data needs to be searched or aggregated across all characters, even those offline (e.g., "find all members of a guild").
 
-#### **2. Entity-Component-System (The "Live World Simulation")**
-The ECS is the **System of Record for Instances and Transient State**.
+#### **2. Entity-Component-System (The "Redis-Backed Live World Cache")**
+The ECS is the **System of Record for Instances and Transient State**, backed by Redis for resilience and persistence.
 
 **Use an ECS Component When:**
 *   **It's a Unique Instance:** The data represents a *specific thing* existing in the world right now (e.g., a specific Iron Sword, entity ID `1234-abcd`, lying on the ground).
 *   **It's Transient, High-Volatility Data:** The data changes frequently during the game loop (e.g., current HP, position, active spell effects).
 *   **We Need to Query it Locally:** The data is for interactions within a single area (e.g., "find all entities with health within 10 meters").
+
+**Redis-Backed Resilience:** The ECS maintains all live world state in Redis, providing complete resilience against engine crashes. When the engine restarts, it loads the complete live state from Redis, ensuring no loss of transient game data. Only if Redis is empty does the system fall back to loading from PostgreSQL and then populating Redis.
 
 ### Data Synchronization Doctrine
 
@@ -70,6 +78,20 @@ This defines the rules for how data moves between the Relational DB and the ECS 
     3.  It runs calculation systems (like the stat calculator) to generate derived data.
 *   **Benefit:** This guarantees every session starts from a consistent state, automatically correcting any potential drift.
 
+## Shared Schemas (The Contract)
+
+The `schemas/` directory contains Protocol Buffer definitions that serve as the data contract between services. The `input.proto` file defines the structure for player commands sent from the API server to the Chronos Engine, ensuring consistent message format across the distributed system.
+
+### Code Generation
+
+The build system automatically generates OCaml modules from Protocol Buffer schemas using `ocaml-protoc` and the `pbrt` runtime library. The `schemas/dune` file contains rules that invoke `ocaml-protoc` to generate `.ml` and `.mli` files into `lib/schemas_generated/`. The generated code is exposed as the `qed_labyrinth.schemas_generated` library, making schema types directly available to the main engine code.
+
+To use generated types in your code:
+```ocaml
+open Schemas_generated.Input
+let event = { user_id = "user123"; trace_id = "trace456"; payload = Some (Move { direction = North }) }
+```
+
 ## Common Patterns
 
 ### Adding a New Relational Model
@@ -89,3 +111,35 @@ This defines the rules for how data moves between the Relational DB and the ECS 
 1.  Define event type in `lib/domain/event.ml`.
 2.  Add a handler case in `lib/domain/loop.ml`'s `process_event` function.
 3.  Create or modify systems to handle and queue the event.
+
+### Schema Development (Protocol Buffers)
+The system uses Protocol Buffers for message serialization between the API server and the OCaml engine. Schemas are defined in the `schemas/` directory and automatically generate OCaml code.
+
+**Schema Files:**
+- `schemas/input.proto` - Defines commands sent from API server to engine
+- `schemas/output.proto` - Defines events sent from engine to API server
+
+**Auto-Generation:**
+The build system automatically regenerates OCaml modules from Protocol Buffer schemas using `ocaml-protoc`. When you modify any `.proto` file, the generated code in `lib/schemas_generated/` is automatically updated on the next build.
+
+**Usage in Code:**
+```ocaml
+(* Decode incoming Redis message *)
+let proto_event = Schemas_generated.Input.decode_pb_input_event (Pbrt.Decoder.of_string message_content) in
+
+(* Create outgoing message *)
+let output_event = Schemas_generated.Output.{
+  target_user_ids = [user_id];
+  payload = Chat_message { sender_name = "System"; content = "Hello"; message_type = "System" };
+} in
+```
+
+**Adding New Message Types:**
+1. Edit the appropriate `.proto` file in `schemas/`
+2. Run `dune build` to regenerate OCaml code
+3. Update any conversion functions in `lib/domain/loop.ml`
+4. Update message handlers in the engine and API server
+
+## Deployment
+
+The project is deployed via a GitHub Actions workflow that automatically builds and pushes Docker images to GitHub Container Registry (ghcr.io). Upon successful image builds, the workflow connects to the production server via SSH and uses `docker-compose` to pull and deploy the latest container versions. This ensures zero-downtime deployments with atomic service updates.

@@ -29,14 +29,22 @@
   (ppx_deriving_yojson (>= 3.7.0))   ; JSON deriving
   (ppx_deriving (>= 5.2.1))          ; General deriving
   (digestif (>= 0.8.0))              ; Hashing
+  (pbrt (>= 3.0))                    ; Protocol buffer runtime
+  (ocaml-protoc (>= 3.0))            ; Protocol buffer compiler
+  dream                              ; Web framework
+  lwt_ppx                            ; Lwt syntax extension
+  cohttp-lwt-unix                    ; HTTP client
+  jose                               ; JWT library
+  ppx_yojson_conv                    ; JSON conversion
 
   ;; Future dependencies - uncomment as needed
   ; Network & Database - for post-MVP
-  (dream (>= 1.0.0~alpha4))          ; Async web framework
   (caqti (>= 1.9.0))                 ; Database abstraction
   (caqti-driver-postgresql (>= 1.9.0)); Postgres driver
   (caqti-lwt (>= 1.9.0))             ; Async DB interface
   (caqti-driver-sqlite3 (>= 1.9.0))
+  (caqti-driver-postgresql (>= 1.9.0))
+  (redis-lwt (>= 0.4))                ; Redis client for message bus
   ; (ppx_yojson_conv (>= 0.1.0))       ; Additional JSON support
   ; (qcheck :with-test)                ; Property testing for later
   ; (ppx_rapper (>= 3.1.0))             ; For SQL queries

@@ -1,5 +1,7 @@
 open Base
 open Qed_error
+open Exit
+open Error_utils
 
 module System = struct
   let find_character_by_user_id state user_id =
@@ -29,55 +31,31 @@ module System = struct
     Stdio.printf"[MOVE] Current area for user %s is %s\n" user_id current_area_id;
     Stdio.Out_channel.flush Stdio.stdout;
 
-    let* all_exits = Ecs.ExitStorage.all () |> Lwt_result.ok in
-    let exit_opt =
-      List.find all_exits ~f:(fun (_, exit_comp) ->
-        String.equal exit_comp.from_area_id current_area_id &&
-         String.equal (Components.ExitComponent.direction_to_string exit_comp.direction)
-                     (Components.ExitComponent.direction_to_string direction))
-    in
-
-    (* DEBUG *)
-    (match exit_opt with
-    | None -> Stdio.printf "[MOVE] No exit found from %s going %s\n" current_area_id (Components.ExitComponent.direction_to_string direction)
-    | Some (_, exit_comp) -> Stdio.printf "[MOVE] Exit found: to_area=%s\n" exit_comp.Components.ExitComponent.to_area_id);
-    Stdio.Out_channel.flush Stdio.stdout;
+    let* exit_opt = Exit.find_by_area_and_direction ~area_id:current_area_id ~direction in
 
     match exit_opt with
     | None ->
-        let* () = Infra.Queue.push state.event_queue
-          (Event.SendMovementFailed { user_id; reason = "You can't go that way." }) |> Lwt_result.ok in
-        Lwt.return_ok ()
-    | Some (_, exit_comp) ->
-        let new_area_id = exit_comp.to_area_id in
-
-        (* DEBUG *)
-        Stdio.printf "[MOVE] Moving user %s from %s to %s\n" user_id current_area_id new_area_id;
-        Stdio.Out_channel.flush Stdio.stdout;
+        let* () = Publisher.publish_system_message_to_user state user_id "You can't go that way." in
+        Lwt_result.return ()
+    | Some exit_record ->
+        let new_area_id = exit_record.to_area_id in
 
         let* char_name =
           Communication_system.System.get_character_name char_entity_id |> Lwt.map (Result.of_option ~error:CharacterNotFound)
         in
         
-        (* Announce departure to everyone in the old room BEFORE moving *)
         let direction_str = Components.ExitComponent.direction_to_string direction in
         let departure_msg_content = Printf.sprintf "%s has left, heading %s." char_name direction_str in
         let* departure_msg =
           Communication.create ~message_type:System ~sender_id:None ~content:departure_msg_content ~area_id:(Some current_area_id)
         in
-        let* () = Infra.Queue.push state.event_queue (Event.Announce { area_id = current_area_id; message = departure_msg }) |> Lwt_result.ok in
+        let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.Announce { area_id = current_area_id; message = departure_msg })) in
         
-        (* Now, update the character's position *)
         let new_pos_comp = { position_comp with area_id = new_area_id } in
-        let* () = Ecs.CharacterPositionStorage.set char_entity_id new_pos_comp |> Lwt_result.ok in
+        let* () = wrap_ok (Ecs.CharacterPositionStorage.set char_entity_id new_pos_comp) in
 
-        (* Queue PlayerMoved event for arrival announcements and other consequences *)
-        let* () = Infra.Queue.push state.event_queue
-          (Event.PlayerMoved { user_id; old_area_id = current_area_id; new_area_id; direction }) |> Lwt_result.ok in
+        let* () = wrap_ok (Infra.Queue.push state.event_queue
+          (Event.PlayerMoved { user_id; old_area_id = current_area_id; new_area_id; direction })) in
 
-        (* DEBUG *)
-        Stdio.printf "[MOVE] Queued PlayerMoved event for user %s\n" user_id;
-        Stdio.Out_channel.flush Stdio.stdout;
-
-        Lwt.return_ok ()
+        Lwt_result.return ()
 end

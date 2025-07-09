@@ -40,6 +40,21 @@ export const areaHandlers = {
         setIsLoading(false);
         setError(null);
     },
+    'AreaUpdate': (payload) => {
+        // payload comes directly from protobuf .toObject(); fields are camelCase
+        setArea(prev => {
+            const exits = (payload.exitsList || []).map(e => ({ direction: e.direction }));
+            return {
+                ...prev,
+                name: payload.name,
+                description: payload.description,
+                exits,
+                // Additional optional fields could be added here later
+            };
+        });
+        setIsLoading(false);
+        setError(null);
+    },
     'AreaUpdateFailed': (payload) => {
         setError(payload.error);
         setIsLoading(false);

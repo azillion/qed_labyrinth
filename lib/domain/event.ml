@@ -19,13 +19,6 @@ type t =
   | CharacterListRequested of { user_id: string }
   | CharacterList of { user_id: string; characters: (string * string) list }
   
-  (* Communication events *)
-  | SendCharacterList of { user_id: string; characters: Types.list_character list }
-  | SendCharacterCreated of { user_id: string; character: Types.list_character }
-  | SendCharacterCreationFailed of { user_id: string; error: Yojson.Safe.t }
-  | SendCharacterSelected of { user_id: string; character_sheet: Types.character_sheet }
-  | SendCharacterSelectionFailed of { user_id: string; error: Yojson.Safe.t }
-
   (* Area management events *)
   | CreateArea of { 
       user_id: string; 
@@ -54,6 +47,7 @@ type t =
   | AreaQuery of { user_id: string; area_id: string }
   | AreaQueryResult of { user_id: string; area: Types.area }
   | AreaQueryFailed of { user_id: string; error: Yojson.Safe.t }
+  | LoadAreaIntoECS of { area_id: string }
 
   (* Movement events *)
   | Move of { user_id: string; direction: Components.ExitComponent.direction }

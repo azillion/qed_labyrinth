@@ -1,5 +1,6 @@
 open Lwt.Syntax
 open Base
+open Error_utils
 
 module Area_creation_system = struct
   let handle_create_area state user_id name description x y z ?elevation ?temperature ?moisture () =
@@ -57,27 +58,14 @@ end
 
 module Area_creation_communication_system = struct
   let handle_area_created state user_id area_id =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        (* Send area created message to client *)
-        client.Client.send (Protocol.CommandSuccess {
-          message = {
-            Types.sender_id = None;
-            message_type = Communication.CommandSuccess;
-            content = Printf.sprintf "Area created successfully with ID: %s" area_id;
-            timestamp = Unix.time ();
-            area_id = None;
-          }
-        })
-    | None -> Lwt.return_unit
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Area created successfully with ID: %s" area_id) in
+    Lwt_result.return ()
 
   let handle_area_creation_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Error { error })
-    | None -> Lwt.return_unit
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error) in
+    Lwt_result.return ()
 
   let priority = 50
 
@@ -87,7 +75,7 @@ module Area_creation_communication_system = struct
 end
 
 module Exit_creation_system = struct
-  let handle_create_exit state user_id from_area_id to_area_id direction description hidden locked =
+  let handle_create_exit state user_id from_area_id to_area_id direction =
     (* Validate from_area_id and to_area_id exist *)
     let* from_area_valid = match Uuidm.of_string from_area_id with
       | None -> Lwt.return false
@@ -113,65 +101,43 @@ module Exit_creation_system = struct
       ) in
       Lwt.return_unit
     end else begin
-      (* Create a new entity for the exit *)
-      let* entity_id_result = Ecs.Entity.create () in
-      match entity_id_result with
+      (* Create exit using the new Exit model *)
+      let* exit_result = Exit.create 
+        ~from_area_id
+        ~to_area_id
+        ~direction
+      in
+      match exit_result with
       | Error e -> 
-          Stdio.eprintf "Failed to create exit entity: %s\n" (Error.to_string_hum e);
+          Stdio.eprintf "Failed to create exit: %s\n" (Qed_error.to_string e);
           let* () = Infra.Queue.push state.State.event_queue (
             Event.ExitCreationFailed {
               user_id;
-              error = Qed_error.to_yojson (Qed_error.DatabaseError "Failed to create exit entity")
+              error = Qed_error.to_yojson e
             }
           ) in
           Lwt.return_unit
-      | Ok entity_id ->
-          let entity_id_str = Uuidm.to_string entity_id in
-          
-          (* Add ExitComponent *)
-          let exit_comp = Components.ExitComponent.{
-            entity_id = entity_id_str;
-            from_area_id;
-            to_area_id;
-            direction;
-            description;
-            hidden;
-            locked;
-          } in
-          let* () = Ecs.ExitStorage.set entity_id exit_comp in
-          
+      | Ok exit_record ->
           (* Queue event for exit creation success *)
           let* () = Infra.Queue.push state.State.event_queue (
             Event.ExitCreated {
               user_id;
-              exit_id = entity_id_str
+              exit_id = exit_record.id
             }
           ) in
           
-          (* Create reciprocal exit automatically if not hidden *)
-          if not hidden then begin
-            let* entity_id_result = Ecs.Entity.create () in
-            match entity_id_result with
-            | Error e -> 
-                Stdio.eprintf "Failed to create reciprocal exit entity: %s\n" (Error.to_string_hum e);
-                Lwt.return_unit
-            | Ok recip_entity_id ->
-                let recip_entity_id_str = Uuidm.to_string recip_entity_id in
-                
-                (* Add ExitComponent for reciprocal exit *)
-                let recip_exit_comp = Components.ExitComponent.{
-                  entity_id = recip_entity_id_str;
-                  from_area_id = to_area_id;  (* Swapped *)
-                  to_area_id = from_area_id;  (* Swapped *)
-                  direction = Components.ExitComponent.opposite_direction direction;
-                  description;  (* Same description *)
-                  hidden;       (* Same hidden value *)
-                  locked;       (* Same locked value *)
-                } in
-                let* () = Ecs.ExitStorage.set recip_entity_id recip_exit_comp in
-                Lwt.return_unit
-          end else
-            Lwt.return_unit
+          (* Create reciprocal exit automatically *)
+          let* recip_exit_result = Exit.create
+            ~from_area_id:to_area_id  (* Swapped *)
+            ~to_area_id:from_area_id  (* Swapped *)
+            ~direction:(Components.ExitComponent.opposite_direction direction)
+          in
+          match recip_exit_result with
+          | Error e -> 
+              Stdio.eprintf "Failed to create reciprocal exit: %s\n" (Qed_error.to_string e);
+              Lwt.return_unit
+          | Ok _ ->
+              Lwt.return_unit
     end
 
   let priority = 100
@@ -183,27 +149,14 @@ end
 
 module Exit_creation_communication_system = struct
   let handle_exit_created state user_id exit_id =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        (* Send exit created message to client *)
-        client.Client.send (Protocol.CommandSuccess {
-          message = {
-            Types.sender_id = None;
-            message_type = Communication.CommandSuccess;
-            content = Printf.sprintf "Exit created successfully with ID: %s" exit_id;
-            timestamp = Unix.time ();
-            area_id = None;
-          }
-        })
-    | None -> Lwt.return_unit
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Exit created successfully with ID: %s" exit_id) in
+    Lwt_result.return ()
 
   let handle_exit_creation_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Error { error })
-    | None -> Lwt.return_unit
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error) in
+    Lwt_result.return ()
 
   let priority = 50
 
@@ -231,32 +184,32 @@ module Area_query_system = struct
     Lwt.return (List.filter_opt char_details)
 
   let handle_area_query state user_id area_id =
-    let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Called by user %s for area %s" user_id area_id) in
+    let open Lwt_result.Syntax in
+    let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Called by user %s for area %s" user_id area_id)) in
     (* Get area details *)
     match Uuidm.of_string area_id with
     | None ->
-        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Invalid area_id: %s (user: %s)" area_id user_id) in
-        let* () = Infra.Queue.push state.State.event_queue (
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Invalid area_id: %s (user: %s)" area_id user_id)) in
+        let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
           Event.AreaQueryFailed {
             user_id;
             error = Qed_error.to_yojson Qed_error.AreaNotFound
           }
-        ) in
-        Lwt.return_unit
+        )) in
+        Lwt_result.return ()
     | Some entity_id ->
-        let* area_opt = Ecs.AreaStorage.get entity_id in
-        let* desc_opt = Ecs.DescriptionStorage.get entity_id in
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] Converted area_id to entity_id: %s" (Uuidm.to_string entity_id))) in
+        let* area_opt = wrap_val (Ecs.AreaStorage.get entity_id) in
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] AreaStorage.get result: %s" (match area_opt with Some _ -> "Found" | None -> "Not found"))) in
+        let* desc_opt = wrap_val (Ecs.DescriptionStorage.get entity_id) in
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] DescriptionStorage.get result: %s" (match desc_opt with Some _ -> "Found" | None -> "Not found"))) in
         (match (area_opt, desc_opt) with
         | (Some area, Some desc) ->
-            let* all_exits = Ecs.ExitStorage.all () in
-            let exits = List.filter all_exits ~f:(fun (_, exit_comp) ->
-              String.equal exit_comp.Components.ExitComponent.from_area_id area_id &&
-              not exit_comp.Components.ExitComponent.hidden
+            let* exits = Exit.find_by_area ~area_id in
+            let exit_directions = List.map exits ~f:(fun exit ->
+              Components.ExitComponent.direction_to_string exit.Exit.direction
             ) in
-            let exit_directions = List.map exits ~f:(fun (_, exit) ->
-              Components.ExitComponent.direction_to_string exit.Components.ExitComponent.direction
-            ) in
-            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Found area: %s (id: %s), exits: [%s]" desc.Components.DescriptionComponent.name area_id (String.concat ~sep:", " exit_directions)) in
+            let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Found area: %s (id: %s), exits: [%s]" desc.Components.DescriptionComponent.name area_id (String.concat ~sep:", " exit_directions))) in
             let area_info : Types.area = {
               id = area_id;
               name = desc.Components.DescriptionComponent.name;
@@ -271,33 +224,32 @@ module Area_query_system = struct
               temperature = area.Components.AreaComponent.temperature;
               moisture = area.Components.AreaComponent.moisture;
             } in
-            let* () = Infra.Queue.push state.State.event_queue (
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
               Event.AreaQueryResult {
                 user_id;
                 area = area_info
               }
-            ) in
-            let* () = Infra.Queue.push state.State.event_queue
-              (Event.RequestChatHistory { user_id; area_id })
-            in
-            let%lwt characters_here = find_characters_in_area area_id in
-            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Characters present in area %s: %d" area_id (List.length characters_here)) in
-            let* () = Infra.Queue.push state.State.event_queue (
+            )) in
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue
+              (Event.RequestChatHistory { user_id; area_id })) in
+            let* characters_here = wrap_val (find_characters_in_area area_id) in
+            let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Characters present in area %s: %d" area_id (List.length characters_here))) in
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
               Event.UpdateAreaPresence {
                 area_id;
                 characters = characters_here
               }
-            ) in
-            Lwt.return_unit
+            )) in
+            Lwt_result.return ()
         | _ ->
-            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Area or description not found for area_id: %s (user: %s)" area_id user_id) in
-            let* () = Infra.Queue.push state.State.event_queue (
+            let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Area or description not found for area_id: %s (user: %s)" area_id user_id)) in
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
               Event.AreaQueryFailed {
                 user_id;
                 error = Qed_error.to_yojson Qed_error.AreaNotFound
               }
-            ) in
-            Lwt.return_unit)
+            )) in
+            Lwt_result.return ())
 
   let priority = 100
 
@@ -308,18 +260,27 @@ end
 
 module Area_query_communication_system = struct
   let handle_area_query_result state user_id area =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Area { area })
-    | None -> Lwt.return_unit
+    let open Lwt_result.Syntax in
+    let exits = List.map area.Types.exits ~f:(fun exit ->
+      Schemas_generated.Output.{ direction = exit.Types.direction }
+    ) in
+    let area_update = Schemas_generated.Output.{
+      area_id = area.Types.id;
+      name = area.Types.name;
+      description = area.Types.description;
+      exits;
+    } in
+    let output_event = Schemas_generated.Output.{
+      target_user_ids = [user_id];
+      payload = Area_update area_update;
+    } in
+    let* () = Publisher.publish_event state output_event in
+    Lwt_result.return ()
 
   let handle_area_query_failed state user_id error =
-    let client_opt = Connection_manager.find_client_by_user_id state.State.connection_manager user_id in
-    match client_opt with
-    | Some client ->
-        client.Client.send (Protocol.Error { error })
-    | None -> Lwt.return_unit
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error) in
+    Lwt_result.return ()
 
   let priority = 50
 
