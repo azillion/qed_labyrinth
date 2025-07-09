@@ -3,11 +3,11 @@ import { connectionManager } from '../connectionManager';
 import { OutputEvent } from '../schemas_generated/output_pb';
 
 export function startEgressService() {
+  // The third argument `true` tells node-redis to deliver messages as Buffer instead of string
   redisSubscriber.subscribe('engine_events', (message) => {
     try {
-      // Convert the message string to a Buffer for deserialization
-      const buffer = Buffer.from(message, 'binary');
-      const outputEvent = OutputEvent.deserializeBinary(buffer);
+      // The message is already a Buffer (Uint8Array), we can feed it directly to protobuf
+      const outputEvent = OutputEvent.deserializeBinary(message as unknown as Uint8Array);
       const targetUserIds = outputEvent.getTargetUserIdsList();
       
       for (const userId of targetUserIds) {
@@ -33,5 +33,5 @@ export function startEgressService() {
     } catch (error) {
       console.error('Error processing engine event:', error);
     }
-  });
+  }, true);
 }

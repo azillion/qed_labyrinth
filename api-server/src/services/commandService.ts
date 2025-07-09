@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import redisClient from '../redisClient';
-import { InputEvent, PlayerCommand, MoveCommand, SayCommand, Direction } from '../schemas_generated/input_pb';
+import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
   try {
@@ -37,6 +37,23 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
         playerCommand.setSay(sayCommand);
         break;
       }
+      case 'CreateCharacter': {
+        const createCharacterCommand = new CreateCharacterCommand();
+        createCharacterCommand.setName(command.payload.name);
+        createCharacterCommand.setMight(command.payload.might);
+        createCharacterCommand.setFinesse(command.payload.finesse);
+        createCharacterCommand.setWits(command.payload.wits);
+        createCharacterCommand.setGrit(command.payload.grit);
+        createCharacterCommand.setPresence(command.payload.presence);
+        playerCommand.setCreateCharacter(createCharacterCommand);
+        break;
+      }
+      case 'ListCharacters': {
+        const listCharactersCommand = new ListCharactersCommand();
+        // No fields to set – empty message
+        playerCommand.setListCharacters(listCharactersCommand);
+        break;
+      }
       default:
         throw new Error(`Unknown command type: ${command.type}`);
     }
@@ -47,7 +64,10 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
     const serializedEvent = inputEvent.serializeBinary();
     
     // Publish to the player_commands channel
-    await redisClient.publish('player_commands', Buffer.from(serializedEvent));
+    await redisClient.publish(
+      'player_commands',
+      Buffer.from(serializedEvent).toString('latin1')   // preserves raw bytes 0–255
+    );
     
     console.log(`Published command for user ${userId} with trace ID ${traceId}`);
   } catch (error) {

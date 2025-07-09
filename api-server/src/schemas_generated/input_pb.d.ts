@@ -43,6 +43,62 @@ export namespace SayCommand {
   }
 }
 
+export class CreateCharacterCommand extends jspb.Message {
+  getName(): string;
+  setName(value: string): void;
+
+  getMight(): number;
+  setMight(value: number): void;
+
+  getFinesse(): number;
+  setFinesse(value: number): void;
+
+  getWits(): number;
+  setWits(value: number): void;
+
+  getGrit(): number;
+  setGrit(value: number): void;
+
+  getPresence(): number;
+  setPresence(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): CreateCharacterCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: CreateCharacterCommand): CreateCharacterCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: CreateCharacterCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): CreateCharacterCommand;
+  static deserializeBinaryFromReader(message: CreateCharacterCommand, reader: jspb.BinaryReader): CreateCharacterCommand;
+}
+
+export namespace CreateCharacterCommand {
+  export type AsObject = {
+    name: string,
+    might: number,
+    finesse: number,
+    wits: number,
+    grit: number,
+    presence: number,
+  }
+}
+
+export class ListCharactersCommand extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListCharactersCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: ListCharactersCommand): ListCharactersCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ListCharactersCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListCharactersCommand;
+  static deserializeBinaryFromReader(message: ListCharactersCommand, reader: jspb.BinaryReader): ListCharactersCommand;
+}
+
+export namespace ListCharactersCommand {
+  export type AsObject = {
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -53,6 +109,16 @@ export class PlayerCommand extends jspb.Message {
   clearSay(): void;
   getSay(): SayCommand | undefined;
   setSay(value?: SayCommand): void;
+
+  hasCreateCharacter(): boolean;
+  clearCreateCharacter(): void;
+  getCreateCharacter(): CreateCharacterCommand | undefined;
+  setCreateCharacter(value?: CreateCharacterCommand): void;
+
+  hasListCharacters(): boolean;
+  clearListCharacters(): void;
+  getListCharacters(): ListCharactersCommand | undefined;
+  setListCharacters(value?: ListCharactersCommand): void;
 
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
@@ -69,12 +135,16 @@ export namespace PlayerCommand {
   export type AsObject = {
     move?: MoveCommand.AsObject,
     say?: SayCommand.AsObject,
+    createCharacter?: CreateCharacterCommand.AsObject,
+    listCharacters?: ListCharactersCommand.AsObject,
   }
 
   export enum CommandCase {
     COMMAND_NOT_SET = 0,
     MOVE = 1,
     SAY = 2,
+    CREATE_CHARACTER = 3,
+    LIST_CHARACTERS = 4,
   }
 }
 

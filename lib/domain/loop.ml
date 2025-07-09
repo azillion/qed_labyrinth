@@ -3,6 +3,17 @@ open Base
 
 module Queue = Infra.Queue
 
+let string_of_event_type (event: Event.t) =
+  match event with
+  | CreateCharacter _ -> "CreateCharacter"
+  | CharacterCreated _ -> "CharacterCreated"
+  | CharacterSelected _ -> "CharacterSelected"
+  | Move _ -> "Move"
+  | Say _ -> "Say"
+  | CharacterListRequested _ -> "CharacterListRequested"
+  (* Add other event types as needed for debugging *)
+  | _ -> "OtherEvent"
+
 (* Helper function to convert protobuf directions to internal directions *)
 let direction_of_proto (proto_direction : Schemas_generated.Input.direction) =
   match proto_direction with
@@ -16,6 +27,16 @@ let direction_of_proto (proto_direction : Schemas_generated.Input.direction) =
 
 (* Main conversion function from protobuf to internal events *)
 let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
+  let () =
+    let payload_type = match proto_event.payload with
+      | Some (Move _) -> "Move"
+      | Some (Say _) -> "Say"
+      | Some (Create_character _) -> "CreateCharacter"
+      | Some (List_characters) -> "ListCharacters"
+      | None -> "None"
+    in
+    Stdio.printf "[DEBUG] Converting protobuf event with payload type: %s\n" payload_type
+  in
   match proto_event.payload with
   | None -> None
   | Some payload ->
@@ -25,37 +46,71 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
           Some (Event.Move { user_id = proto_event.user_id; direction })
       | Say say_cmd ->
           Some (Event.Say { user_id = proto_event.user_id; content = say_cmd.content })
+      | Create_character create_cmd ->
+          (match Int32.to_int create_cmd.might, Int32.to_int create_cmd.finesse, Int32.to_int create_cmd.wits, Int32.to_int create_cmd.grit, Int32.to_int create_cmd.presence with
+          | Some might, Some finesse, Some wits, Some grit, Some presence ->
+              Some (Event.CreateCharacter { 
+                user_id = proto_event.user_id; 
+                name = create_cmd.name; 
+                description = ""; 
+                starting_area_id = "00000000-0000-0000-0000-000000000000"; 
+                might = might; 
+                finesse = finesse; 
+                wits = wits; 
+                grit = grit; 
+                presence = presence 
+              })
+          | _ -> None)
+      | List_characters ->
+          Some (Event.CharacterListRequested { user_id = proto_event.user_id })
 
 (* Redis subscriber function *)
 let subscribe_to_player_commands (state : State.t) =
   let open Lwt.Syntax in
-  (* Subscribe to the player_commands channel *)
-  let* () = Redis_lwt.Client.subscribe state.redis_conn ["player_commands"] in
-  (* Get the reply stream from the connection *)
-  let reply_stream = Redis_lwt.Client.stream state.redis_conn in
-  (* Process incoming messages *)
-  Lwt_stream.iter_s (fun replies ->
-    let* () = Lwt_list.iter_s (fun reply ->
-      match reply with
-      | `Multibulk [`Bulk (Some "message"); `Bulk (Some _channel); `Bulk (Some message_content)] ->
-          (* This is a pub/sub message *)
-          (try
-            let proto_event = Schemas_generated.Input.decode_pb_input_event (Pbrt.Decoder.of_string message_content) in
-            match event_of_protobuf proto_event with
-            | Some event -> 
-                Infra.Queue.push state.event_queue event
-            | None -> 
-                Stdio.eprintf "Failed to convert protobuf message to event\n";
-                Lwt.return_unit
-          with
-          | exn ->
-              Stdio.eprintf "Error processing Redis message: %s\n" (Base.Exn.to_string exn);
-              Lwt.return_unit)
-      | _ -> 
-          (* Ignore other reply types (like subscription confirmations) *)
-          Lwt.return_unit
-    ) replies in
-    Lwt.return_unit
+  let%lwt subscriber_conn = Redis_lwt.Client.connect { host = "127.0.0.1"; port = 6379 } in
+  let%lwt () = Redis_lwt.Client.subscribe subscriber_conn ["player_commands"] in
+  let%lwt () = Lwt_io.printl "[DEBUG] Subscribed to player_commands" in
+  let reply_stream = Redis_lwt.Client.stream subscriber_conn in
+  (* Helper to stringify Redis replies for debugging *)
+  let string_of_redis_reply (r : Redis_lwt.Client.reply) : string =
+    match r with
+    | `Bulk None -> "Bulk nil"
+    | `Bulk (Some s) -> Printf.sprintf "Bulk(%d)" (String.length s)
+    | `Status s -> "Status(" ^ s ^ ")"
+    | `Int i -> "Int(" ^ Int.to_string i ^ ")"
+    | `Int64 i -> "Int64(" ^ Int64.to_string i ^ ")"
+    | `Error e -> "Error(" ^ e ^ ")"
+    | `Multibulk l -> "Multibulk(len=" ^ Int.to_string (List.length l) ^ ")"
+    | `Moved _ -> "Moved"
+    | `Ask _ -> "Ask"
+  in
+  Lwt_stream.iter_s (fun reply_parts ->
+    (* Log summary of the parts *)
+    let parts_desc = String.concat ~sep:", " (List.map reply_parts ~f:string_of_redis_reply) in
+    let%lwt () = Lwt_io.printl ("[TRACE] Reply parts: [" ^ parts_desc ^ "]") in
+    match reply_parts with
+    | [`Bulk (Some "message"); `Bulk (Some channel); `Bulk (Some message_content)] ->
+        let%lwt () = Lwt_io.printl (Printf.sprintf "[DEBUG] Received message on channel '%s'" channel) in
+        (try
+          let* () = Lwt_io.printl "[DEBUG] Attempting to deserialize Protobuf message." in
+          let proto_event = Schemas_generated.Input.decode_pb_input_event (Pbrt.Decoder.of_string message_content) in
+          match event_of_protobuf proto_event with
+          | Some event ->
+              let* () = Infra.Queue.push state.event_queue event in
+              let* () = Lwt_io.printl "[DEBUG] Pushed event to internal queue." in
+              Lwt.return_unit
+          | None ->
+              let* () = Lwt_io.printl "[ERROR] Protobuf message resulted in no engine event." in
+              Lwt.return_unit
+        with exn ->
+          let* () = Lwt_io.printl (Printf.sprintf "[FATAL] Deserialization failed: %s" (Base.Exn.to_string exn)) in
+          Lwt.return_unit)
+    | [`Bulk (Some "subscribe"); _channel; _] ->
+        (* Subscription ack *)
+        Lwt.return_unit
+    | _ ->
+        let%lwt () = Lwt_io.printl "[DEBUG] Unhandled reply pattern from Redis" in
+        Lwt.return_unit
   ) reply_stream
 
 (* Helper function to publish events to Redis *)
@@ -167,6 +222,7 @@ let process_events (state : State.t) =
     match%lwt Infra.Queue.pop_opt state.event_queue with
     | None -> Lwt.return_unit
     | Some event ->
+        let%lwt () = Lwt_io.printl (Printf.sprintf "[DEBUG] Popped from queue, now processing event: %s" (string_of_event_type event)) in
         let%lwt result = process_event state event in
         let%lwt () = match result with
         | Ok () -> Lwt.return_unit (* Success, continue *)
@@ -220,8 +276,7 @@ let run (state : State.t) =
   match init_result with
   | Ok () ->
       let* () = register_ecs_systems state in
-      Lwt.async (fun () -> subscribe_to_player_commands state);
-      game_loop state
+      Lwt.join [subscribe_to_player_commands state; game_loop state]
   | Error e ->
       let* () = Lwt_io.printl (Printf.sprintf "World initialization error: %s" (Base.Error.to_string_hum e)) in
       Stdio.print_endline ("[ERROR] World initialization error: " ^ Base.Error.to_string_hum e);

@@ -3,6 +3,7 @@
 module Character_list_system = struct
 
   let handle_character_list_requested state user_id =
+    Stdio.printf "[DEBUG] Handling character list requested for user %s\n" user_id;
     let open Lwt_result.Syntax in
     let* character_components = Ecs.CharacterStorage.all () |> Lwt_result.ok in
     match character_components with
@@ -12,6 +13,7 @@ module Character_list_system = struct
         let characters =
           Base.List.map db_chars ~f:(fun c -> Types.{ id = c.id; name = c.name })
         in
+        Stdio.printf "[DEBUG] Sending character list to user %s\n" user_id;
         Infra.Queue.push state.State.event_queue
           (Event.SendCharacterList { user_id; characters }) |> Lwt_result.ok
     | character_components ->
