@@ -12,13 +12,25 @@ export const [error, setError] = createSignal(null);
 // Message handlers that will be registered with WebSocket system
 export const chatHandlers = {
     'ChatMessage': (payload) => {
-        const { message } = payload;
-        // Only add message if it's for current room
-        setMessages(msgs => [...msgs, message]);
+        // payload is a single message object coming from protobuf .toObject()
+        // Fields: senderName, content, messageType
+        const msg = {
+            sender_name: payload.senderName,
+            content: payload.content,
+            message_type: payload.messageType,
+            timestamp: Date.now()
+        };
+        setMessages(msgs => [...msgs, msg]);
     },
     'ChatHistory': (payload) => {
-        const { messages } = payload;
-        setMessages(messages);
+        // Expect payload.messagesList from protobuf object
+        const msgs = (payload.messagesList || []).map(m => ({
+            sender_name: m.senderName,
+            content: m.content,
+            message_type: m.messageType,
+            timestamp: Date.now()
+        }));
+        setMessages(msgs);
         setIsLoading(false);
         setError(null);
     },

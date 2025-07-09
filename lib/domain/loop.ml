@@ -11,7 +11,26 @@ let string_of_event_type (event: Event.t) =
   | Move _ -> "Move"
   | Say _ -> "Say"
   | CharacterListRequested _ -> "CharacterListRequested"
-  (* Add other event types as needed for debugging *)
+  | AreaQuery _ -> "AreaQuery"
+  | AreaQueryResult _ -> "AreaQueryResult"
+  | PlayerMoved _ -> "PlayerMoved"
+  | UpdateAreaPresence _ -> "UpdateAreaPresence"
+  | AreaCreated _ -> "AreaCreated"
+  | AreaCreationFailed _ -> "AreaCreationFailed"
+  | ExitCreated _ -> "ExitCreated"
+  | ExitCreationFailed _ -> "ExitCreationFailed"
+  | SendMovementFailed _ -> "SendMovementFailed"
+  | CharacterList _ -> "CharacterList"
+  | LoadCharacterIntoECS _ -> "LoadCharacterIntoECS"
+  | UnloadCharacterFromECS _ -> "UnloadCharacterFromECS"
+  | SendChatHistory _        -> "SendChatHistory"
+  | RequestChatHistory _     -> "RequestChatHistory"
+  | Announce _               -> "Announce"
+  | Tell _                   -> "Tell"
+  | Emote _                  -> "Emote"
+  | CharacterCreationFailed _-> "CharacterCreationFailed"
+  | CharacterSelectionFailed _-> "CharacterSelectionFailed"
+  | AreaQueryFailed _        -> "AreaQueryFailed"
   | _ -> "OtherEvent"
 
 (* Helper function to convert protobuf directions to internal directions *)
@@ -220,8 +239,9 @@ let process_events (state : State.t) =
 
 let register_ecs_systems (_state : State.t) =
   (* Register your ECS systems here *)
-  
-  Initialization_system.Starting_area_initialization_system.initialize_starting_area_once ();
+
+  let open Lwt.Syntax in
+  let* () = Initialization_system.Starting_area_initialization_system.initialize_starting_area_once () in
   
   Lwt.return_unit
 

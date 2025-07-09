@@ -18,7 +18,7 @@ module Starting_area_initialization_system = struct
         (* The starting area doesn't exist in our ECS yet, we need to add it *)
         match Uuidm.of_string starting_area_id with
         | None -> 
-            Stdio.eprintf "Invalid starting area UUID format\n";
+            let* () = Lwt_io.printl "Invalid starting area UUID format" in
             Lwt.return_unit
         | Some entity_id ->
             (* Create predefined starting area instead of looking it up *)
@@ -79,7 +79,7 @@ module Starting_area_initialization_system = struct
             let* entity_result = Infra.Database.Pool.use db_operation in
             match entity_result with
             | Error e ->
-                Stdio.eprintf "Failed to create entity for starting area: %s\n" (Error.to_string_hum e);
+                let* () = Lwt_io.printl (Printf.sprintf "Failed to create entity for starting area: %s" (Error.to_string_hum e)) in
                 Lwt.return_unit
             | Ok () ->
                 (* Ensure the entity is registered in the ECS entity catalogue before adding components *)
@@ -88,7 +88,7 @@ module Starting_area_initialization_system = struct
                 let* () = Ecs.AreaStorage.set entity_id area_comp in
                 let* () = Ecs.DescriptionStorage.set entity_id desc_comp in
                 
-                Stdio.printf "Successfully initialized starting area in ECS\n";
+                let* () = Lwt_io.printl "Successfully initialized starting area in ECS" in
                 Lwt.return_unit
 
   let initialize_second_area () =
@@ -107,7 +107,7 @@ module Starting_area_initialization_system = struct
         (* The second area doesn't exist in our ECS yet, we need to add it *)
         match Uuidm.of_string second_area_id with
         | None -> 
-            Stdio.eprintf "Invalid second area UUID format\n";
+            let* () = Lwt_io.printl "Invalid second area UUID format" in
             Lwt.return_unit
         | Some entity_id ->
             (* Create predefined second area *)
@@ -168,7 +168,7 @@ module Starting_area_initialization_system = struct
             let* entity_result = Infra.Database.Pool.use db_operation in
             match entity_result with
             | Error e ->
-                Stdio.eprintf "Failed to create entity for second area: %s\n" (Error.to_string_hum e);
+                let* () = Lwt_io.printl (Printf.sprintf "Failed to create entity for second area: %s" (Error.to_string_hum e)) in
                 Lwt.return_unit
             | Ok () ->
                 (* Ensure the entity is registered in the ECS entity catalogue before adding components *)
@@ -177,7 +177,7 @@ module Starting_area_initialization_system = struct
                 let* () = Ecs.AreaStorage.set entity_id area_comp in
                 let* () = Ecs.DescriptionStorage.set entity_id desc_comp in
                 
-                Stdio.printf "Successfully initialized second area in ECS\n";
+                let* () = Lwt_io.printl "Successfully initialized second area in ECS" in
                 Lwt.return_unit
 
   let create_area_connection () =
@@ -199,7 +199,7 @@ module Starting_area_initialization_system = struct
       let* exit_entity_id_result = Ecs.Entity.create () in
       match exit_entity_id_result with
       | Error e ->
-          Stdio.eprintf "Failed to create exit entity: %s\n" (Error.to_string_hum e);
+          let* () = Lwt_io.printl (Printf.sprintf "Failed to create exit entity: %s" (Error.to_string_hum e)) in
           Lwt.return_unit
       | Ok exit_entity_id ->
           let exit_entity_id_str = Uuidm.to_string exit_entity_id in
@@ -219,7 +219,7 @@ module Starting_area_initialization_system = struct
           let* recip_exit_entity_id_result = Ecs.Entity.create () in
           match recip_exit_entity_id_result with
           | Error e ->
-              Stdio.eprintf "Failed to create reciprocal exit entity: %s\n" (Error.to_string_hum e);
+              let* () = Lwt_io.printl (Printf.sprintf "Failed to create reciprocal exit entity: %s" (Error.to_string_hum e)) in
               Lwt.return_unit
           | Ok recip_exit_entity_id ->
               let recip_exit_entity_id_str = Uuidm.to_string recip_exit_entity_id in
@@ -269,27 +269,27 @@ module Starting_area_initialization_system = struct
               let* db_result = Infra.Database.Pool.use db_operation in
               match db_result with
               | Error e ->
-                  Stdio.eprintf "Failed to create exits in database: %s\n" (Error.to_string_hum e);
+                  let* () = Lwt_io.printl (Printf.sprintf "Failed to create exits in database: %s" (Error.to_string_hum e)) in
                   Lwt.return_unit
               | Ok () ->
                   (* Add to ECS storage *)
                   let* () = Ecs.ExitStorage.set exit_entity_id exit_comp in
                   let* () = Ecs.ExitStorage.set recip_exit_entity_id recip_exit_comp in
                   
-                  Stdio.printf "Successfully created area connection\n";
+                  let* () = Lwt_io.printl "Successfully created area connection" in
                   Lwt.return_unit
 
   let priority = 10  (* Run this early in the startup process *)
 
   (* Run initialization once at startup *)
-  let initialize_starting_area_once () = 
-    Lwt.async (fun () ->
-      let* () = Lwt_io.printl "Initializing starting area" in
-      let* () = initialize_starting_area () in
-      let* () = Lwt_io.printl "Initializing second area" in
-      let* () = initialize_second_area () in
-      let* () = Lwt_io.printl "Creating area connection" in
-      create_area_connection ())
+  let initialize_starting_area_once () =
+    let open Lwt.Syntax in
+    let* () = Lwt_io.printl "Initializing starting area" in
+    let* () = initialize_starting_area () in
+    let* () = Lwt_io.printl "Initializing second area" in
+    let* () = initialize_second_area () in
+    let* () = Lwt_io.printl "Creating area connection" in
+    create_area_connection ()
 
   (* Execute function no longer performs initialization *)
   let execute () = Lwt.return_unit
