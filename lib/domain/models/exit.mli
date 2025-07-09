@@ -7,18 +7,12 @@ type t = {
   from_area_id: string;
   to_area_id: string;
   direction: direction;
-  description: string option;
-  hidden: bool;
-  locked: bool;
 }
 
 val create :
   from_area_id:string ->
   to_area_id:string ->
   direction:direction ->
-  description:string option ->
-  hidden:bool ->
-  locked:bool ->
   (t, Qed_error.t) Result.t Lwt.t
 
 val find_by_area_and_direction :

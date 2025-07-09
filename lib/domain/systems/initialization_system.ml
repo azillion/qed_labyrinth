@@ -199,9 +199,6 @@ module Starting_area_initialization_system = struct
           ~from_area_id:starting_area_id
           ~to_area_id:second_area_id
           ~direction:Components.ExitComponent.North
-          ~description:(Some "A winding path leads north through the meadow toward a dense grove of trees.")
-          ~hidden:false
-          ~locked:false
         in
         match north_exit_result with
         | Error e ->
@@ -213,9 +210,6 @@ module Starting_area_initialization_system = struct
               ~from_area_id:second_area_id
               ~to_area_id:starting_area_id
               ~direction:Components.ExitComponent.South
-              ~description:(Some "A winding path leads south through the grove toward an open meadow.")
-              ~hidden:false
-              ~locked:false
             in
             match south_exit_result with
             | Error e ->

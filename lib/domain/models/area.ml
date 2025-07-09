@@ -250,37 +250,6 @@ let get_exits area =
   | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
   | Ok exits -> Lwt.return_ok exits
 
-let create_exit ~from_area_id ~to_area_id ~direction ~description ~hidden
-    ~locked =
-  let open Base in
-  let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    (* First verify both areas exist *)
-    let* from_area = Db.find_opt Q.find_by_id from_area_id in
-    let* to_area = Db.find_opt Q.find_by_id to_area_id in
-    match (from_area, to_area) with
-    | Error e, _ | _, Error e -> Lwt_result.fail e
-    | Ok None, _ | _, Ok None -> Lwt_result.return `AreaNotFound
-    | Ok (Some _), Ok (Some _) -> (
-        let exit =
-          {
-            from_area_id;
-            to_area_id;
-            direction;
-            description = Option.map ~f:(fun d -> d) description;
-            hidden;
-            locked;
-          }
-        in
-        match%lwt Db.exec Q.insert_exit exit with
-        | Error e -> Lwt_result.fail e
-        | Ok () -> Lwt_result.return (`Success exit))
-  in
-  let* result = Database.Pool.use db_operation in
-  match result with
-  | Ok (`Success exit) -> Lwt.return_ok exit
-  | Ok `AreaNotFound -> Lwt.return_error AreaNotFound
-  | Error e -> Lwt.return_error (DatabaseError (Error.to_string_hum e))
-
 let find_exits ~area_id =
   let open Base in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =

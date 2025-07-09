@@ -9,9 +9,6 @@ type t = {
   from_area_id: string;
   to_area_id: string;
   direction: direction;
-  description: string option;
-  hidden: bool;
-  locked: bool;
 }
 
 let uuid = Uuidm.v4_gen (Stdlib.Random.State.make_self_init ())
@@ -30,18 +27,18 @@ module Q = struct
     custom ~encode ~decode string
 
   let exit_type =
-    let encode { id; from_area_id; to_area_id; direction; description; hidden; locked } =
-      Ok (id, from_area_id, to_area_id, direction, description, hidden, locked)
+    let encode { id; from_area_id; to_area_id; direction } =
+      Ok (id, from_area_id, to_area_id, direction)
     in
-    let decode (id, from_area_id, to_area_id, direction, description, hidden, locked) =
-      Ok { id; from_area_id; to_area_id; direction; description; hidden; locked }
+    let decode (id, from_area_id, to_area_id, direction) =
+      Ok { id; from_area_id; to_area_id; direction }
     in
-    custom ~encode ~decode (t7 string string string direction_type (option string) bool bool)
+    custom ~encode ~decode (t4 string string string direction_type)
 
   let insert =
     (exit_type ->. unit)
-      {| INSERT INTO exits (id, from_area_id, to_area_id, direction, description, hidden, locked)
-         VALUES (?, ?, ?, ?, ?, ?, ?) |}
+      {| INSERT INTO exits (id, from_area_id, to_area_id, direction)
+         VALUES (?, ?, ?, ?) |}
 
   let find_by_area_and_direction =
     (t2 string direction_type ->? exit_type)
@@ -52,9 +49,9 @@ module Q = struct
       "SELECT * FROM exits WHERE from_area_id = ?"
 end
 
-let create ~from_area_id ~to_area_id ~direction ~description ~hidden ~locked =
+let create ~from_area_id ~to_area_id ~direction =
   let exit_record =
-    { id = Uuidm.to_string (uuid ()); from_area_id; to_area_id; direction; description; hidden; locked }
+    { id = Uuidm.to_string (uuid ()); from_area_id; to_area_id; direction }
   in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     match%lwt Db.exec Q.insert exit_record with

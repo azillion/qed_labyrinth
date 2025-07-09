@@ -70,7 +70,7 @@ module Area_creation_communication_system = struct
 end
 
 module Exit_creation_system = struct
-  let handle_create_exit state user_id from_area_id to_area_id direction description hidden locked =
+  let handle_create_exit state user_id from_area_id to_area_id direction =
     (* Validate from_area_id and to_area_id exist *)
     let* from_area_valid = match Uuidm.of_string from_area_id with
       | None -> Lwt.return false
@@ -101,9 +101,6 @@ module Exit_creation_system = struct
         ~from_area_id
         ~to_area_id
         ~direction
-        ~description
-        ~hidden
-        ~locked
       in
       match exit_result with
       | Error e -> 
@@ -124,24 +121,18 @@ module Exit_creation_system = struct
             }
           ) in
           
-          (* Create reciprocal exit automatically if not hidden *)
-          if not hidden then begin
-            let* recip_exit_result = Exit.create
-              ~from_area_id:to_area_id  (* Swapped *)
-              ~to_area_id:from_area_id  (* Swapped *)
-              ~direction:(Components.ExitComponent.opposite_direction direction)
-              ~description  (* Same description *)
-              ~hidden       (* Same hidden value *)
-              ~locked       (* Same locked value *)
-            in
-            match recip_exit_result with
-            | Error e -> 
-                Stdio.eprintf "Failed to create reciprocal exit: %s\n" (Qed_error.to_string e);
-                Lwt.return_unit
-            | Ok _ ->
-                Lwt.return_unit
-          end else
-            Lwt.return_unit
+          (* Create reciprocal exit automatically *)
+          let* recip_exit_result = Exit.create
+            ~from_area_id:to_area_id  (* Swapped *)
+            ~to_area_id:from_area_id  (* Swapped *)
+            ~direction:(Components.ExitComponent.opposite_direction direction)
+          in
+          match recip_exit_result with
+          | Error e -> 
+              Stdio.eprintf "Failed to create reciprocal exit: %s\n" (Qed_error.to_string e);
+              Lwt.return_unit
+          | Ok _ ->
+              Lwt.return_unit
     end
 
   let priority = 100
@@ -206,7 +197,7 @@ module Area_query_system = struct
         | (Some area, Some desc) ->
             let* exits_result = Exit.find_by_area ~area_id in
             let* exits = match exits_result with
-              | Ok exits -> Lwt.return (List.filter exits ~f:(fun exit -> not exit.Exit.hidden))
+              | Ok exits -> Lwt.return exits
               | Error e ->
                   let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Failed to get exits: %s" (Qed_error.to_string e)) in
                   Lwt.return []
