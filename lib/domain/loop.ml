@@ -194,21 +194,10 @@ let process_event (state : State.t) (event : Event.t) =
       Lwt_result.return ()
   
   | Event.CharacterCreated { user_id; character_id } ->
-      (* After a character has been created in the DB, look it up so we can notify the
-         client and continue the workflow. We transform the DB record into a
-         Types.list_character payload and enqueue a SendCharacterCreated event so
-         that the communication layer can deliver it. *)
       let open Lwt_result.Syntax in
-      let* character_opt = Character.find_by_id character_id in
-      (match character_opt with
-      | None ->
-          (* Directly notify user via system message *)
-          let* () = Publisher.publish_system_message_to_user state user_id "Character not found after creation" in
-          Lwt_result.return ()
-      | Some _character ->
-          (* Optionally publish character creation success; currently omitted *)
-          let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[EVENT] CharacterCreated processed for user=%s char_id=%s" user_id character_id)) in
-          Lwt_result.return ())
+      let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[EVENT] CharacterCreated user=%s char_id=%s. Triggering CharacterSelected." user_id character_id)) in
+      let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.CharacterSelected { user_id; character_id })) in
+      Lwt_result.return ()
   
   (* Add other event handlers here as they are refactored *)
   | _ -> 
@@ -252,7 +241,7 @@ let process_events (state : State.t) =
   in
   process_all ()
 
-let register_ecs_systems (_state : State.t) =
+let register_ecs_systems () =
   (* Register your ECS systems here *)
 
   let open Lwt.Syntax in
@@ -284,7 +273,7 @@ let run (state : State.t) =
   let* init_result = Ecs.World.init state.redis_conn in
   match init_result with
   | Ok () ->
-      let* () = register_ecs_systems state in
+      let* () = register_ecs_systems () in
       Lwt.join [subscribe_to_player_commands state; game_loop state]
   | Error e ->
       let* () = Lwt_io.printl (Printf.sprintf "World initialization error: %s" (Base.Error.to_string_hum e)) in
