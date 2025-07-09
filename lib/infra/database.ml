@@ -63,13 +63,14 @@ module Schema = struct
   let create_exits_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS exits (
-           entity_id TEXT PRIMARY KEY REFERENCES entities(id),
-           from_entity TEXT NOT NULL REFERENCES entities(id),
-           to_entity TEXT NOT NULL REFERENCES entities(id),
-           direction TEXT,
+           id TEXT PRIMARY KEY,
+           from_area_id TEXT NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+           to_area_id TEXT NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+           direction TEXT NOT NULL,
            description TEXT,
-           hidden INTEGER NOT NULL DEFAULT 0,
-           locked INTEGER NOT NULL DEFAULT 0
+           hidden BOOLEAN NOT NULL DEFAULT false,
+           locked BOOLEAN NOT NULL DEFAULT false,
+           UNIQUE(from_area_id, direction)
          ) |}
 
   (* let create_starting_area_entry =
@@ -126,11 +127,11 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
         let* () = C.exec (create_component_table "messages") () in
         let* () = C.exec (create_component_table "senders") () in
         let* () = C.exec (create_component_table "area_components") () in
-        let* () = C.exec (create_component_table "exits") () in
 
         (* Tier-1 relational tables *)
         let* () = C.exec create_users_table () in
         let* () = C.exec create_areas_table () in
+        let* () = C.exec create_exits_table () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
           "CREATE TABLE IF NOT EXISTS characters (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL UNIQUE, FOREIGN KEY(user_id) REFERENCES users(id))") () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)

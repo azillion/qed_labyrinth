@@ -184,100 +184,46 @@ module Starting_area_initialization_system = struct
     let starting_area_id = "00000000-0000-0000-0000-000000000000" in
     let second_area_id = "11111111-1111-1111-1111-111111111111" in
     
-    (* Check if the exit already exists *)
-    let* all_exits = Ecs.ExitStorage.all () in
-    let exit_exists = List.exists all_exits ~f:(fun (_, exit_comp) ->
-      String.equal exit_comp.Components.ExitComponent.from_area_id starting_area_id &&
-      String.equal exit_comp.Components.ExitComponent.to_area_id second_area_id &&
-      phys_equal exit_comp.Components.ExitComponent.direction Components.ExitComponent.North
-    ) in
-    
-    if exit_exists then
-      Lwt.return_unit
-    else
-      (* Create exit from starting area to second area (North) *)
-      let* exit_entity_id_result = Ecs.Entity.create () in
-      match exit_entity_id_result with
-      | Error e ->
-          let* () = Lwt_io.printl (Printf.sprintf "Failed to create exit entity: %s" (Error.to_string_hum e)) in
-          Lwt.return_unit
-      | Ok exit_entity_id ->
-          let exit_entity_id_str = Uuidm.to_string exit_entity_id in
-          
-          (* Create exit from starting area to second area *)
-          let exit_comp = Components.ExitComponent.{
-            entity_id = exit_entity_id_str;
-            from_area_id = starting_area_id;
-            to_area_id = second_area_id;
-            direction = Components.ExitComponent.North;
-            description = Some "A winding path leads north through the meadow toward a dense grove of trees.";
-            hidden = false;
-            locked = false;
-          } in
-          
-          (* Create reciprocal exit from second area to starting area *)
-          let* recip_exit_entity_id_result = Ecs.Entity.create () in
-          match recip_exit_entity_id_result with
-          | Error e ->
-              let* () = Lwt_io.printl (Printf.sprintf "Failed to create reciprocal exit entity: %s" (Error.to_string_hum e)) in
-              Lwt.return_unit
-          | Ok recip_exit_entity_id ->
-              let recip_exit_entity_id_str = Uuidm.to_string recip_exit_entity_id in
-              
-              let recip_exit_comp = Components.ExitComponent.{
-                entity_id = recip_exit_entity_id_str;
-                from_area_id = second_area_id;
-                to_area_id = starting_area_id;
-                direction = Components.ExitComponent.South;
-                description = Some "A winding path leads south through the grove toward an open meadow.";
-                hidden = false;
-                locked = false;
-              } in
-              
-              (* Add exits to database and ECS *)
-              let db_operation (module Db : Caqti_lwt.CONNECTION) =
-                (* Insert exit entities *)
-                let* _ = Db.exec 
-                  (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-                    "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
-                  exit_entity_id_str
-                in
-                let* _ = Db.exec 
-                  (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-                    "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
-                  recip_exit_entity_id_str
-                in
-                
-                (* Insert exit data *)
-                let exit_json = exit_comp |> [%to_yojson: Components.ExitComponent.t] |> Yojson.Safe.to_string in
-                let* _ = Db.exec 
-                  (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                    "INSERT INTO exits (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
-                  (exit_entity_id_str, exit_json)
-                in
-                
-                let recip_exit_json = recip_exit_comp |> [%to_yojson: Components.ExitComponent.t] |> Yojson.Safe.to_string in
-                let* _ = Db.exec 
-                  (Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit)
-                    "INSERT INTO exits (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO UPDATE SET data = EXCLUDED.data")
-                  (recip_exit_entity_id_str, recip_exit_json)
-                in
-                
-                Lwt.return_ok ()
-              in
-              
-              let* db_result = Infra.Database.Pool.use db_operation in
-              match db_result with
-              | Error e ->
-                  let* () = Lwt_io.printl (Printf.sprintf "Failed to create exits in database: %s" (Error.to_string_hum e)) in
-                  Lwt.return_unit
-              | Ok () ->
-                  (* Add to ECS storage *)
-                  let* () = Ecs.ExitStorage.set exit_entity_id exit_comp in
-                  let* () = Ecs.ExitStorage.set recip_exit_entity_id recip_exit_comp in
-                  
-                  let* () = Lwt_io.printl "Successfully created area connection" in
-                  Lwt.return_unit
+    (* Check if the exit already exists using the new Exit model *)
+    let* existing_north_exit = Exit.find_by_area_and_direction ~area_id:starting_area_id ~direction:Components.ExitComponent.North in
+    match existing_north_exit with
+    | Error e ->
+        let* () = Lwt_io.printl (Printf.sprintf "Failed to check for existing exit: %s" (Qed_error.to_string e)) in
+        Lwt.return_unit
+    | Ok (Some _) ->
+        (* Exit already exists *)
+        Lwt.return_unit
+    | Ok None ->
+        (* Create exit from starting area to second area (North) *)
+        let* north_exit_result = Exit.create 
+          ~from_area_id:starting_area_id
+          ~to_area_id:second_area_id
+          ~direction:Components.ExitComponent.North
+          ~description:(Some "A winding path leads north through the meadow toward a dense grove of trees.")
+          ~hidden:false
+          ~locked:false
+        in
+        match north_exit_result with
+        | Error e ->
+            let* () = Lwt_io.printl (Printf.sprintf "Failed to create north exit: %s" (Qed_error.to_string e)) in
+            Lwt.return_unit
+        | Ok _ ->
+            (* Create reciprocal exit from second area to starting area (South) *)
+            let* south_exit_result = Exit.create
+              ~from_area_id:second_area_id
+              ~to_area_id:starting_area_id
+              ~direction:Components.ExitComponent.South
+              ~description:(Some "A winding path leads south through the grove toward an open meadow.")
+              ~hidden:false
+              ~locked:false
+            in
+            match south_exit_result with
+            | Error e ->
+                let* () = Lwt_io.printl (Printf.sprintf "Failed to create south exit: %s" (Qed_error.to_string e)) in
+                Lwt.return_unit
+            | Ok _ ->
+                let* () = Lwt_io.printl "Successfully created area connection" in
+                Lwt.return_unit
 
   let priority = 10  (* Run this early in the startup process *)
 

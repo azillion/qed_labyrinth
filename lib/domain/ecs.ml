@@ -358,7 +358,6 @@ module DerivedStatsStorage = MakeComponentStorage(DerivedStatsComponent)
 module HealthStorage = MakeComponentStorage(HealthComponent)
 module ActionPointsStorage = MakeComponentStorage(ActionPointsComponent)
 module AreaStorage = MakeComponentStorage(AreaComponent)
-module ExitStorage = MakeComponentStorage(ExitComponent)
 
 (* World module *)
 module World = struct
@@ -401,7 +400,6 @@ module World = struct
         let* () = HealthStorage.load_from_db entity_ids in
         let* () = ActionPointsStorage.load_from_db entity_ids in
         let* () = AreaStorage.load_from_db entity_ids in
-        let* () = ExitStorage.load_from_db entity_ids in
         (* Load other component storages here *)
 
         Lwt.return_ok ()
@@ -418,7 +416,6 @@ module World = struct
       let* () = HealthStorage.sync_to_db (module Db) in
       let* () = ActionPointsStorage.sync_to_db (module Db) in
       let* () = AreaStorage.sync_to_db (module Db) in
-      let* () = ExitStorage.sync_to_db (module Db) in
       (* Sync other component storages here *)
       
       let deleted = Entity.cleanup_deleted () in

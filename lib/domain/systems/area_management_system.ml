@@ -96,62 +96,49 @@ module Exit_creation_system = struct
       ) in
       Lwt.return_unit
     end else begin
-      (* Create a new entity for the exit *)
-      let* entity_id_result = Ecs.Entity.create () in
-      match entity_id_result with
+      (* Create exit using the new Exit model *)
+      let* exit_result = Exit.create 
+        ~from_area_id
+        ~to_area_id
+        ~direction
+        ~description
+        ~hidden
+        ~locked
+      in
+      match exit_result with
       | Error e -> 
-          Stdio.eprintf "Failed to create exit entity: %s\n" (Error.to_string_hum e);
+          Stdio.eprintf "Failed to create exit: %s\n" (Qed_error.to_string e);
           let* () = Infra.Queue.push state.State.event_queue (
             Event.ExitCreationFailed {
               user_id;
-              error = Qed_error.to_yojson (Qed_error.DatabaseError "Failed to create exit entity")
+              error = Qed_error.to_yojson e
             }
           ) in
           Lwt.return_unit
-      | Ok entity_id ->
-          let entity_id_str = Uuidm.to_string entity_id in
-          
-          (* Add ExitComponent *)
-          let exit_comp = Components.ExitComponent.{
-            entity_id = entity_id_str;
-            from_area_id;
-            to_area_id;
-            direction;
-            description;
-            hidden;
-            locked;
-          } in
-          let* () = Ecs.ExitStorage.set entity_id exit_comp in
-          
+      | Ok exit_record ->
           (* Queue event for exit creation success *)
           let* () = Infra.Queue.push state.State.event_queue (
             Event.ExitCreated {
               user_id;
-              exit_id = entity_id_str
+              exit_id = exit_record.id
             }
           ) in
           
           (* Create reciprocal exit automatically if not hidden *)
           if not hidden then begin
-            let* entity_id_result = Ecs.Entity.create () in
-            match entity_id_result with
+            let* recip_exit_result = Exit.create
+              ~from_area_id:to_area_id  (* Swapped *)
+              ~to_area_id:from_area_id  (* Swapped *)
+              ~direction:(Components.ExitComponent.opposite_direction direction)
+              ~description  (* Same description *)
+              ~hidden       (* Same hidden value *)
+              ~locked       (* Same locked value *)
+            in
+            match recip_exit_result with
             | Error e -> 
-                Stdio.eprintf "Failed to create reciprocal exit entity: %s\n" (Error.to_string_hum e);
+                Stdio.eprintf "Failed to create reciprocal exit: %s\n" (Qed_error.to_string e);
                 Lwt.return_unit
-            | Ok recip_entity_id ->
-                let recip_entity_id_str = Uuidm.to_string recip_entity_id in
-                
-                (* Add ExitComponent for reciprocal exit *)
-                let recip_exit_comp = Components.ExitComponent.{
-                  entity_id = recip_entity_id_str;
-                  from_area_id = to_area_id;  (* Swapped *)
-                  to_area_id = from_area_id;  (* Swapped *)
-                  direction = Components.ExitComponent.opposite_direction direction;
-                  description;  (* Same description *)
-                  hidden;       (* Same hidden value *)
-                  locked;       (* Same locked value *)
-                } in
-                let* () = Ecs.ExitStorage.set recip_entity_id recip_exit_comp in
+            | Ok _ ->
                 Lwt.return_unit
           end else
             Lwt.return_unit
@@ -217,13 +204,15 @@ module Area_query_system = struct
         let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] DescriptionStorage.get result: %s" (match desc_opt with Some _ -> "Found" | None -> "Not found")) in
         (match (area_opt, desc_opt) with
         | (Some area, Some desc) ->
-            let* all_exits = Ecs.ExitStorage.all () in
-            let exits = List.filter all_exits ~f:(fun (_, exit_comp) ->
-              String.equal exit_comp.Components.ExitComponent.from_area_id area_id &&
-              not exit_comp.Components.ExitComponent.hidden
-            ) in
-            let exit_directions = List.map exits ~f:(fun (_, exit) ->
-              Components.ExitComponent.direction_to_string exit.Components.ExitComponent.direction
+            let* exits_result = Exit.find_by_area ~area_id in
+            let* exits = match exits_result with
+              | Ok exits -> Lwt.return (List.filter exits ~f:(fun exit -> not exit.Exit.hidden))
+              | Error e ->
+                  let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Failed to get exits: %s" (Qed_error.to_string e)) in
+                  Lwt.return []
+            in
+            let exit_directions = List.map exits ~f:(fun exit ->
+              Components.ExitComponent.direction_to_string exit.Exit.direction
             ) in
             let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Found area: %s (id: %s), exits: [%s]" desc.Components.DescriptionComponent.name area_id (String.concat ~sep:", " exit_directions)) in
             let area_info : Types.area = {
