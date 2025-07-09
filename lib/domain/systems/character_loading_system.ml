@@ -9,17 +9,6 @@ let handle_load_character state character_id =
   match character_opt with
   | None -> Lwt_result.fail CharacterNotFound
   | Some character ->
-      (* Before loading, unload any currently active character for this user *)
-      let* () = wrap_ok (
-        match State.get_active_character state character.user_id with
-        | Some old_entity ->
-            let old_char_id = Uuidm.to_string old_entity in
-            Infra.Queue.push state.State.event_queue (
-              Event.UnloadCharacterFromECS { user_id = character.user_id; character_id = old_char_id }
-            )
-        | None -> Lwt.return_unit
-      ) in
-
       (* Convert character_id string to Uuidm.t entity ID *)
       match Uuidm.of_string character_id with
       | None -> Lwt_result.fail InvalidCharacter

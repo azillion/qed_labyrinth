@@ -48,13 +48,22 @@ module System = struct
   let get_sender_name state sender_id =
     match sender_id with
     | None -> Lwt.return "System"
-    | Some user_id ->
-        let%lwt char_entity_id_opt = find_character_by_user_id state user_id in
-        match char_entity_id_opt with
-        | None -> Lwt.return "Unknown"
+    | Some id_str -> (
+        match Uuidm.of_string id_str with
         | Some char_entity_id ->
+            (* We were given a character entity id – look up its name directly. *)
             let%lwt name_opt = get_character_name char_entity_id in
             Lwt.return (Option.value name_opt ~default:"Unknown")
+        | None ->
+            (* Fallback for legacy records where we stored the user_id instead of
+               the character id. Retain the old behaviour for backward
+               compatibility. *)
+            let%lwt char_entity_id_opt = find_character_by_user_id state id_str in
+            (match char_entity_id_opt with
+            | None -> Lwt.return "Unknown"
+            | Some char_entity_id ->
+                let%lwt name_opt = get_character_name char_entity_id in
+                Lwt.return (Option.value name_opt ~default:"Unknown")))
 
   let handle_say state user_id content =
     let open Lwt_result.Syntax in
@@ -62,9 +71,13 @@ module System = struct
     let* char_pos = get_character_position char_entity_id |> Lwt.map (Result.of_option ~error:(ServerError "Character has no position")) in
     let area_id = char_pos.area_id in
 
-    (* Create and persist the chat message *)
+    (* Create and persist the chat message.
+       We now store the character entity id instead of the user_id so that the
+       sender name remains stable even if the user later switches active
+       characters. *)
+    let sender_char_id_str = Some (Uuidm.to_string char_entity_id) in
     let* message =
-      Communication.create ~message_type:Chat ~sender_id:(Some user_id) ~content ~area_id:(Some area_id)
+      Communication.create ~message_type:Chat ~sender_id:sender_char_id_str ~content ~area_id:(Some area_id)
     in
 
     (* Announce the persisted message *)
