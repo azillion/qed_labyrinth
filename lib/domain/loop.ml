@@ -1,5 +1,6 @@
 open Lwt.Syntax
 open Base
+open Error_utils
 
 module Queue = Infra.Queue
 
@@ -173,7 +174,7 @@ let process_event (state : State.t) (event : Event.t) =
   | Event.PlayerMoved { user_id; old_area_id; new_area_id; direction } ->
       Presence_system.System.handle_player_moved state user_id old_area_id new_area_id direction
   | Event.SendMovementFailed { user_id; reason } ->
-      (* Movement failure response is now handled by the API server via Redis events *)
+      let open Lwt_result.Syntax in
       let* () = Publisher.publish_system_message_to_user state user_id reason in
       Lwt_result.return ()
   
@@ -202,11 +203,11 @@ let process_event (state : State.t) (event : Event.t) =
       (match character_opt with
       | None ->
           (* Directly notify user via system message *)
-          let%lwt () = Publisher.publish_system_message_to_user state user_id "Character not found after creation" in
+          let* () = Publisher.publish_system_message_to_user state user_id "Character not found after creation" in
           Lwt_result.return ()
       | Some _character ->
           (* Optionally publish character creation success; currently omitted *)
-          let%lwt () = Lwt_io.printl (Printf.sprintf "[EVENT] CharacterCreated processed for user=%s char_id=%s" user_id character_id) in
+          let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[EVENT] CharacterCreated processed for user=%s char_id=%s" user_id character_id)) in
           Lwt_result.return ())
   
   (* Add other event handlers here as they are refactored *)
@@ -241,7 +242,8 @@ let process_events (state : State.t) =
             in
             (match user_id_opt with
             | Some user_id ->
-                Publisher.publish_system_message_to_user state user_id ("Error: " ^ err_str)
+                let%lwt _ = Publisher.publish_system_message_to_user state user_id ("Error: " ^ err_str) in
+                Lwt.return_unit
             | None ->
                 (* Event was not user-specific, so just log it. *)
                 Lwt.return_unit)

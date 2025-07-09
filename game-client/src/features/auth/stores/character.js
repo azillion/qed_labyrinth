@@ -30,6 +30,38 @@ export const [characters, setCharacters] = createStore([]);
 export const [loadingCharacters, setLoadingCharacters] = createSignal(false);
 export const [characterError, setCharacterError] = createSignal(null);
 
+// Helper to map server camelCase payload to client snake_case state
+function mapCharacterPayload(payload) {
+  if (!payload) return {};
+  return {
+    id: payload.id ?? null,
+    name: payload.name ?? null,
+    health: payload.health ?? 0,
+    max_health: payload.maxHealth ?? 0,
+    action_points: payload.actionPoints ?? 0,
+    max_action_points: payload.maxActionPoints ?? 0,
+    core_attributes: payload.coreAttributes ? {
+      might: payload.coreAttributes.might ?? 0,
+      finesse: payload.coreAttributes.finesse ?? 0,
+      wits: payload.coreAttributes.wits ?? 0,
+      grit: payload.coreAttributes.grit ?? 0,
+      presence: payload.coreAttributes.presence ?? 0,
+    } : {
+      might: 0, finesse: 0, wits: 0, grit: 0, presence: 0
+    },
+    derived_stats: payload.derivedStats ? {
+      physical_power: payload.derivedStats.physicalPower ?? 0,
+      spell_power: payload.derivedStats.spellPower ?? 0,
+      accuracy: payload.derivedStats.accuracy ?? 0,
+      evasion: payload.derivedStats.evasion ?? 0,
+      armor: payload.derivedStats.armor ?? 0,
+      resolve: payload.derivedStats.resolve ?? 0,
+    } : {
+      physical_power: 0, spell_power: 0, accuracy: 0, evasion: 0, armor: 0, resolve: 0
+    },
+  };
+}
+
 // Export handlers that will be registered later
 export const characterHandlers = {
   'CharacterList': (payload) => {
@@ -37,7 +69,7 @@ export const characterHandlers = {
     setLoadingCharacters(false);
   },
   'CharacterSelected': (payload) => {
-    setCharacter(payload.character_sheet);
+    setCharacter(mapCharacterPayload(payload.character_sheet));
   },
   'CharacterSelectionFailed': (payload) => {
     setCharacterError(payload.message);
@@ -47,7 +79,7 @@ export const characterHandlers = {
   },
   'CharacterCreated': (payload) => {
     console.log('CharacterCreated', payload);
-    setCharacter(payload);
+    setCharacter(mapCharacterPayload(payload));
   },
   'CharacterCreationFailed': (payload) => {
     if (payload.error && payload.error[0] == 'NameTaken') {

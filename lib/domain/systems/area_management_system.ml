@@ -1,5 +1,6 @@
 open Lwt.Syntax
 open Base
+open Error_utils
 
 module Area_creation_system = struct
   let handle_create_area state user_id name description x y z ?elevation ?temperature ?moisture () =
@@ -57,10 +58,14 @@ end
 
 module Area_creation_communication_system = struct
   let handle_area_created state user_id area_id =
-    Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Area created successfully with ID: %s" area_id)
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Area created successfully with ID: %s" area_id) in
+    Lwt_result.return ()
 
   let handle_area_creation_failed state user_id error =
-    Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error)
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error) in
+    Lwt_result.return ()
 
   let priority = 50
 
@@ -144,10 +149,14 @@ end
 
 module Exit_creation_communication_system = struct
   let handle_exit_created state user_id exit_id =
-    Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Exit created successfully with ID: %s" exit_id)
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Printf.sprintf "Exit created successfully with ID: %s" exit_id) in
+    Lwt_result.return ()
 
   let handle_exit_creation_failed state user_id error =
-    Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error)
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error) in
+    Lwt_result.return ()
 
   let priority = 50
 
@@ -176,31 +185,31 @@ module Area_query_system = struct
 
   let handle_area_query state user_id area_id =
     let open Lwt_result.Syntax in
-    let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Called by user %s for area %s" user_id area_id) |> Lwt.map (fun () -> Ok ()) in
+    let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Called by user %s for area %s" user_id area_id)) in
     (* Get area details *)
     match Uuidm.of_string area_id with
     | None ->
-        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Invalid area_id: %s (user: %s)" area_id user_id) |> Lwt.map (fun () -> Ok ()) in
-        let* () = Infra.Queue.push state.State.event_queue (
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Invalid area_id: %s (user: %s)" area_id user_id)) in
+        let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
           Event.AreaQueryFailed {
             user_id;
             error = Qed_error.to_yojson Qed_error.AreaNotFound
           }
-        ) |> Lwt.map (fun () -> Ok ()) in
+        )) in
         Lwt_result.return ()
     | Some entity_id ->
-        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] Converted area_id to entity_id: %s" (Uuidm.to_string entity_id)) |> Lwt.map (fun () -> Ok ()) in
-        let* area_opt = Ecs.AreaStorage.get entity_id |> Lwt.map (fun x -> Ok x) in
-        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] AreaStorage.get result: %s" (match area_opt with Some _ -> "Found" | None -> "Not found")) |> Lwt.map (fun () -> Ok ()) in
-        let* desc_opt = Ecs.DescriptionStorage.get entity_id |> Lwt.map (fun x -> Ok x) in
-        let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] DescriptionStorage.get result: %s" (match desc_opt with Some _ -> "Found" | None -> "Not found")) |> Lwt.map (fun () -> Ok ()) in
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] Converted area_id to entity_id: %s" (Uuidm.to_string entity_id))) in
+        let* area_opt = wrap_val (Ecs.AreaStorage.get entity_id) in
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] AreaStorage.get result: %s" (match area_opt with Some _ -> "Found" | None -> "Not found"))) in
+        let* desc_opt = wrap_val (Ecs.DescriptionStorage.get entity_id) in
+        let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] DescriptionStorage.get result: %s" (match desc_opt with Some _ -> "Found" | None -> "Not found"))) in
         (match (area_opt, desc_opt) with
         | (Some area, Some desc) ->
             let* exits = Exit.find_by_area ~area_id in
             let exit_directions = List.map exits ~f:(fun exit ->
               Components.ExitComponent.direction_to_string exit.Exit.direction
             ) in
-            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Found area: %s (id: %s), exits: [%s]" desc.Components.DescriptionComponent.name area_id (String.concat ~sep:", " exit_directions)) |> Lwt.map (fun () -> Ok ()) in
+            let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Found area: %s (id: %s), exits: [%s]" desc.Components.DescriptionComponent.name area_id (String.concat ~sep:", " exit_directions))) in
             let area_info : Types.area = {
               id = area_id;
               name = desc.Components.DescriptionComponent.name;
@@ -215,31 +224,31 @@ module Area_query_system = struct
               temperature = area.Components.AreaComponent.temperature;
               moisture = area.Components.AreaComponent.moisture;
             } in
-            let* () = Infra.Queue.push state.State.event_queue (
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
               Event.AreaQueryResult {
                 user_id;
                 area = area_info
               }
-            ) |> Lwt.map (fun () -> Ok ()) in
-            let* () = Infra.Queue.push state.State.event_queue
-              (Event.RequestChatHistory { user_id; area_id }) |> Lwt.map (fun () -> Ok ()) in
-            let* characters_here = find_characters_in_area area_id |> Lwt.map (fun x -> Ok x) in
-            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Characters present in area %s: %d" area_id (List.length characters_here)) |> Lwt.map (fun () -> Ok ()) in
-            let* () = Infra.Queue.push state.State.event_queue (
+            )) in
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue
+              (Event.RequestChatHistory { user_id; area_id })) in
+            let* characters_here = wrap_val (find_characters_in_area area_id) in
+            let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Characters present in area %s: %d" area_id (List.length characters_here))) in
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
               Event.UpdateAreaPresence {
                 area_id;
                 characters = characters_here
               }
-            ) |> Lwt.map (fun () -> Ok ()) in
+            )) in
             Lwt_result.return ()
         | _ ->
-            let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Area or description not found for area_id: %s (user: %s)" area_id user_id) |> Lwt.map (fun () -> Ok ()) in
-            let* () = Infra.Queue.push state.State.event_queue (
+            let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Area or description not found for area_id: %s (user: %s)" area_id user_id)) in
+            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
               Event.AreaQueryFailed {
                 user_id;
                 error = Qed_error.to_yojson Qed_error.AreaNotFound
               }
-            ) |> Lwt.map (fun () -> Ok ()) in
+            )) in
             Lwt_result.return ())
 
   let priority = 100
@@ -251,6 +260,7 @@ end
 
 module Area_query_communication_system = struct
   let handle_area_query_result state user_id area =
+    let open Lwt_result.Syntax in
     let exits = List.map area.Types.exits ~f:(fun exit ->
       Schemas_generated.Output.{ direction = exit.Types.direction }
     ) in
@@ -264,10 +274,13 @@ module Area_query_communication_system = struct
       target_user_ids = [user_id];
       payload = Area_update area_update;
     } in
-    Publisher.publish_event state output_event |> Lwt.map (fun () -> Ok ())
+    let* () = Publisher.publish_event state output_event in
+    Lwt_result.return ()
 
   let handle_area_query_failed state user_id error =
-    Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error)
+    let open Lwt_result.Syntax in
+    let* () = Publisher.publish_system_message_to_user state user_id (Yojson.Safe.to_string error) in
+    Lwt_result.return ()
 
   let priority = 50
 

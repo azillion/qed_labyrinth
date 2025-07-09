@@ -22,7 +22,7 @@ module Character_list_system = struct
     } in
 
     (* 4. Publish the event to the user. *)
-    let* () = Publisher.publish_event state output_event |> Lwt.map (fun () -> Ok ()) in
+    let* () = Publisher.publish_event state output_event in
     Lwt_result.return ()
 
   (* System implementation for ECS *)

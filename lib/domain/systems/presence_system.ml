@@ -15,13 +15,13 @@ module System = struct
     (* Check if the new area is loaded, and load it if not. *)
     let* () =
       (match Uuidm.of_string new_area_id with
-      | None -> Lwt.return_unit
+      | None -> Error_utils.wrap_ok Lwt.return_unit
       | Some entity_id ->
           let%lwt is_loaded = Ecs.AreaStorage.get entity_id in
           if Option.is_none is_loaded then
-            Infra.Queue.push state.event_queue (Event.LoadAreaIntoECS { area_id = new_area_id })
+            Error_utils.wrap_ok (Infra.Queue.push state.event_queue (Event.LoadAreaIntoECS { area_id = new_area_id }))
           else
-            Lwt.return_unit) |> Lwt_result.ok
+            Error_utils.wrap_ok (Lwt.return_unit))
     in
 
     (* 1. Client movement is now handled by the API server via Redis events *)
@@ -42,11 +42,10 @@ module System = struct
               ~content:arrival_msg_content
               ~area_id:(Some new_area_id)
           in
-          Infra.Queue.push state.event_queue (Event.Announce { area_id = new_area_id; message = arrival_msg })
-          |> Lwt_result.ok
+          Error_utils.wrap_ok (Infra.Queue.push state.event_queue (Event.Announce { area_id = new_area_id; message = arrival_msg }))
     in
 
     (* 4. Send the new area info and chat history to the moving player regardless. *)
-    let* () = Infra.Queue.push state.event_queue (Event.AreaQuery { user_id; area_id = new_area_id }) |> Lwt_result.ok in
+    let* () = Error_utils.wrap_ok (Infra.Queue.push state.event_queue (Event.AreaQuery { user_id; area_id = new_area_id })) in
     Lwt.return_ok ()
 end

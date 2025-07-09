@@ -1,6 +1,7 @@
 open Base
 open Qed_error
 open Exit
+open Error_utils
 
 module System = struct
   let find_character_by_user_id state user_id =
@@ -34,8 +35,8 @@ module System = struct
 
     match exit_opt with
     | None ->
-        let* () = Publisher.publish_system_message_to_user state user_id "You can't go that way." |> Lwt_result.ok in
-        Lwt.return_ok ()
+        let* () = Publisher.publish_system_message_to_user state user_id "You can't go that way." in
+        Lwt_result.return ()
     | Some exit_record ->
         let new_area_id = exit_record.to_area_id in
 
@@ -48,13 +49,13 @@ module System = struct
         let* departure_msg =
           Communication.create ~message_type:System ~sender_id:None ~content:departure_msg_content ~area_id:(Some current_area_id)
         in
-        let* () = Infra.Queue.push state.event_queue (Event.Announce { area_id = current_area_id; message = departure_msg }) |> Lwt_result.ok in
+        let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.Announce { area_id = current_area_id; message = departure_msg })) in
         
         let new_pos_comp = { position_comp with area_id = new_area_id } in
-        let* () = Ecs.CharacterPositionStorage.set char_entity_id new_pos_comp |> Lwt_result.ok in
+        let* () = wrap_ok (Ecs.CharacterPositionStorage.set char_entity_id new_pos_comp) in
 
-        let* () = Infra.Queue.push state.event_queue
-          (Event.PlayerMoved { user_id; old_area_id = current_area_id; new_area_id; direction }) |> Lwt_result.ok in
+        let* () = wrap_ok (Infra.Queue.push state.event_queue
+          (Event.PlayerMoved { user_id; old_area_id = current_area_id; new_area_id; direction })) in
 
-        Lwt.return_ok ()
+        Lwt_result.return ()
 end

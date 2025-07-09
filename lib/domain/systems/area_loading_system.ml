@@ -9,7 +9,7 @@ let handle_load_area (area_id : string) : (unit, Qed_error.t) Result.t Lwt.t =
   match entity_id_opt with
   | None -> Lwt_result.fail (InvalidAreaId)
   | Some entity_id ->
-      let* existing_area_opt = Ecs.AreaStorage.get entity_id |> Lwt_result.ok in
+      let* existing_area_opt = Error_utils.wrap_val (Ecs.AreaStorage.get entity_id) in
       if Option.is_some existing_area_opt then
         (* Already loaded, nothing to do *)
         Lwt_result.return ()
@@ -30,7 +30,7 @@ let handle_load_area (area_id : string) : (unit, Qed_error.t) Result.t Lwt.t =
           temperature = area_model.temperature;
           moisture = area_model.moisture;
         } in
-        let* () = Ecs.AreaStorage.set entity_id area_comp |> Lwt_result.ok in
+        let* () = Error_utils.wrap_ok (Ecs.AreaStorage.set entity_id area_comp) in
         
         (* 5. Create and set DescriptionComponent *)
         let desc_comp = Components.DescriptionComponent.{ 
@@ -38,6 +38,6 @@ let handle_load_area (area_id : string) : (unit, Qed_error.t) Result.t Lwt.t =
           name = area_model.name; 
           description = Some area_model.description 
         } in
-        let* () = Ecs.DescriptionStorage.set entity_id desc_comp |> Lwt_result.ok in
+        let* () = Error_utils.wrap_ok (Ecs.DescriptionStorage.set entity_id desc_comp) in
         
         Lwt.return_ok () 
