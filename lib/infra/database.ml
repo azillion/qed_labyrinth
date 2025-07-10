@@ -73,15 +73,6 @@ module Schema = struct
            UNIQUE(from_area_id, direction)
          ) |}
 
-  (* let create_starting_area_entry =
-    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      {| INSERT INTO areas (id, name, description, x, y, z, climate_elevation, climate_temperature, climate_moisture)
-         VALUES ('00000000-0000-0000-0000-000000000000', 'The Ancient Oak Meadow', 
-           'An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree''s vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.
-The meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass.',
-           0, 0, 0, 0.0, 0.0, 0.0)
-         ON CONFLICT (id) DO NOTHING |} *)
-
   let create_comm_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS communications (
@@ -136,9 +127,6 @@ The meadow blooms with blue cornflowers and crimson poppies dotting the emerald 
 
         (* communications table used for chat and system messages *)
         let* () = C.exec create_comm_table () in
-
-        (* Create starting area entry *)
-        (* let* () = C.exec create_starting_area_entry () in *)
 
         Lwt.return_ok ())
       (fun _ -> failwith "Database error")

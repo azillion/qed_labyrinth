@@ -11,11 +11,16 @@ module Starting_area_initialization_system = struct
       let open Lwt_result.Syntax in
       let* () = Db.start () in
       
-      (* Insert starting area entity *)
+      (* Insert entities first to satisfy foreign key constraints *)
       let* _ = Db.exec 
         (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
           "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
         starting_area_id
+      in
+      let* _ = Db.exec 
+        (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
+          "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
+        second_area_id
       in
 
       (* Insert starting area into areas table *)
@@ -25,13 +30,6 @@ module Starting_area_initialization_system = struct
         (starting_area_id, "The Ancient Oak Meadow", 
          "An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree's vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above.\nThe meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass.",
          0, 0, 0)
-      in
-
-      (* Insert second area entity *)
-      let* _ = Db.exec 
-        (Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit)
-          "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING")
-        second_area_id
       in
 
       (* Insert second area into areas table *)
