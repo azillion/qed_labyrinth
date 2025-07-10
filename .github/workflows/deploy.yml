@@ -1,5 +1,6 @@
-name: Build and Deploy
+name: Deploy to DigitalOcean
 
+# This workflow runs on every push to the main branch.
 on:
   push:
     branches:
@@ -8,42 +9,50 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push API Server image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # The context is now the root
+          file: ./Dockerfile.api # Specify the dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/qed-api-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build and push Chronos Engine image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.engine
           push: true
-          tags: ghcr.io/${{ github.repository }}/chronos_engine:latest
-      
-      - name: Build and push API Server image
-        uses: docker/build-push-action@v5
+          tags: ghcr.io/${{ github.repository_owner }}/qed-chronos-engine:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to DigitalOcean Droplet
+        uses: appleboy/ssh-action@master
         with:
-          context: .
-          file: ./Dockerfile.api
-          push: true
-          tags: ghcr.io/${{ github.repository }}/api_server:latest
-      
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.KEY }}
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           script: |
-            cd /app/qed_labyrinth
-            echo ${{ secrets.GH_PAT }} | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-            docker compose pull
-            docker compose up -d --force-recreate
+            cd /var/www/qed_labyrinth
+            git pull
+            docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GHCR_TOKEN }}
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d
+            docker image prune -af

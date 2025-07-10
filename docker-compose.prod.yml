@@ -1,0 +1,57 @@
+version: '3.8'
+
+# This file is for production. It pulls pre-built images from ghcr.io.
+# It assumes the .env file with secrets is present on the server.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${QED_DB_USER}
+      POSTGRES_PASSWORD: ${QED_DB_PASSWORD}
+      POSTGRES_DB: ${QED_DB_NAME}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    image: redis:7
+    restart: always
+
+  chronos_engine:
+    # Pull the image from the GitHub Container Registry
+    image: ghcr.io/azillion/qed-chronos-engine:latest
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      QED_DB_HOST: postgres
+      QED_DB_PORT: 5432
+      QED_DB_USER: ${QED_DB_USER}
+      QED_DB_PASSWORD: ${QED_DB_PASSWORD}
+      QED_DB_NAME: ${QED_DB_NAME}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    restart: always
+
+  api_server:
+    # Pull the image from the GitHub Container Registry
+    image: ghcr.io/azillion/qed-api-server:latest
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      QED_DB_HOST: postgres
+      QED_DB_PORT: 5432
+      QED_DB_USER: ${QED_DB_USER}
+      QED_DB_PASSWORD: ${QED_DB_PASSWORD}
+      QED_DB_NAME: ${QED_DB_NAME}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3001:3001"
+    restart: always
+
+volumes:
+  pg_data:
