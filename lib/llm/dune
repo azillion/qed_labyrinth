@@ -7,10 +7,8 @@
   ppx_deriving_yojson.runtime
   ppx_deriving.runtime
   digestif
-  jose
   ptime
   ptime.clock
-  dream
   lwt
   caqti
   caqti-lwt

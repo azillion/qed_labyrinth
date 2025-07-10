@@ -7,7 +7,6 @@
   qed_labyrinth.llm
   qed_labyrinth.domain
   uuidm
-  dream
   redis-lwt
   redis
   pbrt

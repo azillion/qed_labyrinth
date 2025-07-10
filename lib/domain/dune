@@ -8,10 +8,8 @@
   ppx_deriving.runtime
   qed_labyrinth.infra
   digestif
-  jose
   ptime
   ptime.clock
-  dream
   lwt
   caqti
   caqti-lwt
