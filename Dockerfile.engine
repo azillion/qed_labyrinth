@@ -19,20 +19,18 @@ USER root
 # Copy project dependency definitions
 COPY --chown=opam:opam dune-project .
 COPY --chown=opam:opam *.opam .
-USER opam
 
 # Install OCaml dependencies. This is cached to speed up builds.
 RUN opam install . --deps-only --with-test
 
-USER root
 # Copy project source code
 COPY --chown=opam:opam lib/ lib/
 COPY --chown=opam:opam bin/ bin/
 COPY --chown=opam:opam schemas/ schemas/
-USER opam
 
 # Build the release executable
 RUN eval $(opam env) && dune build --profile=release
+USER opam
 
 # Production stage
 FROM debian:12-slim
