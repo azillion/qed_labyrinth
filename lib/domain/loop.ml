@@ -91,7 +91,11 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
 (* Redis subscriber function *)
 let subscribe_to_player_commands (state : State.t) =
   let open Lwt.Syntax in
-  let%lwt subscriber_conn = Redis_lwt.Client.connect { host = "127.0.0.1"; port = 6379 } in
+  let redis_host =
+    try Stdlib.Sys.getenv "REDIS_HOST"
+    with _ -> failwith "REDIS_HOST environment variable is not set"
+  in
+  let%lwt subscriber_conn = Redis_lwt.Client.connect { host = redis_host; port = 6379 } in
   let%lwt () = Redis_lwt.Client.subscribe subscriber_conn ["player_commands"] in
   let%lwt () = Lwt_io.printl "[DEBUG] Subscribed to player_commands" in
   let reply_stream = Redis_lwt.Client.stream subscriber_conn in
