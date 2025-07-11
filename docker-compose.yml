@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16
@@ -9,6 +7,11 @@ services:
       POSTGRES_DB: ${QED_DB_NAME}
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${QED_DB_USER} -d ${QED_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
@@ -18,8 +21,10 @@ services:
       context: .
       dockerfile: Dockerfile.engine
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       QED_DB_HOST: postgres
       QED_DB_PORT: 5432
@@ -34,8 +39,10 @@ services:
       context: .
       dockerfile: Dockerfile.api
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       QED_DB_HOST: postgres
       QED_DB_PORT: 5432

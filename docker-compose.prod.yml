@@ -1,5 +1,3 @@
-version: '3.8'
-
 # This file is for production. It pulls pre-built images from ghcr.io.
 # It assumes the .env file with secrets is present on the server.
 
@@ -12,6 +10,11 @@ services:
       POSTGRES_DB: ${QED_DB_NAME}
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${QED_DB_USER} -d ${QED_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: always
 
   redis:
@@ -22,8 +25,10 @@ services:
     # Pull the image from the GitHub Container Registry
     image: ghcr.io/azillion/qed-chronos-engine:latest
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       QED_DB_HOST: postgres
       QED_DB_PORT: 5432
@@ -38,8 +43,10 @@ services:
     # Pull the image from the GitHub Container Registry
     image: ghcr.io/azillion/qed-api-server:latest
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       QED_DB_HOST: postgres
       QED_DB_PORT: 5432
