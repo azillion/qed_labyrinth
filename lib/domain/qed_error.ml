@@ -1,12 +1,10 @@
 type t =
   (* authentication errors *)
-  | InvalidUsername
   | InvalidPassword
   | InvalidEmail
   | InvalidToken
   | InvalidCharacter
   | UserNotFound
-  | UsernameTaken
   | EmailTaken
   (* area errors *)
   | AreaNotFound
@@ -31,13 +29,11 @@ type t =
 [@@deriving yojson]
 
 let to_string = function
-  | InvalidUsername    -> "Invalid username"
   | InvalidPassword    -> "Invalid password"
   | InvalidEmail       -> "Invalid email"
   | InvalidToken       -> "Invalid token"
   | InvalidCharacter   -> "Invalid character"
   | UserNotFound       -> "User not found"
-  | UsernameTaken      -> "Username taken"
   | EmailTaken         -> "Email taken"
   | AreaNotFound       -> "Area not found"
   | CharacterNotFound  -> "Character not found"

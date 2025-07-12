@@ -18,9 +18,8 @@ module Schema = struct
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS users (
            id TEXT PRIMARY KEY,
-           username TEXT NOT NULL UNIQUE,
-           password_hash TEXT NOT NULL,
            email TEXT NOT NULL UNIQUE,
+           password_hash TEXT NOT NULL,
            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
            deleted_at TIMESTAMP,
            token TEXT,
@@ -32,8 +31,6 @@ module Schema = struct
   let create_users_indexes = [
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       "CREATE INDEX IF NOT EXISTS users_deleted_at_idx ON users(deleted_at)";
-    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      "CREATE INDEX IF NOT EXISTS users_username_idx ON users(username)";
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       "CREATE INDEX IF NOT EXISTS users_email_idx ON users(email)";
   ]

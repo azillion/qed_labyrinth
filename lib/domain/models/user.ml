@@ -31,7 +31,6 @@ let string_of_role = function
 
 type t = {
   id : string;
-  username : string;
   password_hash : string;
   email : string;
   created_at : Ptime.t;
@@ -51,7 +50,6 @@ module Q = struct
     let encode
         {
           id;
-          username;
           password_hash;
           email;
           created_at;
@@ -62,9 +60,8 @@ module Q = struct
         } =
       Ok
         ( id,
-          username,
-          password_hash,
           email,
+          password_hash,
           created_at,
           deleted_at,
           token,
@@ -73,9 +70,8 @@ module Q = struct
     in
     let decode
         ( id,
-          username,
-          password_hash,
           email,
+          password_hash,
           created_at,
           deleted_at,
           token,
@@ -87,7 +83,6 @@ module Q = struct
           Ok
             {
               id;
-              username;
               password_hash;
               email;
               created_at;
@@ -98,7 +93,7 @@ module Q = struct
             }
     in
     let rep =
-      t9 string string string string ptime (option ptime) (option string)
+      t8 string string string ptime (option ptime) (option string)
         (option ptime) string
     in
     custom ~encode ~decode rep
@@ -107,9 +102,9 @@ module Q = struct
     (string ->? user_type)
       "SELECT * FROM users WHERE id = ? AND deleted_at IS NULL"
 
-  let find_by_username =
+  let find_by_email =
     (string ->? user_type)
-      "SELECT * FROM users WHERE username = ? AND deleted_at IS NULL"
+      "SELECT * FROM users WHERE email = ? AND deleted_at IS NULL"
 
   let update_token =
     (t3 (option string) (option ptime) string ->. unit)
@@ -140,10 +135,10 @@ let find_by_id id =
   | Ok (Some user) -> Lwt.return_ok user
   | Ok None -> Lwt.return_error UserNotFound
 
-let find_by_username username =
+let find_by_email email =
   let open Base in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
-    let* user_result = Db.find_opt Q.find_by_username username in
+    let* user_result = Db.find_opt Q.find_by_email email in
     match user_result with
     | Error e -> Lwt_result.fail e
     | Ok result -> Lwt_result.return result

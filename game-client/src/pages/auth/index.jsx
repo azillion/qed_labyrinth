@@ -10,7 +10,7 @@ import { login, register } from '@features/auth/stores/auth';
 const LoginPage = () => {
 	const [step, setStep] = createSignal("select");
 	const [mode, setMode] = createSignal(null);
-	const [username, setUsername] = createSignal("");
+	// Username no longer required
 	const [password, setPassword] = createSignal("");
 	const [email, setEmail] = createSignal("");
 	const [error, setError] = createSignal("");
@@ -19,7 +19,7 @@ const LoginPage = () => {
 	let inputRef;
 
 	const focusInput = () => {
-		if (["username", "password", "email"].includes(step())) {
+		if (["email", "password"].includes(step())) {
 			inputRef?.focus();
 		} else {
 			containerRef?.focus();
@@ -42,13 +42,9 @@ const LoginPage = () => {
 			e.preventDefault();
 			setEmail("");
 			setPassword("");
-			setUsername("");
 			setError("");
 		}
-		if (e.key === "Enter" && step() === "username" && username() === "") {
-			setError("Username cannot be empty");
-			return;
-		} else if (e.key === "Enter" && step() === "password" && password() === "") {
+		if (e.key === "Enter" && step() === "password" && password() === "") {
 			setError("Password cannot be empty");
 			return;
 		} else if (e.key === "Enter" && step() === "email" && email() === "") {
@@ -60,21 +56,15 @@ const LoginPage = () => {
 			e.preventDefault();
 			if (e.key === "1") {
 				setMode("login");
-				setStep("username");
+				setStep("email");
 			} else if (e.key === "2") {
 				setMode("register");
-				setStep("username");
+				setStep("email");
 			}
 		} else if (e.key === "Enter") {
-			if (step() === "username") {
+			if (step() === "email") {
 				setStep("password");
 			} else if (step() === "password") {
-				if (mode() === "register") {
-					setStep("email");
-				} else {
-					handleSubmit();
-				}
-			} else if (step() === "email") {
 				handleSubmit();
 			}
 		}
@@ -83,9 +73,9 @@ const LoginPage = () => {
 	// Replace the handleSubmit function with:
 	const handleSubmit = async () => {
 		if (mode() === 'login') {
-			await login(username(), password());
+			await login(email(), password());
 		} else {
-			await register(username(), password(), email());
+			await register(email(), password());
 		}
 	};
 
@@ -136,7 +126,7 @@ const LoginPage = () => {
 					</div>
 				</Show>
 
-				<Show when={step() === "username"}>
+				<Show when={step() === "email"}>
 					<div class="space-y-4">
 						<TerminalText class={theme().textBase}>
 							{mode() === "login"
@@ -147,11 +137,11 @@ const LoginPage = () => {
 							<TerminalText class={theme().textBase}>&gt;</TerminalText>
 							<div class="ml-2 flex-1">
 								<TerminalInput
-									id="username"
+									id="email"
 									ref={inputRef}
-									value={username()}
-									onInput={setUsername}
-									placeholder="Enter username"
+									value={email()}
+									onInput={setEmail}
+									placeholder="Enter email"
 								/>
 							</div>
 						</div>
@@ -175,32 +165,13 @@ const LoginPage = () => {
 					</div>
 				</Show>
 
-				<Show when={step() === "email"}>
-					<div class="sace-y-4">
-						<div class="flex items-center">
-							<TerminalText class={theme().textBase}>&gt;</TerminalText>
-							<div class="ml-2 flex-1">
-								<TerminalInput
-									id="email"
-									ref={inputRef}
-									value={email()}
-									onInput={setEmail}
-									placeholder="Enter email"
-								/>
-							</div>
-						</div>
-					</div>
-				</Show>
-
 				<div class={`mt-8 pt-4 border-t ${theme().textDimmest}`}>
 					<TerminalText class={theme().textDimmer}>
 						{step() === "select"
 							? "Type 1 or 2 to select an option..."
-							: step() === "username"
-								? "Enter your username and press RETURN..."
-								: step() === "password"
-									? "Enter your password and press RETURN..."
-									: "Enter your email and press RETURN..."}
+							: step() === "email"
+								? "Enter your email and press RETURN..."
+								: "Enter your password and press RETURN..."}
 					</TerminalText>
 				</div>
 			</div>

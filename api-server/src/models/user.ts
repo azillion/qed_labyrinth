@@ -4,18 +4,16 @@ import { randomUUID } from 'crypto';
 
 export interface User {
   id: string;
-  username: string;
   email: string;
   password_hash: string;
   created_at: Date;
 }
 
-export async function findByUsername(username: string): Promise<User | null> {
+export async function findByEmail(email: string): Promise<User | null> {
   const result = await pool.query(
-    'SELECT id, username, email, password_hash, created_at FROM users WHERE username = $1',
-    [username]
+    'SELECT id, email, password_hash, created_at FROM users WHERE email = $1',
+    [email]
   );
-  
   return result.rows[0] || null;
 }
 
@@ -28,12 +26,11 @@ export async function comparePassword(password: string, hash: string): Promise<b
   return bcrypt.compare(password, hash);
 }
 
-export async function createUser(username: string, email: string, hashedPassword: string): Promise<User> {
+export async function createUser(email: string, hashedPassword: string): Promise<User> {
   const id = randomUUID();
   const result = await pool.query(
-    'INSERT INTO users (id, username, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, username, email, password_hash, created_at',
-    [id, username, email, hashedPassword]
+    'INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3) RETURNING id, email, password_hash, created_at',
+    [id, email, hashedPassword]
   );
-  
   return result.rows[0];
 }

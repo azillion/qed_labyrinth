@@ -1,27 +1,26 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { findByUsername, comparePassword, createUser, hashPassword } from '../models/user';
+import { findByEmail, comparePassword, createUser, hashPassword } from '../models/user';
 
 interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 
 interface RegisterRequest {
-  username: string;
   email: string;
   password: string;
 }
 
 export async function authRoutes(server: FastifyInstance, options: any) {
   server.post('/login', async (request: FastifyRequest<{ Body: LoginRequest }>, reply: FastifyReply) => {
-    const { username, password } = request.body;
+    const { email, password } = request.body;
     
-    if (!username || !password) {
-      return reply.status(400).send({ error: 'Username and password are required' });
+    if (!email || !password) {
+      return reply.status(400).send({ error: 'Email and password are required' });
     }
     
     try {
-      const user = await findByUsername(username);
+      const user = await findByEmail(email);
       
       if (!user) {
         return reply.status(401).send({ error: 'Invalid credentials' });
@@ -33,7 +32,7 @@ export async function authRoutes(server: FastifyInstance, options: any) {
         return reply.status(401).send({ error: 'Invalid credentials' });
       }
       
-      const token = server.jwt.sign({ userId: user.id, username: user.username });
+      const token = server.jwt.sign({ userId: user.id, email: user.email });
       
       return reply.send({ token });
     } catch (error) {
@@ -43,25 +42,25 @@ export async function authRoutes(server: FastifyInstance, options: any) {
   });
   
   server.post('/register', async (request: FastifyRequest<{ Body: RegisterRequest }>, reply: FastifyReply) => {
-    const { username, email, password } = request.body;
+    const { email, password } = request.body;
     
-    if (!username || !email || !password) {
-      return reply.status(400).send({ error: 'Username, email, and password are required' });
+    if (!email || !password) {
+      return reply.status(400).send({ error: 'Email and password are required' });
     }
     
     try {
-      const existingUser = await findByUsername(username);
+      const existingUser = await findByEmail(email);
       
       if (existingUser) {
-        return reply.status(409).send({ error: 'Username already exists' });
+        return reply.status(409).send({ error: 'Email already exists' });
       }
       
       const hashedPassword = await hashPassword(password);
-      const user = await createUser(username, email, hashedPassword);
+      const user = await createUser(email, hashedPassword);
       
-      const token = server.jwt.sign({ userId: user.id, username: user.username });
+      const token = server.jwt.sign({ userId: user.id, email: user.email });
       
-      return reply.status(201).send({ token, user: { id: user.id, username: user.username, email: user.email } });
+      return reply.status(201).send({ token, user: { id: user.id, email: user.email } });
     } catch (error) {
       console.error('Registration error:', error);
       return reply.status(500).send({ error: 'Internal server error' });

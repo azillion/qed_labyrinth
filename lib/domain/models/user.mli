@@ -8,7 +8,6 @@ val string_of_role : role -> string
 
 type t = {
   id : string;
-  username : string;
   password_hash : string;
   email : string;
   created_at : Ptime.t;
@@ -20,7 +19,7 @@ type t = {
 
 
 val find_by_id : string -> (t, Qed_error.t) result Lwt.t
-val find_by_username : string -> (t, Qed_error.t) result Lwt.t
+val find_by_email : string -> (t, Qed_error.t) result Lwt.t
 
 val update_token :
   user_id:string ->

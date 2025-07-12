@@ -27,9 +27,9 @@ export const setAuthState = (token) => {
 };
 
 // Auth actions
-export const login = async (username, password) => {
+export const login = async (email, password) => {
 	try {
-		const response = await fetcher.post(ENDPOINTS.login, { username, password });
+		const response = await fetcher.post(ENDPOINTS.login, { email, password });
 		if (response.token) {
 			setAuthState(response.token);
 			setUserRole(response.role);
@@ -43,9 +43,9 @@ export const login = async (username, password) => {
 	}
 };
 
-export const register = async (username, password, email) => {
+export const register = async (email, password) => {
 	try {
-		const response = await fetcher.post(ENDPOINTS.register, { username, password, email });
+		const response = await fetcher.post(ENDPOINTS.register, { email, password });
 		if (response?.token && typeof response.token === 'string') {
 			setAuthState(response.token);
 			setUserRole(response.role);
