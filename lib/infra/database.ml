@@ -111,6 +111,8 @@ module Schema = struct
         let* () = C.exec (create_component_table "levels") () in
         let* () = C.exec (create_component_table "messages") () in
         let* () = C.exec (create_component_table "senders") () in
+        let* () = C.exec (create_component_table "items") () in
+        let* () = C.exec (create_component_table "inventories") () in
 
 
         (* Tier-1 relational tables *)
@@ -121,6 +123,8 @@ module Schema = struct
           "CREATE TABLE IF NOT EXISTS characters (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL UNIQUE, FOREIGN KEY(user_id) REFERENCES users(id))") () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
           "CREATE TABLE IF NOT EXISTS character_core_stats (character_id TEXT PRIMARY KEY, might INTEGER NOT NULL, finesse INTEGER NOT NULL, wits INTEGER NOT NULL, grit INTEGER NOT NULL, presence INTEGER NOT NULL, FOREIGN KEY(character_id) REFERENCES characters(id))") () in
+        let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+          "CREATE TABLE IF NOT EXISTS item_definitions (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL, item_type TEXT NOT NULL CHECK (item_type IN ('WEAPON', 'ARMOR', 'CONSUMABLE', 'MISC')), slot TEXT CHECK (slot IN ('MAIN_HAND', 'OFF_HAND', 'HEAD', 'CHEST', 'LEGS', 'FEET', 'NONE')), weight REAL NOT NULL DEFAULT 0.0, is_stackable BOOLEAN NOT NULL DEFAULT false, properties JSONB)") () in
 
         (* communications table used for chat and system messages *)
         let* () = C.exec create_comm_table () in

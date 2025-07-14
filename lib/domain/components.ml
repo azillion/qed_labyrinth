@@ -123,3 +123,22 @@ module ActionPointsComponent = struct
 
   let table_name = "action_points"
 end
+
+module ItemComponent = struct
+  type t = {
+    entity_id: string;
+    item_definition_id: string;
+    quantity: int;
+  } [@@deriving yojson]
+
+  let table_name = "items"
+end
+
+module InventoryComponent = struct
+  type t = {
+    entity_id: string;
+    items: string list; (* List of item entity IDs *)
+  } [@@deriving yojson]
+
+  let table_name = "inventories"
+end

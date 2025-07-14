@@ -361,6 +361,8 @@ module DerivedStatsStorage = MakeComponentStorage(DerivedStatsComponent)
 module HealthStorage = MakeComponentStorage(HealthComponent)
 module ActionPointsStorage = MakeComponentStorage(ActionPointsComponent)
 module AreaStorage = MakeComponentStorage(AreaComponent)
+module ItemStorage = MakeComponentStorage(ItemComponent)
+module InventoryStorage = MakeComponentStorage(InventoryComponent)
 
 (* World module *)
 module World = struct
@@ -403,6 +405,8 @@ module World = struct
       let* () = HealthStorage.load_from_db () in
       let* () = ActionPointsStorage.load_from_db () in
       let* () = AreaStorage.load_from_db () in
+      let* () = ItemStorage.load_from_db () in
+      let* () = InventoryStorage.load_from_db () in
       (* NOTE: We do not load CharacterStorage, DescriptionStorage, or CoreStatsStorage
          as they were removed from this persistence layer in Phase 1. *)
       Lwt.return_ok ()
@@ -415,6 +419,8 @@ module World = struct
       let* () = HealthStorage.sync_to_db (module Db) in
       let* () = ActionPointsStorage.sync_to_db (module Db) in
       let* () = AreaStorage.sync_to_db (module Db) in
+      let* () = ItemStorage.sync_to_db (module Db) in
+      let* () = InventoryStorage.sync_to_db (module Db) in
       (* Sync other component storages here *)
       
       let deleted = Entity.cleanup_deleted () in
