@@ -190,11 +190,15 @@ module Q = struct
       {| UPDATE areas SET name = ?, description = ? WHERE id = ? |}
 end
 
-let create ~name ~description ~x ~y ~z ?elevation ?temperature ?moisture () =
+let create ~name ~description ~x ~y ~z ?id ?elevation ?temperature ?moisture () =
   let open Base in
+  let id = match id with
+    | Some id -> id
+    | None -> Uuidm.to_string (uuid ())
+  in
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     let area = { 
-      id = Uuidm.to_string (uuid ()); 
+      id;
       name; 
       description; 
       x; 

@@ -1,0 +1,45 @@
+{
+  "item_definitions": [
+    {
+      "id": "a1b2c3d4-0001-0000-0000-000000000000",
+      "name": "Rusty Dagger",
+      "description": "A simple, pitted dagger. It's not much, but it's sharp enough.",
+      "item_type": "WEAPON",
+      "slot": "MAIN_HAND",
+      "weight": 1.5,
+      "is_stackable": false,
+      "properties": { "damage": 5 }
+    },
+    {
+      "id": "a1b2c3d4-0002-0000-0000-000000000000",
+      "name": "Health Potion",
+      "description": "A vial of swirling red liquid that restores a small amount of health.",
+      "item_type": "CONSUMABLE",
+      "slot": "NONE",
+      "weight": 0.5,
+      "is_stackable": true,
+      "properties": { "heal_amount": 25 }
+    }
+  ],
+  "areas": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "name": "The Ancient Oak Meadow",
+      "description": "An ancient oak dominates the hillside, its twisted trunk rising from the earth in massive coils. The tree's vast canopy spreads across the sky, its leaves catching rays of sunlight that pierce through gathering storm clouds above. The meadow blooms with blue cornflowers and crimson poppies dotting the emerald grass.",
+      "x": 0, "y": 0, "z": 0
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "name": "The Whispering Grove",
+      "description": "A dense grove of ancient trees stands before you, their branches intertwined like the fingers of old friends. The air is thick with the scent of pine and earth, and a gentle breeze carries whispers through the leaves. Sunlight filters through the canopy in golden shafts, illuminating patches of moss-covered ground where small flowers bloom in the shadows.",
+      "x": 0, "y": 1, "z": 0
+    }
+  ],
+  "exits": [
+    {
+      "from_id": "00000000-0000-0000-0000-000000000000",
+      "to_id": "11111111-1111-1111-1111-111111111111",
+      "direction": "north"
+    }
+  ]
+} 

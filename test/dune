@@ -1,4 +1,6 @@
 (tests
- (names test)
+ (names test test_seeding)
  (libraries
-  qed_labyrinth))
+  qed_labyrinth
+  qed_labyrinth.infra
+  qed_labyrinth.domain))

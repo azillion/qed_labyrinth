@@ -286,9 +286,6 @@ let process_events (state : State.t) =
 let register_ecs_systems () =
   (* Register your ECS systems here *)
 
-  let open Lwt.Syntax in
-  let* () = Initialization_system.Starting_area_initialization_system.initialize_starting_area_once () in
-  
   Lwt.return_unit
 
 let rec game_loop (state : State.t) =

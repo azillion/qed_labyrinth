@@ -49,6 +49,7 @@ val create :
   x:int ->
   y:int ->
   z:int ->
+  ?id:string ->
   ?elevation:float ->
   ?temperature:float ->
   ?moisture:float ->

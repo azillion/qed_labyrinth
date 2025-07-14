@@ -405,6 +405,7 @@ module World = struct
       let* () = HealthStorage.load_from_db () in
       let* () = ActionPointsStorage.load_from_db () in
       let* () = AreaStorage.load_from_db () in
+      let* () = DescriptionStorage.load_from_db () in
       let* () = ItemStorage.load_from_db () in
       let* () = InventoryStorage.load_from_db () in
       (* NOTE: We do not load CharacterStorage, DescriptionStorage, or CoreStatsStorage
@@ -419,6 +420,7 @@ module World = struct
       let* () = HealthStorage.sync_to_db (module Db) in
       let* () = ActionPointsStorage.sync_to_db (module Db) in
       let* () = AreaStorage.sync_to_db (module Db) in
+      let* () = DescriptionStorage.sync_to_db (module Db) in
       let* () = ItemStorage.sync_to_db (module Db) in
       let* () = InventoryStorage.sync_to_db (module Db) in
       (* Sync other component storages here *)

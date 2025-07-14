@@ -20,6 +20,7 @@
   uuidm
   redis-lwt
   pbrt
+  ppx_yojson_conv_lib
   qed_labyrinth.schemas_generated
   unix)
  (preprocess

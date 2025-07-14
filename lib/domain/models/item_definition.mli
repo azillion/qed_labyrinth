@@ -3,6 +3,11 @@ open Base
 type item_type = Weapon | Armor | Consumable | Misc
 type slot = MainHand | OffHand | Head | Chest | Legs | Feet | None
 
+val item_type_to_string : item_type -> string
+val item_type_of_string : string -> (item_type, string) Result.t
+val slot_to_string : slot -> string
+val slot_of_string : string -> (slot, string) Result.t
+
 type t = {
   id : string;
   name : string;
