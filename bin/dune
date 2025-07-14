@@ -1,6 +1,7 @@
 (executable
  (name chronos_engine)
  (public_name qed_labyrinth)
+ (modules chronos_engine)
  (preprocess (pps lwt_ppx ppx_yojson_conv))
  (libraries
   qed_labyrinth.infra
@@ -14,3 +15,21 @@
   cohttp-lwt-unix
   lwt
   lwt.unix))
+
+(executable
+ (name genesis)
+ (public_name qed_labyrinth-genesis)
+ (modules genesis)
+ (preprocess (pps lwt_ppx ppx_yojson_conv))
+ (libraries
+  qed_labyrinth.infra
+  qed_labyrinth.domain
+  uuidm
+  caqti
+  caqti-lwt
+  caqti-driver-postgresql
+  caqti-driver-sqlite3
+  lwt
+  lwt.unix
+  base
+  stdio))

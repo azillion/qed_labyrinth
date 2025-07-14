@@ -29,22 +29,17 @@ let test_seeding_ecs_loading () =
           Stdio.eprintf "Failed to initialize ECS: %s\n" (Base.Error.to_string_hum e);
           Lwt.return_unit
       | Ok () ->
-          (* Run seeding *)
-          let* seed_result = Qed_domain.Seeding_system.seed_world_if_needed () in
-          match seed_result with
-          | Error e ->
-              Stdio.eprintf "Seeding failed: %s\n" (Qed_domain.Qed_error.to_string e);
+          (* Manually load the pre-seeded starting area into ECS *)
+          let starting_area_id = "00000000-0000-0000-0000-000000000000" in
+          let* _ = Qed_domain.Area_loading_system.handle_load_area starting_area_id in
+          (* Verify components are present *)
+          match Uuidm.of_string starting_area_id with
+          | None ->
+              Stdio.eprintf "Invalid starting area ID\n";
               Lwt.return_unit
-          | Ok () ->
-              (* Test if starting area is loaded in ECS *)
-              let starting_area_id = "00000000-0000-0000-0000-000000000000" in
-              match Uuidm.of_string starting_area_id with
-              | None ->
-                  Stdio.eprintf "Invalid starting area ID\n";
-                  Lwt.return_unit
-              | Some entity_id ->
-                  let* area_opt = Qed_domain.Ecs.AreaStorage.get entity_id in
-                  let* desc_opt = Qed_domain.Ecs.DescriptionStorage.get entity_id in
+          | Some entity_id ->
+              let* area_opt = Qed_domain.Ecs.AreaStorage.get entity_id in
+              let* desc_opt = Qed_domain.Ecs.DescriptionStorage.get entity_id in
                   
                   match (area_opt, desc_opt) with
                   | (Some area, Some desc) ->

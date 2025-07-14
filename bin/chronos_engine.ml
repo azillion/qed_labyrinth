@@ -12,14 +12,6 @@ let () =
       Stdio.print_endline "Database connected successfully";
       Lwt_main.run (
         let open Lwt.Syntax in
-        (* Seed the world data from JSON if needed *)
-        let* seed_result = Qed_domain.Seeding_system.seed_world_if_needed () in
-        let* () = match seed_result with
-          | Ok () -> Lwt.return_unit
-          | Error e ->
-              Stdio.eprintf "Seeding failed: %s\n" (Qed_domain.Qed_error.to_string e);
-              Lwt.return (Stdlib.exit 1)
-        in
         let redis_host = Stdlib.Sys.getenv_opt "REDIS_HOST" |> Option.value ~default:"127.0.0.1" in
         let redis_port = 
           match Stdlib.Sys.getenv_opt "REDIS_PORT" with

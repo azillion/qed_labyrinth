@@ -12,6 +12,8 @@ module Internal = struct
     properties: Yojson.Safe.t;
   } [@@deriving yojson { strict = false }]
 
+  type item_in_area = { item_definition_id: string; quantity: int } [@@deriving yojson]
+
   type area = {
     id : string;
     name : string;
@@ -19,6 +21,7 @@ module Internal = struct
     x : int;
     y : int;
     z : int;
+    items : item_in_area list [@default []];
   } [@@deriving yojson { strict = false }]
 
   type exit = {
@@ -71,7 +74,10 @@ let get_item_definitions world =
   )
 
 let get_areas world =
-  List.map world.Internal.areas ~f:(fun a -> (a.Internal.id, a.Internal.name, a.Internal.description, a.Internal.x, a.Internal.y, a.Internal.z))
+  List.map world.Internal.areas ~f:(fun a ->
+    let item_data = List.map a.Internal.items ~f:(fun i -> (i.item_definition_id, i.quantity, a.id)) in
+    (a.id, a.name, a.description, a.x, a.y, a.z, item_data)
+  )
 
 let get_exits world =
   List.map world.Internal.exits ~f:(fun e -> (e.Internal.from_id, e.Internal.to_id, e.Internal.direction)) 
