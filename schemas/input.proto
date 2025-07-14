@@ -35,6 +35,20 @@ message SelectCharacterCommand {
   string character_id = 1;
 }
 
+message TakeCommand {
+  string character_id = 1;
+  string item_entity_id = 2;
+}
+
+message DropCommand {
+  string character_id = 1;
+  string item_entity_id = 2;
+}
+
+message RequestInventoryCommand {
+  string character_id = 1;
+}
+
 message PlayerCommand {
   oneof command {
     MoveCommand            move            = 1;
@@ -42,6 +56,9 @@ message PlayerCommand {
     CreateCharacterCommand create_character = 3;
     ListCharactersCommand  list_characters = 4;
     SelectCharacterCommand select_character = 5;
+    TakeCommand            take             = 6;
+    DropCommand            drop             = 7;
+    RequestInventoryCommand request_inventory = 8;
   }
 }
 

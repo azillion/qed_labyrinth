@@ -62,6 +62,9 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
       | Some (Create_character _) -> "CreateCharacter"
       | Some (List_characters) -> "ListCharacters"
       | Some (Select_character _) -> "SelectCharacter"
+      | Some (Take _) -> "Take"
+      | Some (Drop _) -> "Drop"
+      | Some (Request_inventory _) -> "RequestInventory"
       | None -> "None"
     in
     Stdio.printf "[DEBUG] Converting protobuf event with payload type: %s\n" payload_type
@@ -94,6 +97,12 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) =
           Some (Event.CharacterListRequested { user_id = proto_event.user_id })
       | Select_character select_cmd ->
           Some (Event.CharacterSelected { user_id = proto_event.user_id; character_id = select_cmd.character_id })
+      | Take take_cmd ->
+          Some (Event.TakeItem { user_id = proto_event.user_id; character_id = take_cmd.character_id; item_entity_id = take_cmd.item_entity_id })
+      | Drop drop_cmd ->
+          Some (Event.DropItem { user_id = proto_event.user_id; character_id = drop_cmd.character_id; item_entity_id = drop_cmd.item_entity_id })
+      | Request_inventory inv_cmd ->
+          Some (Event.RequestInventory { user_id = proto_event.user_id; character_id = inv_cmd.character_id })
 
 (* Redis subscriber function *)
 let subscribe_to_player_commands (state : State.t) =
@@ -221,10 +230,15 @@ let process_event (state : State.t) (event : Event.t) =
   | Event.DropItemFailed { user_id; reason } ->
       Publisher.publish_system_message_to_user state user_id reason
   | Event.SendInventory { user_id; items } ->
-      (* TODO: Implement actual serialization once Protobuf schemas are updated. *)
-      let item_names = List.map items ~f:(fun (name, _, _) -> name) |> String.concat ~sep:", " in
-      let%lwt () = Lwt_io.printl (Printf.sprintf "[ITEM] Would send inventory to %s: [%s]" user_id item_names) in
-      Lwt_result.return ()
+      let pb_items = List.map items ~f:(fun (name, description, quantity) ->
+        Schemas_generated.Output.{ name; description; quantity = Int32.of_int_exn quantity }
+      ) in
+      let inventory_list_msg = Schemas_generated.Output.{ items = pb_items } in
+      let output_event = Schemas_generated.Output.{
+        target_user_ids = [user_id];
+        payload = Inventory_list inventory_list_msg;
+      } in
+      Publisher.publish_event state output_event
   | Event.ActionFailed { user_id; reason } ->
       Publisher.publish_system_message_to_user state user_id reason
   (* Add other event handlers here as they are refactored *)

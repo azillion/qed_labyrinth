@@ -29,6 +29,16 @@ message ListCharacter {
   string name = 2;
 }
 
+message InventoryItem {
+  string name = 1;
+  string description = 2;
+  int32 quantity = 3;
+}
+
+message InventoryList {
+  repeated InventoryItem items = 1;
+}
+
 message CharacterList {
   repeated ListCharacter characters = 1;
 }
@@ -69,5 +79,6 @@ message OutputEvent {
     AreaUpdate area_update = 4;
     CharacterList character_list = 5;
     CharacterSheet character_sheet = 6;
+    InventoryList inventory_list = 7;
   }
 }

@@ -119,6 +119,74 @@ export namespace SelectCharacterCommand {
   }
 }
 
+export class TakeCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  getItemEntityId(): string;
+  setItemEntityId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): TakeCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: TakeCommand): TakeCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: TakeCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): TakeCommand;
+  static deserializeBinaryFromReader(message: TakeCommand, reader: jspb.BinaryReader): TakeCommand;
+}
+
+export namespace TakeCommand {
+  export type AsObject = {
+    characterId: string,
+    itemEntityId: string,
+  }
+}
+
+export class DropCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  getItemEntityId(): string;
+  setItemEntityId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DropCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: DropCommand): DropCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: DropCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DropCommand;
+  static deserializeBinaryFromReader(message: DropCommand, reader: jspb.BinaryReader): DropCommand;
+}
+
+export namespace DropCommand {
+  export type AsObject = {
+    characterId: string,
+    itemEntityId: string,
+  }
+}
+
+export class RequestInventoryCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RequestInventoryCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: RequestInventoryCommand): RequestInventoryCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RequestInventoryCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RequestInventoryCommand;
+  static deserializeBinaryFromReader(message: RequestInventoryCommand, reader: jspb.BinaryReader): RequestInventoryCommand;
+}
+
+export namespace RequestInventoryCommand {
+  export type AsObject = {
+    characterId: string,
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -145,6 +213,21 @@ export class PlayerCommand extends jspb.Message {
   getSelectCharacter(): SelectCharacterCommand | undefined;
   setSelectCharacter(value?: SelectCharacterCommand): void;
 
+  hasTake(): boolean;
+  clearTake(): void;
+  getTake(): TakeCommand | undefined;
+  setTake(value?: TakeCommand): void;
+
+  hasDrop(): boolean;
+  clearDrop(): void;
+  getDrop(): DropCommand | undefined;
+  setDrop(value?: DropCommand): void;
+
+  hasRequestInventory(): boolean;
+  clearRequestInventory(): void;
+  getRequestInventory(): RequestInventoryCommand | undefined;
+  setRequestInventory(value?: RequestInventoryCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -163,6 +246,9 @@ export namespace PlayerCommand {
     createCharacter?: CreateCharacterCommand.AsObject,
     listCharacters?: ListCharactersCommand.AsObject,
     selectCharacter?: SelectCharacterCommand.AsObject,
+    take?: TakeCommand.AsObject,
+    drop?: DropCommand.AsObject,
+    requestInventory?: RequestInventoryCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -172,6 +258,9 @@ export namespace PlayerCommand {
     CREATE_CHARACTER = 3,
     LIST_CHARACTERS = 4,
     SELECT_CHARACTER = 5,
+    TAKE = 6,
+    DROP = 7,
+    REQUEST_INVENTORY = 8,
   }
 }
 

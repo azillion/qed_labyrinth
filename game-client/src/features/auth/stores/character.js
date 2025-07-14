@@ -1,6 +1,7 @@
 import { createStore } from "solid-js/store";
 import { createSignal } from "solid-js";
 import { socketManager } from '@lib/socket';
+import { inventoryActions } from '@features/game/stores/inventory';
 
 export const [character, setCharacter] = createStore({
   id: null,
@@ -38,6 +39,7 @@ export const characterHandlers = {
   },
   'CharacterSelected': (payload) => {
     setCharacter(payload.character_sheet);
+    inventoryActions.request();
   },
   'CharacterSelectionFailed': (payload) => {
     setCharacterError(payload.message);

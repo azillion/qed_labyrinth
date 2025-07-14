@@ -131,6 +131,56 @@ export namespace ListCharacter {
   }
 }
 
+export class InventoryItem extends jspb.Message {
+  getName(): string;
+  setName(value: string): void;
+
+  getDescription(): string;
+  setDescription(value: string): void;
+
+  getQuantity(): number;
+  setQuantity(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): InventoryItem.AsObject;
+  static toObject(includeInstance: boolean, msg: InventoryItem): InventoryItem.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: InventoryItem, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): InventoryItem;
+  static deserializeBinaryFromReader(message: InventoryItem, reader: jspb.BinaryReader): InventoryItem;
+}
+
+export namespace InventoryItem {
+  export type AsObject = {
+    name: string,
+    description: string,
+    quantity: number,
+  }
+}
+
+export class InventoryList extends jspb.Message {
+  clearItemsList(): void;
+  getItemsList(): Array<InventoryItem>;
+  setItemsList(value: Array<InventoryItem>): void;
+  addItems(value?: InventoryItem, index?: number): InventoryItem;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): InventoryList.AsObject;
+  static toObject(includeInstance: boolean, msg: InventoryList): InventoryList.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: InventoryList, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): InventoryList;
+  static deserializeBinaryFromReader(message: InventoryList, reader: jspb.BinaryReader): InventoryList;
+}
+
+export namespace InventoryList {
+  export type AsObject = {
+    itemsList: Array<InventoryItem.AsObject>,
+  }
+}
+
 export class CharacterList extends jspb.Message {
   clearCharactersList(): void;
   getCharactersList(): Array<ListCharacter>;
@@ -312,6 +362,11 @@ export class OutputEvent extends jspb.Message {
   getCharacterSheet(): CharacterSheet | undefined;
   setCharacterSheet(value?: CharacterSheet): void;
 
+  hasInventoryList(): boolean;
+  clearInventoryList(): void;
+  getInventoryList(): InventoryList | undefined;
+  setInventoryList(value?: InventoryList): void;
+
   getPayloadCase(): OutputEvent.PayloadCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): OutputEvent.AsObject;
@@ -331,6 +386,7 @@ export namespace OutputEvent {
     areaUpdate?: AreaUpdate.AsObject,
     characterList?: CharacterList.AsObject,
     characterSheet?: CharacterSheet.AsObject,
+    inventoryList?: InventoryList.AsObject,
   }
 
   export enum PayloadCase {
@@ -340,6 +396,7 @@ export namespace OutputEvent {
     AREA_UPDATE = 4,
     CHARACTER_LIST = 5,
     CHARACTER_SHEET = 6,
+    INVENTORY_LIST = 7,
   }
 }
 
