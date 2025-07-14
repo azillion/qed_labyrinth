@@ -33,6 +33,13 @@ let string_of_event_type (event: Event.t) =
   | CharacterCreationFailed _-> "CharacterCreationFailed"
   | CharacterSelectionFailed _-> "CharacterSelectionFailed"
   | AreaQueryFailed _        -> "AreaQueryFailed"
+  | TakeItem _ -> "TakeItem"
+  | DropItem _ -> "DropItem"
+  | RequestInventory _ -> "RequestInventory"
+  | SendInventory _ -> "SendInventory"
+  | TakeItemFailed _ -> "TakeItemFailed"
+  | DropItemFailed _ -> "DropItemFailed"
+  | ActionFailed _ -> "ActionFailed"
   | _ -> "OtherEvent"
 
 (* Helper function to convert protobuf directions to internal directions *)
@@ -202,7 +209,24 @@ let process_event (state : State.t) (event : Event.t) =
       let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[EVENT] CharacterCreated user=%s char_id=%s. Triggering CharacterSelected." user_id character_id)) in
       let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.CharacterSelected { user_id; character_id })) in
       Lwt_result.return ()
-  
+
+  (* Item & Inventory Events *)
+  | Event.TakeItem { user_id; character_id; item_entity_id } ->
+      Item_system.System.handle_take_item state user_id character_id item_entity_id
+  | Event.DropItem { user_id; character_id; item_entity_id } ->
+      Item_system.System.handle_drop_item state user_id character_id item_entity_id
+  | Event.RequestInventory { user_id; character_id } ->
+      Item_system.System.handle_request_inventory state user_id character_id
+  | Event.TakeItemFailed { user_id; reason }
+  | Event.DropItemFailed { user_id; reason } ->
+      Publisher.publish_system_message_to_user state user_id reason
+  | Event.SendInventory { user_id; items } ->
+      (* TODO: Implement actual serialization once Protobuf schemas are updated. *)
+      let item_names = List.map items ~f:(fun (name, _, _) -> name) |> String.concat ~sep:", " in
+      let%lwt () = Lwt_io.printl (Printf.sprintf "[ITEM] Would send inventory to %s: [%s]" user_id item_names) in
+      Lwt_result.return ()
+  | Event.ActionFailed { user_id; reason } ->
+      Publisher.publish_system_message_to_user state user_id reason
   (* Add other event handlers here as they are refactored *)
   | _ -> 
     let* () = Lwt_io.printl (Printf.sprintf "[WARNING] Unhandled event: %s" (string_of_event_type event)) in

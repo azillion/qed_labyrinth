@@ -64,3 +64,12 @@ type t =
 
   (* Presence Events *)
   | UpdateAreaPresence of { area_id: string; characters: Types.list_character list }
+  
+  (* Item & Inventory Events *)
+  | TakeItem of { user_id: string; character_id: string; item_entity_id: string }
+  | DropItem of { user_id: string; character_id: string; item_entity_id: string }
+  | RequestInventory of { user_id: string; character_id: string }
+  | SendInventory of { user_id: string; items: (string * string * int) list } (* name, description, quantity *)
+  | TakeItemFailed of { user_id: string; reason: string }
+  | DropItemFailed of { user_id: string; reason: string }
+  | ActionFailed of { user_id: string; reason: string }
