@@ -31,6 +31,11 @@ type list_character = {
   name : string;
 } [@@deriving yojson]
 
+type list_item = {
+  id : string;
+  name : string;
+} [@@deriving yojson]
+
 type characters_list = {
   characters : list_character list;
 } [@@deriving yojson]
@@ -51,6 +56,7 @@ type area = {
   description : string;
   coordinate : coordinate option;
   exits : exit list;
+  items : list_item list;
   elevation : float option;
   temperature : float option;
   moisture : float option;
@@ -68,6 +74,7 @@ let area_of_model (area_model : Area.t) (exits : Exit.t list) : area =
     description = area_model.description;
     coordinate = Some { x = area_model.x; y = area_model.y; z = area_model.z };
     exits = List.map exit_of_model exits;
+    items = [];
     elevation = area_model.elevation;
     temperature = area_model.temperature;
     moisture = area_model.moisture;

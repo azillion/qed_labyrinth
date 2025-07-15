@@ -11,6 +11,7 @@ export const [area, setArea] = createStore({
     elevation: null,
     temperature: null,
     moisture: null,
+    items: [],
     objects: [], // For future implementation
     characters: [] // For future implementation
 });
@@ -44,11 +45,13 @@ export const areaHandlers = {
         // payload comes directly from protobuf .toObject(); fields are camelCase
         setArea(prev => {
             const exits = (payload.exitsList || []).map(e => ({ direction: e.direction }));
+            const items = (payload.itemsList || []).map(i => ({ id: i.id, name: i.name }));
             return {
                 ...prev,
                 name: payload.name,
                 description: payload.description,
                 exits,
+                items,
                 // Additional optional fields could be added here later
             };
         });

@@ -73,6 +73,30 @@ export namespace Exit {
   }
 }
 
+export class AreaItem extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
+  getName(): string;
+  setName(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): AreaItem.AsObject;
+  static toObject(includeInstance: boolean, msg: AreaItem): AreaItem.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: AreaItem, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): AreaItem;
+  static deserializeBinaryFromReader(message: AreaItem, reader: jspb.BinaryReader): AreaItem;
+}
+
+export namespace AreaItem {
+  export type AsObject = {
+    id: string,
+    name: string,
+  }
+}
+
 export class AreaUpdate extends jspb.Message {
   getAreaId(): string;
   setAreaId(value: string): void;
@@ -87,6 +111,11 @@ export class AreaUpdate extends jspb.Message {
   getExitsList(): Array<Exit>;
   setExitsList(value: Array<Exit>): void;
   addExits(value?: Exit, index?: number): Exit;
+
+  clearItemsList(): void;
+  getItemsList(): Array<AreaItem>;
+  setItemsList(value: Array<AreaItem>): void;
+  addItems(value?: AreaItem, index?: number): AreaItem;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): AreaUpdate.AsObject;
@@ -104,6 +133,7 @@ export namespace AreaUpdate {
     name: string,
     description: string,
     exitsList: Array<Exit.AsObject>,
+    itemsList: Array<AreaItem.AsObject>,
   }
 }
 
@@ -132,6 +162,9 @@ export namespace ListCharacter {
 }
 
 export class InventoryItem extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
   getName(): string;
   setName(value: string): void;
 
@@ -153,6 +186,7 @@ export class InventoryItem extends jspb.Message {
 
 export namespace InventoryItem {
   export type AsObject = {
+    id: string,
     name: string,
     description: string,
     quantity: number,

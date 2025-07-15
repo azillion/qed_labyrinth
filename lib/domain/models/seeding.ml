@@ -12,7 +12,25 @@ module Internal = struct
     properties: Yojson.Safe.t;
   } [@@deriving yojson { strict = false }]
 
-  type item_in_area = { item_definition_id: string; quantity: int } [@@deriving yojson]
+  type item_in_area = { item_definition_id: string; quantity: int }
+
+  (* Manual parser to accept either string or object *)
+  let item_in_area_of_yojson json =
+    match json with
+    | `String id -> Ok { item_definition_id = id; quantity = 1 }
+    | `Assoc _ as j -> (
+        match j with
+        | `Assoc kv -> (
+            let id_opt = List.Assoc.find kv ~equal:String.equal "item_definition_id" |> Option.map ~f:(function `String s -> s | _ -> "") in
+            let qty = match List.Assoc.find kv ~equal:String.equal "quantity" with Some (`Int n) -> n | _ -> 1 in
+            match id_opt with
+            | Some id -> Ok { item_definition_id = id; quantity = qty }
+            | None -> Error "missing id")
+        | _ -> Error "invalid obj")
+    | _ -> Error "Invalid item_in_area"
+
+  let item_in_area_to_yojson (i : item_in_area) =
+    `Assoc [ ("item_definition_id", `String i.item_definition_id); ("quantity", `Int i.quantity) ]
 
   type area = {
     id : string;

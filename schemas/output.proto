@@ -17,11 +17,18 @@ message Exit {
   string direction = 1;
 }
 
+// Represents an item lying on the ground in an area
+message AreaItem {
+  string id = 1;
+  string name = 2;
+}
+
 message AreaUpdate {
   string area_id = 1;
   string name = 2;
   string description = 3;
   repeated Exit exits = 4;
+  repeated AreaItem items = 5;
 }
 
 message ListCharacter {
@@ -30,9 +37,10 @@ message ListCharacter {
 }
 
 message InventoryItem {
-  string name = 1;
-  string description = 2;
-  int32 quantity = 3;
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 quantity = 4;
 }
 
 message InventoryList {

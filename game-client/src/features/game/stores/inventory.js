@@ -13,8 +13,10 @@ export const [error, setError] = createSignal(null);
 // Handlers for WebSocket events from the server
 export const inventoryHandlers = {
   'InventoryList': (payload) => {
-    // payload.items is an array of { name, description, quantity }
-    setInventory(payload.items);
+    // payload.itemsList from protobuf -> include id,name,description,quantity
+    const rawItems = payload.items || [];
+    const items = rawItems.map(i => ({ id: i.id, name: i.name, description: i.description, quantity: i.quantity }));
+    setInventory(items);
     setIsLoading(false);
     setError(null);
   },

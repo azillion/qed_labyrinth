@@ -230,8 +230,8 @@ let process_event (state : State.t) (event : Event.t) =
   | Event.DropItemFailed { user_id; reason } ->
       Publisher.publish_system_message_to_user state user_id reason
   | Event.SendInventory { user_id; items } ->
-      let pb_items = List.map items ~f:(fun (name, description, quantity) ->
-        Schemas_generated.Output.{ name; description; quantity = Int32.of_int_exn quantity }
+      let pb_items = List.map items ~f:(fun (item_id, name_, description_, quantity_) ->
+        Schemas_generated.Output.{ id = item_id; name = name_; description = description_; quantity = Int32.of_int_exn quantity_ }
       ) in
       let inventory_list_msg = Schemas_generated.Output.{ items = pb_items } in
       let output_event = Schemas_generated.Output.{

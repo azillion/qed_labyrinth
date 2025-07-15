@@ -31,3 +31,6 @@ val create :
   (t, Qed_error.t) Result.t Lwt.t
 
 val find_by_id : string -> (t option, Qed_error.t) Result.t Lwt.t 
+
+(* Bulk lookup of item definitions: returns mapping of id -> name *)
+val find_names_by_ids : string list -> ((string * string) list, Qed_error.t) Result.t Lwt.t 

@@ -166,10 +166,63 @@ module Area_query_system = struct
           let%lwt desc_opt = Ecs.DescriptionStorage.get char_id in
           Lwt.return (Option.map desc_opt ~f:(fun d -> d.name))
         in
-        Lwt.return (Option.map name_opt ~f:(fun name -> { Types.id = Uuidm.to_string char_id; name }))
+        Lwt.return (
+          Option.map name_opt ~f:(fun name ->
+            ( { Types.id = Uuidm.to_string char_id; name } : Types.list_character )
+          )
+        )
       ) characters_in_area
     in
     Lwt.return (List.filter_opt char_details)
+
+  (* Find all item entities in the specified area *)
+  let find_items_in_area area_id =
+    let%lwt item_positions = Ecs.ItemPositionStorage.all () in
+    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Found %d item positions" (List.length item_positions)) in
+    let entities_in_area =
+      List.filter item_positions ~f:(fun (_, pos) -> String.equal pos.Components.ItemPositionComponent.area_id area_id)
+      |> List.map ~f:fst
+    in
+    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Entities in area: %d" (List.length entities_in_area)) in
+    List.iter entities_in_area ~f:(fun eid ->
+      Lwt.async (fun () ->
+        let%lwt c = Ecs.ItemStorage.get eid in
+        let has = Option.is_some c in
+        Lwt_io.printl
+          (Printf.sprintf "[DEBUG] eid=%s comp=%b" (Uuidm.to_string eid) has))
+    );
+    (* Fetch all item components first *)
+    let%lwt item_comps =
+      Lwt_list.filter_map_s (fun eid ->
+        let%lwt comp_opt = Ecs.ItemStorage.get eid in
+        Lwt.return (Option.map comp_opt ~f:(fun comp -> (eid, comp)))
+      ) entities_in_area
+    in
+    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Item components: %d" (List.length item_comps)) in
+    let definition_ids = List.map item_comps ~f:(fun (_, comp) -> comp.Components.ItemComponent.item_definition_id) in
+    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Definition ids: %d" (List.length definition_ids)) in
+    let unique_definition_ids = List.dedup_and_sort ~compare:String.compare definition_ids in
+    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Unique definition ids: %d" (List.length unique_definition_ids)) in
+    let%lwt items =
+      let%lwt names_result = Item_definition.find_names_by_ids unique_definition_ids in
+      match names_result with
+      | Error _ ->
+          (* fallback sequential lookup *)
+          Lwt_list.filter_map_s (fun (eid, comp) ->
+            let%lwt def_res = Item_definition.find_by_id comp.Components.ItemComponent.item_definition_id in
+            match def_res with
+            | Ok (Some def) -> Lwt.return_some Types.{ id = Uuidm.to_string eid; name = def.name }
+            | _ -> Lwt.return_none)
+            item_comps
+      | Ok pairs ->
+          let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Items definitions fetched: %d" (List.length pairs)) in
+          let name_map = Map.of_alist_exn (module String) pairs in
+          let mapped = List.filter_map item_comps ~f:(fun (eid, comp) ->
+            Map.find name_map comp.Components.ItemComponent.item_definition_id
+            |> Option.map ~f:(fun name -> Types.{ id = Uuidm.to_string eid; name })) in
+          Lwt.return mapped
+    in
+    Lwt.return items
 
   let rec handle_area_query state user_id area_id =
     let open Lwt_result.Syntax in
@@ -198,6 +251,7 @@ module Area_query_system = struct
               Components.ExitComponent.direction_to_string exit.Exit.direction
             ) in
             let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Found area: %s (id: %s), exits: [%s]" desc.Components.DescriptionComponent.name area_id (String.concat ~sep:", " exit_directions))) in
+            let* items_here = wrap_val (find_items_in_area area_id) in
             let area_info : Types.area = {
               id = area_id;
               name = desc.Components.DescriptionComponent.name;
@@ -208,6 +262,7 @@ module Area_query_system = struct
                 z = area.Components.AreaComponent.z;
               };
               exits = List.map exit_directions ~f:(fun dir -> { Types.direction = dir });
+              items = items_here;
               elevation = area.Components.AreaComponent.elevation;
               temperature = area.Components.AreaComponent.temperature;
               moisture = area.Components.AreaComponent.moisture;
@@ -263,11 +318,15 @@ module Area_query_communication_system = struct
     let exits = List.map area.Types.exits ~f:(fun exit ->
       Schemas_generated.Output.{ direction = exit.Types.direction }
     ) in
+    let items_pb = List.map area.Types.items ~f:(fun item ->
+      (Schemas_generated.Output.{ id = item.Types.id; name = item.Types.name } : Schemas_generated.Output.area_item)
+    ) in
     let area_update = Schemas_generated.Output.{
       area_id = area.Types.id;
       name = area.Types.name;
       description = area.Types.description;
       exits;
+      items = items_pb;
     } in
     let output_event = Schemas_generated.Output.{
       target_user_ids = [user_id];

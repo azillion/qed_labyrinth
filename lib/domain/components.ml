@@ -142,3 +142,12 @@ module InventoryComponent = struct
 
   let table_name = "inventories"
 end
+
+module ItemPositionComponent = struct
+  type t = {
+    entity_id: string;
+    area_id: string; (* Item is located in this area *)
+  } [@@deriving yojson]
+
+  let table_name = "item_positions"
+end

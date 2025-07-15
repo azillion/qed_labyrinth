@@ -12,7 +12,7 @@ let genesis_transaction (world_data : Seeding.t)
   let item_insert_req =
     let open Caqti_type.Std in
     Caqti_request.Infix.((t8 string string string string string float bool (option string) ->. unit)
-        "INSERT INTO item_definitions (id, name, description, item_type, slot, weight, is_stackable, properties) VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb)")
+        "INSERT INTO item_definitions (id, name, description, item_type, slot, weight, is_stackable, properties) VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb) ON CONFLICT (id) DO NOTHING")
   in
   let rec insert_item_defs = function
     | [] -> Lwt_result.return ()
@@ -32,7 +32,7 @@ let genesis_transaction (world_data : Seeding.t)
   let area_insert_req =
     let open Caqti_type.Std in
     Caqti_request.Infix.((t9 string string string int int int (option float) (option float) (option float) ->. unit)
-        "INSERT INTO areas (id, name, description, x, y, z, climate_elevation, climate_temperature, climate_moisture) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        "INSERT INTO areas (id, name, description, x, y, z, climate_elevation, climate_temperature, climate_moisture) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING")
   in
   let rec insert_areas = function
     | [] -> Lwt_result.return ()
@@ -56,7 +56,7 @@ let genesis_transaction (world_data : Seeding.t)
   let exit_insert_req =
     let open Caqti_type.Std in
     Caqti_request.Infix.((t7 string string string string (option string) bool bool ->. unit)
-        "INSERT INTO exits (id, from_area_id, to_area_id, direction, description, hidden, locked) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        "INSERT INTO exits (id, from_area_id, to_area_id, direction, description, hidden, locked) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING")
   in
 
   let rec insert_exits = function
@@ -71,9 +71,9 @@ let genesis_transaction (world_data : Seeding.t)
   in
   let* () = insert_exits (Seeding.get_exits world_data) in
 
-  let entity_insert_req = Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit) "INSERT INTO entities (id) VALUES (?)" in
-  let items_table_insert_req = Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit) "INSERT INTO items (entity_id, data) VALUES (?, ?)" in
-  let pos_table_insert_req = Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit) "INSERT INTO character_positions (entity_id, data) VALUES (?, ?)" in
+  let entity_insert_req = Caqti_request.Infix.(Caqti_type.string ->. Caqti_type.unit) "INSERT INTO entities (id) VALUES (?) ON CONFLICT (id) DO NOTHING" in
+  let items_table_insert_req = Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit) "INSERT INTO items (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO NOTHING" in
+  let pos_table_insert_req = Caqti_request.Infix.(Caqti_type.(t2 string string) ->. Caqti_type.unit) "INSERT INTO item_positions (entity_id, data) VALUES (?, ?) ON CONFLICT (entity_id) DO NOTHING" in
 
   let rec insert_items_in_area = function
     | [] -> Lwt_result.return ()
@@ -83,8 +83,8 @@ let genesis_transaction (world_data : Seeding.t)
         let item_comp = Components.ItemComponent.{ entity_id = item_entity_id_str; item_definition_id = item_def_id; quantity } in
         let item_comp_json = Components.ItemComponent.to_yojson item_comp |> Yojson.Safe.to_string in
         let* () = Db.exec items_table_insert_req (item_entity_id_str, item_comp_json) in
-        let pos_comp = Components.CharacterPositionComponent.{ entity_id = item_entity_id_str; area_id } in
-        let pos_comp_json = Components.CharacterPositionComponent.to_yojson pos_comp |> Yojson.Safe.to_string in
+        let pos_comp = Components.ItemPositionComponent.{ entity_id = item_entity_id_str; area_id } in
+        let pos_comp_json = Components.ItemPositionComponent.to_yojson pos_comp |> Yojson.Safe.to_string in
         let* () = Db.exec pos_table_insert_req (item_entity_id_str, pos_comp_json) in
         insert_items_in_area rest_items
   in

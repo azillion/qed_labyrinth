@@ -1,6 +1,8 @@
 import { createStore } from "solid-js/store";
 import { createSignal } from "solid-js";
 import { socketManager } from '@lib/socket';
+import { area } from './area';
+import { inventoryActions } from './inventory';
 
 // Core chat state 
 export const [messages, setMessages] = createStore([]);
@@ -107,6 +109,18 @@ export const chatActions = {
                 const message = parts.slice(1).join(' ');
                 if (message) {
                     socketManager.send('Say', { content: message });
+                }
+            } else if (command === '/get') {
+                const itemName = parts.slice(1).join(' ').toLowerCase();
+                if (!itemName) {
+                    setError("Usage: /get <item name>");
+                    return;
+                }
+                const item = area.items.find(i => i.name.toLowerCase() === itemName);
+                if (item) {
+                    inventoryActions.take(item.id);
+                } else {
+                    setError("You don't see that here.");
                 }
             } else {
                 // Unknown command - could add error handling here

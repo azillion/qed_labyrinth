@@ -2,6 +2,7 @@ import { Show, createMemo } from "solid-js";
 import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { area, isLoading, error } from "../../features/game/stores/area";
+import { inventoryActions } from "@features/game/stores/inventory";
 import { chatActions } from "@features/game/stores/chat";
 import { userRole } from "@features/auth/stores/auth";
 
@@ -22,6 +23,8 @@ const DIRECTION_ORDER = {
     up: 4,
     down: 5
 };
+
+const hasItems = createMemo(() => area.items && area.items.length > 0);
 
 export const AreaFrame = () => {
     const hasArea = createMemo(() => {
@@ -62,6 +65,24 @@ export const AreaFrame = () => {
                                     </>
                                 ))}
                             </TerminalText>
+                        )}
+                        {hasItems() && (
+                            <div class="mt-4">
+                                <TerminalText class={`${theme().textDim}`}>
+                                    You see here:{" "}
+                                    {area.items.map((item, i) => (
+                                        <>
+                                            <span
+                                                class="cursor-pointer hover:text-white transition-colors select-none"
+                                                onClick={() => inventoryActions.take(item.id)}
+                                            >
+                                                {item.name}
+                                            </span>
+                                            {i < area.items.length - 1 ? ", " : ""}
+                                        </>
+                                    ))}
+                                </TerminalText>
+                            </div>
                         )}
                         <Show when={userRole() === "admin" || userRole() === "super admin"}>
                             <TerminalText class={`${theme().textDim}`}>

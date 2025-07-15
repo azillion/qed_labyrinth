@@ -79,3 +79,23 @@ let find_by_id id =
   match%lwt Database.Pool.use db_operation with
   | Ok result -> Lwt.return_ok result
   | Error err -> Lwt.return_error (DatabaseError (Error.to_string_hum err)) 
+
+(* Bulk lookup names by ids using a single SQL query *)
+let find_names_by_ids ids =
+  match ids with
+  | [] -> Lwt.return_ok []
+  | _ ->
+    let open Caqti_type.Std in
+    let query =
+      Caqti_request.Infix.((string) ->* (t2 string string))
+        "SELECT id, name FROM item_definitions WHERE id = ANY (?::text[])"
+    in
+    let pg_array = "{" ^ (String.concat ~sep:"," ids) ^ "}" in
+    let db_operation (module Db : Caqti_lwt.CONNECTION) =
+      Db.collect_list query pg_array
+    in
+    match%lwt Database.Pool.use db_operation with
+    | Ok pairs ->
+        let pairs_list = List.map pairs ~f:(fun (id, name) -> (id, name)) in
+        Lwt.return_ok pairs_list
+    | Error err -> Lwt.return_error (DatabaseError (Error.to_string_hum err)) 

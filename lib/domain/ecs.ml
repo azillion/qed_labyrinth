@@ -304,39 +304,35 @@ module MakeComponentStorage (C : Component) : ComponentStorage
         Stdio.eprintf "Cannot load components for %s: Redis not connected\n" C.table_name;
         Lwt.return_unit
     | Some redis ->
-        let* redis_result = Redis_lwt.Client.hgetall redis C.table_name in
-        if List.is_empty redis_result then
-          (* Cache miss: Load all from PostgreSQL and populate Redis cache *)
-          let db_operation (module Db : Caqti_lwt.CONNECTION) =
-            find_all_from_db (module Db)
-          in
-          let* result = Database.Pool.use db_operation in
-          (match result with
-          | Ok components ->
-              let redis_payload = List.map components ~f:(fun (id, comp) ->
-                let json_str = comp |> [%to_yojson: C.t] |> Yojson.Safe.to_string in
-                (Uuidm.to_string id, json_str)
-              ) in
-              if not (List.is_empty redis_payload) then
+        (* Always refresh from PostgreSQL, then overwrite Redis cache *)
+        let db_operation (module Db : Caqti_lwt.CONNECTION) =
+          find_all_from_db (module Db)
+        in
+        let* result = Database.Pool.use db_operation in
+        (match result with
+        | Ok components ->
+            (* Update in-memory store *)
+            Hashtbl.clear store;
+            List.iter components ~f:(fun (id, comp) ->
+              Hashtbl.set store ~key:id ~data:comp);
+
+            (* Write fresh cache to Redis *)
+            let redis_payload = List.map components ~f:(fun (id, comp) ->
+              let json_str = comp |> [%to_yojson: C.t] |> Yojson.Safe.to_string in
+              (Uuidm.to_string id, json_str))
+            in
+            let%lwt () =
+              if List.is_empty redis_payload then Lwt.return_unit
+              else (
+                let%lwt _ = Redis_lwt.Client.del redis [C.table_name] in
                 let%lwt _ = Redis_lwt.Client.hmset redis C.table_name redis_payload in
-                Lwt.return_unit
-              else Lwt.return_unit
-          | Error e ->
-              Stdio.eprintf "Failed to load components for %s from DB: %s\n"
-                C.table_name (Error.to_string_hum e);
-              Lwt.return_unit)
-        else
-          (* Cache hit: Load from Redis *)
-          Lwt_list.iter_s (fun (entity_id_str, json_str) ->
-            match Uuidm.of_string entity_id_str with
-            | None -> Lwt.return_unit (* Skip invalid UUIDs *)
-            | Some entity_id ->
-                match json_str |> Yojson.Safe.from_string |> [%of_yojson: C.t] with
-                | Ok component ->
-                    Hashtbl.set store ~key:entity_id ~data:component;
-                    Lwt.return_unit
-                | Error _ -> Lwt.return_unit (* Skip parse errors *)
-          ) redis_result
+                Lwt.return_unit)
+            in
+            Lwt.return_unit
+        | Error e ->
+            Stdio.eprintf "Failed to load components for %s from DB: %s\n"
+              C.table_name (Error.to_string_hum e);
+            Lwt.return_unit)
 end
 
 (* Example component *)
@@ -363,6 +359,7 @@ module ActionPointsStorage = MakeComponentStorage(ActionPointsComponent)
 module AreaStorage = MakeComponentStorage(AreaComponent)
 module ItemStorage = MakeComponentStorage(ItemComponent)
 module InventoryStorage = MakeComponentStorage(InventoryComponent)
+module ItemPositionStorage = MakeComponentStorage(ItemPositionComponent)
 
 (* World module *)
 module World = struct
@@ -406,8 +403,11 @@ module World = struct
       let* () = ActionPointsStorage.load_from_db () in
       let* () = AreaStorage.load_from_db () in
       let* () = DescriptionStorage.load_from_db () in
-      let* () = ItemStorage.load_from_db () in
+      let%lwt () = ItemStorage.load_from_db () in
+      let%lwt all_items = ItemStorage.all () in
+      let%lwt () = Lwt_io.printl (Printf.sprintf "[DEBUG] ItemStorage loaded: %d items" (List.length all_items)) in
       let* () = InventoryStorage.load_from_db () in
+      let* () = ItemPositionStorage.load_from_db () in
       (* NOTE: We do not load CharacterStorage, DescriptionStorage, or CoreStatsStorage
          as they were removed from this persistence layer in Phase 1. *)
       Lwt.return_ok ()
@@ -423,6 +423,7 @@ module World = struct
       let* () = DescriptionStorage.sync_to_db (module Db) in
       let* () = ItemStorage.sync_to_db (module Db) in
       let* () = InventoryStorage.sync_to_db (module Db) in
+      let* () = ItemPositionStorage.sync_to_db (module Db) in
       (* Sync other component storages here *)
       
       let deleted = Entity.cleanup_deleted () in

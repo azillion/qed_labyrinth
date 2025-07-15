@@ -31,6 +31,11 @@ type list_character = {
   name : string;
 } [@@deriving yojson]
 
+type list_item = {
+  id : string;
+  name : string;
+} [@@deriving yojson]
+
 type characters_list = {
   characters : list_character list;
 } [@@deriving yojson]
@@ -54,6 +59,7 @@ type area = {
   description : string;
   coordinate : coordinate option;
   exits : exit list;
+  items : list_item list; (* Area ground items *)
   elevation : float option;
   temperature : float option;
   moisture : float option;

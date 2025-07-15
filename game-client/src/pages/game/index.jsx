@@ -1,7 +1,6 @@
 import { createMemo, createEffect, onCleanup } from "solid-js";
 
 import { StatusFrame } from "./status";
-import { InventoryFrame } from "./inventory";
 import { AreaFrame } from "./area";
 import { ChatFrame } from "./chat";
 import { CommandInput } from "./command";

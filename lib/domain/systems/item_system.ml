@@ -41,16 +41,17 @@ module System = struct
     in
 
     let* char_pos = Ecs.CharacterPositionStorage.get char_entity |> Lwt.map (Result.of_option ~error:(LogicError "Character has no position")) in
-    let* item_pos_opt = wrap_val (Ecs.CharacterPositionStorage.get item_entity) in
+    let* item_pos_opt = wrap_val (Ecs.ItemPositionStorage.get item_entity) in
 
     match item_pos_opt with
-    | Some item_pos when String.equal item_pos.Components.CharacterPositionComponent.area_id char_pos.area_id ->
-        let* () = wrap_ok (Ecs.CharacterPositionStorage.remove item_entity) in
+    | Some item_pos when String.equal item_pos.area_id char_pos.area_id ->
+        let* () = wrap_ok (Ecs.ItemPositionStorage.remove item_entity) in
         let* inventory = wrap_val (get_character_inventory char_entity) in
         let updated_inventory = { inventory with items = item_entity_id :: inventory.items } in
         let* () = wrap_ok (Ecs.InventoryStorage.set char_entity updated_inventory) in
         let* () = Publisher.publish_system_message_to_user state user_id "You take the item." in
         let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.RequestInventory { user_id; character_id })) in
+        let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.AreaQuery { user_id; area_id = char_pos.area_id })) in
         Lwt_result.return ()
     | _ ->
         let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.ActionFailed { user_id; reason = "The item is not here." })) in
@@ -77,14 +78,16 @@ module System = struct
       let* item_entity =
         Uuidm.of_string item_entity_id |> Lwt.return |> Lwt.map (Result.of_option ~error:(LogicError "Invalid item entity ID"))
       in
-      let new_item_pos = Components.CharacterPositionComponent.{
+      let new_item_pos = Components.ItemPositionComponent.{
         entity_id = item_entity_id;
         area_id = char_pos.area_id;
       } in
-      let* () = wrap_ok (Ecs.CharacterPositionStorage.set item_entity new_item_pos) in
+      let* () = wrap_ok (Ecs.ItemPositionStorage.set item_entity new_item_pos) in
+      let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[DROP] inserted ItemPosition (%s → %s)" item_entity_id char_pos.area_id)) in
 
       let* () = Publisher.publish_system_message_to_user state user_id "You drop the item." in
       let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.RequestInventory { user_id; character_id })) in
+      let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.AreaQuery { user_id; area_id = char_pos.area_id })) in
       Lwt_result.return ()
 
   (* Build inventory details and queue SendInventory event *)
@@ -96,7 +99,7 @@ module System = struct
     let* inventory = wrap_val (get_character_inventory char_entity) in
 
     (* Helper to resolve an item entity to details *)
-    let build_item_details (item_eid_str : string) : (string * string * int) option Lwt.t =
+    let build_item_details (item_eid_str : string) : (string * string * string * int) option Lwt.t =
       match Uuidm.of_string item_eid_str with
       | None -> Lwt.return_none
       | Some item_eid ->
@@ -106,7 +109,7 @@ module System = struct
           | Some item_comp ->
               let%lwt def_res = Item_definition.find_by_id item_comp.item_definition_id in
               (match def_res with
-              | Ok (Some def) -> Lwt.return_some (def.name, def.description, item_comp.quantity)
+              | Ok (Some def) -> Lwt.return_some (item_eid_str, def.name, def.description, item_comp.quantity)
               | _ -> Lwt.return_none))
     in
 
