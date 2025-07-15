@@ -6,23 +6,18 @@ module System = struct
     match char_entity_opt with
     | None -> Lwt.return_none
     | Some char_entity_id ->
-        let%lwt desc_opt = Ecs.DescriptionStorage.get char_entity_id in
-        Lwt.return (Option.map desc_opt ~f:(fun d -> d.name))
+        let char_id_str = Uuidm.to_string char_entity_id in
+        let%lwt char_res = Character.find_by_id char_id_str in
+        (match char_res with
+        | Ok (Some char_record) -> Lwt.return (Some char_record.name)
+        | Ok None -> Lwt.return_none
+        | Error _ -> Lwt.return_none)
 
   let handle_player_moved (state : State.t) user_id _old_area_id new_area_id _direction =
     let open Lwt_result.Syntax in
 
-    (* Check if the new area is loaded, and load it if not. *)
-    let* () =
-      (match Uuidm.of_string new_area_id with
-      | None -> Error_utils.wrap_ok Lwt.return_unit
-      | Some entity_id ->
-          let%lwt is_loaded = Ecs.AreaStorage.get entity_id in
-          if Option.is_none is_loaded then
-            Error_utils.wrap_ok (Infra.Queue.push state.event_queue (Event.LoadAreaIntoECS { area_id = new_area_id }))
-          else
-            Error_utils.wrap_ok (Lwt.return_unit))
-    in
+    (* Area data now always available via relational storage; no ECS load needed. *)
+    let* () = Error_utils.wrap_ok Lwt.return_unit in
 
     (* 1. Client movement is now handled by the API server via Redis events *)
 

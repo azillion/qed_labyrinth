@@ -351,12 +351,10 @@ module PositionStorage = MakeComponentStorage(Position) *)
 open Components
 module CharacterStorage = MakeComponentStorage(CharacterComponent)
 module CharacterPositionStorage = MakeComponentStorage(CharacterPositionComponent)
-module DescriptionStorage = MakeComponentStorage(DescriptionComponent)
 module CoreStatsStorage = MakeComponentStorage(CoreStatsComponent)
 module DerivedStatsStorage = MakeComponentStorage(DerivedStatsComponent)
 module HealthStorage = MakeComponentStorage(HealthComponent)
 module ActionPointsStorage = MakeComponentStorage(ActionPointsComponent)
-module AreaStorage = MakeComponentStorage(AreaComponent)
 module ItemStorage = MakeComponentStorage(ItemComponent)
 module InventoryStorage = MakeComponentStorage(InventoryComponent)
 module ItemPositionStorage = MakeComponentStorage(ItemPositionComponent)
@@ -401,15 +399,11 @@ module World = struct
       let* () = DerivedStatsStorage.load_from_db () in
       let* () = HealthStorage.load_from_db () in
       let* () = ActionPointsStorage.load_from_db () in
-      let* () = AreaStorage.load_from_db () in
-      let* () = DescriptionStorage.load_from_db () in
       let%lwt () = ItemStorage.load_from_db () in
       let%lwt all_items = ItemStorage.all () in
       let%lwt () = Lwt_io.printl (Printf.sprintf "[DEBUG] ItemStorage loaded: %d items" (List.length all_items)) in
       let* () = InventoryStorage.load_from_db () in
       let* () = ItemPositionStorage.load_from_db () in
-      (* NOTE: We do not load CharacterStorage, DescriptionStorage, or CoreStatsStorage
-         as they were removed from this persistence layer in Phase 1. *)
       Lwt.return_ok ()
 
   let sync_to_db () =
@@ -419,8 +413,6 @@ module World = struct
       let* () = DerivedStatsStorage.sync_to_db (module Db) in
       let* () = HealthStorage.sync_to_db (module Db) in
       let* () = ActionPointsStorage.sync_to_db (module Db) in
-      let* () = AreaStorage.sync_to_db (module Db) in
-      let* () = DescriptionStorage.sync_to_db (module Db) in
       let* () = ItemStorage.sync_to_db (module Db) in
       let* () = InventoryStorage.sync_to_db (module Db) in
       let* () = ItemPositionStorage.sync_to_db (module Db) in

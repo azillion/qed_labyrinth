@@ -21,14 +21,7 @@ let handle_load_character state character_id =
             entity_id = character_id;
             user_id = character.user_id;
           } in
-          let description_component = Components.DescriptionComponent.{
-            entity_id = character_id;
-            name = character.name;
-            description = None;
-          } in
-
           let* () = wrap_ok (Ecs.CharacterStorage.set entity_id character_component) in
-          let* () = wrap_ok (Ecs.DescriptionStorage.set entity_id description_component) in
 
           (* Core stats *)
           let core_stats_component = Components.CoreStatsComponent.{

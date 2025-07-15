@@ -14,8 +14,11 @@ module System = struct
             None))
 
   let get_character_name entity_id =
-    let%lwt desc_opt = Ecs.DescriptionStorage.get entity_id in
-    Lwt.return (Option.map desc_opt ~f:(fun d -> d.name))
+    let char_id_str = Uuidm.to_string entity_id in
+    let%lwt char_res = Character.find_by_id char_id_str in
+    match char_res with
+    | Ok (Some char_record) -> Lwt.return (Some char_record.name)
+    | _ -> Lwt.return_none
 
   let get_character_position entity_id =
     Ecs.CharacterPositionStorage.get entity_id

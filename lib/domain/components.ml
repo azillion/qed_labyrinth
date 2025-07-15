@@ -17,27 +17,15 @@ module CharacterPositionComponent = struct
 end
 
 module DescriptionComponent = struct
-  type t = {
-    entity_id: string;
-    name: string;
-    description: string option;
-  } [@@deriving yojson]
-
-  let table_name = "descriptions"
+  (* Deprecated – description data now lives in Tier-1 relational tables. *)
+  type t = unit [@@deriving yojson]
+  let table_name = "descriptions_removed"
 end
 
 module AreaComponent = struct
-  type t = {
-    entity_id: string;
-    x: int;
-    y: int;
-    z: int;
-    elevation: float option;
-    temperature: float option;
-    moisture: float option;
-  } [@@deriving yojson]
-
-  let table_name = "area_components"
+  (* Deprecated – area data now lives in Tier-1 relational tables. *)
+  type t = unit [@@deriving yojson]
+  let table_name = "area_components_removed"
 end
 
 module ExitComponent = struct

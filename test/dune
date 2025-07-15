@@ -1,5 +1,5 @@
 (tests
- (names test test_seeding)
+ (names test)
  (libraries
   qed_labyrinth
   qed_labyrinth.infra
