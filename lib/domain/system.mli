@@ -8,11 +8,13 @@ module type S = sig
       Used for logging and metrics. *)
   val name : string
 
-  (** The specific event payload this system handles. *)
+  (** The specific event payload this system handles, if any.
+      For tick-based systems, this can be `unit`. *)
   type event
 
   (** A safe casting function from the generic event type to this system's
-      specific event type. Returns None if the event is not for this system. *)
+      specific event type. Returns None if the event is not for this system.
+      For tick-based systems, this should always return None. *)
   val event_type : Event.t -> event option
 
   (** The core logic of the system.
@@ -29,7 +31,17 @@ end
   (logging, metrics, timing) and a standardized handler interface.
 *)
 module Make (Sys : S) : sig
-  (** The standardized `handle` function that is registered with the scheduler.
-      It performs the event type check and calls the wrapped `execute` function. *)
+  (** The standardized `handle` function that is registered with the scheduler. *)
+  val handle : State.t -> string option -> Event.t option -> (unit, Qed_error.t) Result.t Lwt.t
+end
+
+(** A specialized interface for systems that run on every tick. *)
+module type Tickable = sig
+  val name : string
+  val execute : State.t -> (unit, Qed_error.t) Result.t Lwt.t
+end
+
+(** A functor that wraps a tick-based system with observability. *)
+module MakeTickable (Sys : Tickable) : sig
   val handle : State.t -> string option -> Event.t option -> (unit, Qed_error.t) Result.t Lwt.t
 end 
