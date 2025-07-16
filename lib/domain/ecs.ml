@@ -1,3 +1,4 @@
+[@@@ocaml.warning "-32"]
 open Base
 open Lwt.Syntax
 open Infra
@@ -132,6 +133,30 @@ module type ComponentStorage = sig
   val load_from_db : unit -> unit Lwt.t
   val clear_modified : unit -> unit
   val get_modified : unit -> Entity.t list
+end
+
+(* ------------------------------------------------------------------------- *)
+(* Storage Registry - keeps track of all component storages                   *)
+(* ------------------------------------------------------------------------- *)
+
+module StorageRegistry : sig
+  val register : string -> (module ComponentStorage) -> unit
+  val get_all_modified_components : unit -> Set.M(String).t
+  val clear_all_modified : unit -> unit
+end = struct
+  type storage = (module ComponentStorage)
+
+  let registry : (string, storage) Hashtbl.t = Hashtbl.create (module String)
+
+  let register name storage = Hashtbl.set registry ~key:name ~data:storage
+
+  let get_all_modified_components () =
+    Hashtbl.fold registry ~init:(Set.empty (module String))
+      ~f:(fun ~key ~data:(module S : ComponentStorage) acc ->
+        if not (List.is_empty (S.get_modified ())) then Set.add acc key else acc)
+
+  let clear_all_modified () =
+    Hashtbl.iter registry ~f:(fun (module S : ComponentStorage) -> S.clear_modified ())
 end
 
 (* Functor to create component storage *)
@@ -333,6 +358,21 @@ module MakeComponentStorage (C : Component) : ComponentStorage
             Stdio.eprintf "Failed to load components for %s from DB: %s\n"
               C.table_name (Error.to_string_hum e);
             Lwt.return_unit)
+
+  (* Register this storage with the global registry *)
+  module Self = struct
+    type nonrec component = component
+    let set = set
+    let get = get
+    let remove = remove
+    let all = all
+    let sync_to_db = sync_to_db
+    let load_from_db = load_from_db
+    let clear_modified = clear_modified
+    let get_modified = get_modified
+  end
+
+  let () = StorageRegistry.register C.table_name (module Self : ComponentStorage)
 end
 
 (* Example component *)
@@ -359,6 +399,9 @@ module ItemStorage = MakeComponentStorage(ItemComponent)
 module InventoryStorage = MakeComponentStorage(InventoryComponent)
 module ItemPositionStorage = MakeComponentStorage(ItemPositionComponent)
 
+(* Added Unconscious component storage *)
+module UnconsciousStorage = MakeComponentStorage(Unconscious_component)
+
 (* World module *)
 module World = struct
   (* System with priority *)
@@ -369,19 +412,6 @@ module World = struct
 
   (* Store systems in a sorted list (by priority) *)
   let systems : system list ref = ref []
-
-  (* Register a system with a priority (lower numbers run first) *)
-  let register_system ?(priority=100) execute =
-    let new_system = { priority; execute } in
-    (* Insert the system in the correct position based on priority *)
-    let rec insert_sorted system = function
-      | [] -> [system]
-      | head :: tail when system.priority < head.priority -> 
-          system :: head :: tail
-      | head :: tail -> 
-          head :: (insert_sorted system tail)
-    in
-    systems := insert_sorted new_system !systems
 
   (* Execute systems in their sorted order *)
   let step () =
@@ -449,4 +479,6 @@ module World = struct
         else 
           let () = Stdio.eprintf "Database sync error: %s\n" (Exn.to_string exn) in
           Lwt.return_unit)
+
+  module StorageRegistry = StorageRegistry
 end

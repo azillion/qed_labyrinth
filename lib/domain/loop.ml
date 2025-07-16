@@ -82,7 +82,8 @@ let subscribe_to_player_commands (state : State.t) =
   let reply_stream = Redis_lwt.Client.stream subscriber_conn in
   Lwt_stream.iter_s (fun reply_parts ->
     match reply_parts with
-    | [`Bulk (Some "message"); _; `Bulk (Some message_content)] ->
+    | [`Bulk (Some "message"); `Bulk (Some channel); `Bulk (Some message_content)] ->
+      let%lwt () = Monitoring.Log.debug "Received message from Redis" ~data:[("channel", channel)] () in
       (try
         let proto_event = Schemas_generated.Input.decode_pb_input_event (Pbrt.Decoder.of_string message_content) in
         match event_of_protobuf proto_event with
@@ -104,9 +105,18 @@ let rec game_loop (state : State.t) =
     (fun () ->
       let loop_start_time = Unix.gettimeofday () in
       let* () = tick state in
-      let* () = Scheduler.run PreUpdate state in
-      let* () = Scheduler.run Update state in
-      let* () = Scheduler.run PostUpdate state in
+      (* Drain event queue once at start of frame *)
+      let rec drain acc =
+        match%lwt Infra.Queue.pop_opt state.event_queue with
+        | None -> Lwt.return (List.rev acc)
+        | Some (trace_id_opt, ev) ->
+            drain ((trace_id_opt, ev) :: acc)
+      in
+      let* events_for_tick = drain [] in
+
+      let* () = Scheduler.run ~events:events_for_tick PreUpdate state in
+      let* () = Scheduler.run ~events:events_for_tick Update state in
+      let* () = Scheduler.run ~events:events_for_tick PostUpdate state in
       let* () = Ecs.World.step () in
       let* () =
         Lwt.catch

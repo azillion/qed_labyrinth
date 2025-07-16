@@ -65,7 +65,7 @@ module MakeTickable (Sys : Tickable) = struct
     let start_time = Unix.gettimeofday () in
     let data = [ ("system", Sys.name); ("trigger", "OnTick") ] in
 
-    let* () = Monitoring.Log.debug "Executing tickable system" ~data () in
+    (* let* () = Monitoring.Log.debug "Executing tickable system" ~data () in *)
     let%lwt result = Sys.execute state in
     let duration = Unix.gettimeofday () -. start_time in
     Monitoring.Metrics.observe_duration (Sys.name ^ "_duration_seconds") duration;

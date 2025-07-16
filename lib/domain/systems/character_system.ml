@@ -9,8 +9,13 @@ module CharacterListLogic : System.S with type event = Event.character_list_requ
 
   let execute state trace_id payload =
     let user_id = (payload : event).user_id in
-    let open Lwt_result.Syntax in
-    let* db_chars = Character.find_all_by_user ~user_id in
+    let open Lwt.Syntax in
+    let* () = Infra.Monitoring.Log.debug "Executing character list system" ~data:[("trace_id", Option.value trace_id ~default:"N/A")] () in
+    let%lwt db_chars_result = Character.find_all_by_user ~user_id in
+    let* db_chars = match db_chars_result with
+      | Ok chars -> Lwt.return chars
+      | Error e -> Lwt.fail (Failure (Qed_error.to_string e))
+    in
     let pb_characters =
       List.map db_chars ~f:(fun c ->
         (Schemas_generated.Output.{ id = c.id; name = c.name }
@@ -20,10 +25,14 @@ module CharacterListLogic : System.S with type event = Event.character_list_requ
     let output_event : Schemas_generated.Output.output_event = {
       target_user_ids = [user_id];
       payload = Character_list character_list_msg;
-      trace_id = ""
+      trace_id = Option.value trace_id ~default:""
     } in
-    let* () = Publisher.publish_event state ?trace_id output_event in
-    Lwt_result.return ()
+    let%lwt publish_result = Publisher.publish_event state ?trace_id output_event in
+    let* () = match publish_result with
+      | Ok () -> Lwt.return ()
+      | Error e -> Lwt.fail (Failure (Qed_error.to_string e))
+    in
+    Lwt.return_ok ()
 end
 module CharacterList = System.Make(CharacterListLogic)
 

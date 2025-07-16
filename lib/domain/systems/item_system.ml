@@ -120,7 +120,19 @@ module RequestInventoryLogic : System.S with type event = Event.request_inventor
     in
     let* detail_options = wrap_val (Lwt_list.map_s build_item_details inventory.items) in
     let successful_items = List.filter_map detail_options ~f:Fn.id in
-    let* () = wrap_ok (State.enqueue ?trace_id state (Event.SendInventory { user_id; items = successful_items })) in
+
+    (* Build protobuf items *)
+    let pb_items =
+      List.map successful_items ~f:(fun (id, name, description, quantity) ->
+        (Schemas_generated.Output.{ id; name; description; quantity = Int32.of_int_exn quantity } : Schemas_generated.Output.inventory_item))
+    in
+    let inventory_list : Schemas_generated.Output.inventory_list = { items = pb_items } in
+    let output_event : Schemas_generated.Output.output_event = {
+      target_user_ids = [user_id];
+      payload = Inventory_list inventory_list;
+      trace_id = Option.value trace_id ~default:""
+    } in
+    let* () = Publisher.publish_event state ?trace_id output_event in
     Lwt_result.return ()
 end
 module RequestInventory = System.Make(RequestInventoryLogic) 
