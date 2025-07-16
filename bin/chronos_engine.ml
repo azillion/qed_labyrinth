@@ -21,9 +21,19 @@ let () =
         Dispatcher.register "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
         Dispatcher.register "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle;
         Dispatcher.register "Move" Movement_system.Move.handle;
-        Dispatcher.register "PlayerMoved" Presence_system.PlayerMoved.handle
+        Dispatcher.register "PlayerMoved" Presence_system.PlayerMoved.handle;
+        (* Communication systems *)
+        Dispatcher.register "Say" Communication_system.Say.handle;
+        Dispatcher.register "Announce" Communication_system.Announce.handle;
+        Dispatcher.register "Tell" Communication_system.Tell.handle;
+        Dispatcher.register "RequestChatHistory" Communication_system.RequestChatHistory.handle;
+        Dispatcher.register "SendChatHistory" Communication_system.SendChatHistory.handle;
+        (* Area management systems *)
+        Dispatcher.register "AreaQuery" Area_management_system.AreaQuery.handle;
+        Dispatcher.register "AreaQueryResult" Area_management_system.AreaQueryResult.handle;
+        Dispatcher.register "LoadAreaIntoECS" Area_loading_system.LoadArea.handle
       in
-      Stdio.print_endline "Systems registered.";
+      Stdio.print_endline "All systems registered.";
       (* --- End System Registration --- *)
 
       Stdio.print_endline "Database connected successfully";
