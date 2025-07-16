@@ -10,30 +10,34 @@ module type S = sig
 end
 
 module Make (Sys : S) = struct
-  let handle (state : State.t) (trace_id : string option) (event : Event.t) =
-    match Sys.event_type event with
+  let handle (state : State.t) (trace_id : string option) (event_opt : Event.t option) =
+    match event_opt with
     | None ->
-        (* This should not happen if the dispatcher is correct, but is a safeguard. *)
+        (* This could be a tick-based system without an event. We could add a separate
+           execute_on_tick to the interface later if needed. For now, we do nothing. *)
         Lwt.return_ok ()
-    | Some specific_event ->
-        let start_time = Unix.gettimeofday () in
-        let trace_id_str = Option.value trace_id ~default:"N/A" in
-        let data = [("system", Sys.name); ("trace_id", trace_id_str)] in
-
-        let* () = Monitoring.Log.debug "Executing system" ~data () in
-        let%lwt result = Sys.execute state trace_id specific_event in
-        let duration = Unix.gettimeofday () -. start_time in
-
-        Monitoring.Metrics.observe_duration (Sys.name ^ "_duration_seconds") duration;
-
-        (match result with
-        | Ok () ->
-            Monitoring.Metrics.inc (Sys.name ^ "_success_total");
-            let* () = Monitoring.Log.debug "System executed successfully" ~data () in
+    | Some event ->
+        (match Sys.event_type event with
+        | None ->
             Lwt.return_ok ()
-        | Error e ->
-            let error_str = Qed_error.to_string e in
-            Monitoring.Metrics.inc (Sys.name ^ "_error_total");
-            let* () = Monitoring.Log.error "System execution failed" ~data:([("error", error_str)] @ data) () in
-            Lwt.return_error e)
+        | Some specific_event ->
+            let start_time = Unix.gettimeofday () in
+            let trace_id_str = Option.value trace_id ~default:"N/A" in
+            let data = [ ("system", Sys.name); ("trace_id", trace_id_str) ] in
+
+            let* () = Monitoring.Log.debug "Executing system" ~data () in
+            let%lwt result = Sys.execute state trace_id specific_event in
+            let duration = Unix.gettimeofday () -. start_time in
+            Monitoring.Metrics.observe_duration (Sys.name ^ "_duration_seconds") duration;
+
+            (match result with
+            | Ok () ->
+                Monitoring.Metrics.inc (Sys.name ^ "_success_total");
+                let* () = Monitoring.Log.debug "System executed successfully" ~data () in
+                Lwt.return_ok ()
+            | Error e ->
+                let error_str = Qed_error.to_string e in
+                Monitoring.Metrics.inc (Sys.name ^ "_error_total");
+                let* () = Monitoring.Log.error "System execution failed" ~data:([ ("error", error_str) ] @ data) () in
+                Lwt.return_error e))
 end 

@@ -29,7 +29,7 @@ end
   (logging, metrics, timing) and a standardized handler interface.
 *)
 module Make (Sys : S) : sig
-  (** The standardized `handle` function that is registered with the dispatcher.
+  (** The standardized `handle` function that is registered with the scheduler.
       It performs the event type check and calls the wrapped `execute` function. *)
-  val handle : State.t -> string option -> Event.t -> (unit, Qed_error.t) Result.t Lwt.t
+  val handle : State.t -> string option -> Event.t option -> (unit, Qed_error.t) Result.t Lwt.t
 end 
