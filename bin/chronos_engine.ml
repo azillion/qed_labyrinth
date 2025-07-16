@@ -14,7 +14,12 @@ let () =
       let () =
         Dispatcher.register "TakeItem" Item_system.TakeItem.handle;
         Dispatcher.register "DropItem" Item_system.DropItem.handle;
-        Dispatcher.register "RequestInventory" Item_system.RequestInventory.handle
+        Dispatcher.register "RequestInventory" Item_system.RequestInventory.handle;
+        Dispatcher.register "CharacterListRequested" Character_system.CharacterList.handle;
+        Dispatcher.register "CreateCharacter" Character_system.CharacterCreate.handle;
+        Dispatcher.register "CharacterSelected" Character_system.CharacterSelect.handle;
+        Dispatcher.register "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
+        Dispatcher.register "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle
       in
       Stdio.print_endline "Systems registered.";
       (* --- End System Registration --- *)

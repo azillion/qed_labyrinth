@@ -1,74 +1,74 @@
-(* This file contains both character system and character communication system modules *)
+open Base
+open Error_utils
 
-module Character_list_system = struct
+(* --- Character List System --- *)
+module CharacterListLogic : System.S with type event = Event.character_list_requested_payload = struct
+  let name = "character-list"
+  type event = Event.character_list_requested_payload
+  let event_type = function Event.CharacterListRequested e -> Some e | _ -> None
 
-  let handle_character_list_requested state user_id =
+  let execute state trace_id payload =
+    let user_id = (payload : event).user_id in
     let open Lwt_result.Syntax in
-    (* 1. Fetch all character blueprints for the user from the relational DB. *)
     let* db_chars = Character.find_all_by_user ~user_id in
-
-    (* 2. Convert the relational records to the protobuf format. *)
     let pb_characters =
-      Base.List.map db_chars ~f:(fun c ->
+      List.map db_chars ~f:(fun c ->
         (Schemas_generated.Output.{ id = c.id; name = c.name }
           : Schemas_generated.Output.list_character))
     in
     let character_list_msg : Schemas_generated.Output.character_list = { characters = pb_characters } in
-    
-    (* 3. Create the final output event payload. *)
     let output_event : Schemas_generated.Output.output_event = {
       target_user_ids = [user_id];
       payload = Character_list character_list_msg;
-      trace_id = "";
+      trace_id = ""
     } in
-
-    (* 4. Publish the event to the user. *)
-    let* () = Publisher.publish_event state output_event in
+    let* () = Publisher.publish_event state ?trace_id output_event in
     Lwt_result.return ()
+end
+module CharacterList = System.Make(CharacterListLogic)
 
-  (* System implementation for ECS *)
-  let priority = 100
 
-  let execute () =
-    (* This system doesn't need to run on every tick *)
-    Lwt.return_unit
-end 
+(* --- Character Creation System --- *)
+module CharacterCreateLogic : System.S with type event = Event.create_character_payload = struct
+  let name = "character-create"
+  type event = Event.create_character_payload
+  let event_type = function Event.CreateCharacter e -> Some e | _ -> None
 
-module Character_creation_system = struct
-  let handle_create_character state user_id name _description _starting_area_id might finesse wits grit presence =
+  let execute state trace_id payload =
+    let user_id = (payload : event).user_id in
+    let name = payload.name in
+    let might = payload.might in
+    let finesse = payload.finesse in
+    let wits = payload.wits in
+    let grit = payload.grit in
+    let presence = payload.presence in
     let open Lwt_result.Syntax in
-    (* Call the Character.create function from relational model *)
     let* character = Character.create ~user_id ~name ~might ~finesse ~wits ~grit ~presence in
-    (* Log creation for observability *)
-    Stdio.printf "[CREATE_CHARACTER] user=%s character_id=%s name=%s\n" user_id character.id name;
-    (* Queue CharacterCreated event on success *)
-    let%lwt () = State.enqueue state (Event.CharacterCreated { user_id; character_id = character.id }) in
+    let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterCreated { user_id; character_id = character.id })) in
     Lwt_result.return ()
+end
+module CharacterCreate = System.Make(CharacterCreateLogic)
 
-  let priority = 100
 
-  let execute () =
-    (* This system doesn't need to run on every tick *)
-    Lwt.return_unit
-end 
+(* --- Character Selection System --- *)
+module CharacterSelectLogic : System.S with type event = Event.character_selected_payload = struct
+  let name = "character-select"
+  type event = Event.character_selected_payload
+  let event_type = function Event.CharacterSelected e -> Some e | _ -> None
 
-module Character_selection_system = struct
-  let handle_character_selected state user_id character_id =
-    let%lwt () =
+  let execute state trace_id payload =
+    let user_id = (payload : event).user_id in
+    let character_id = payload.character_id in
+    let open Lwt_result.Syntax in
+    let* () =
       match State.get_active_character state user_id with
       | Some old_entity ->
           let old_char_id = Uuidm.to_string old_entity in
-          State.enqueue state (Event.UnloadCharacterFromECS { user_id; character_id = old_char_id })
-      | None -> Lwt.return_unit
+          wrap_ok (State.enqueue ?trace_id state (Event.UnloadCharacterFromECS { user_id; character_id = old_char_id }))
+      | None -> Lwt_result.return ()
     in
-    (* Queue LoadCharacterIntoECS event *)
-    let%lwt () = State.enqueue state (Event.LoadCharacterIntoECS { user_id; character_id }) in
+    let* () = wrap_ok (State.enqueue ?trace_id state (Event.LoadCharacterIntoECS { user_id; character_id })) in
     Lwt_result.return ()
-
-  let priority = 100
-
-  let execute () =
-    (* This system doesn't need to run on every tick *)
-    Lwt.return_unit
 end
+module CharacterSelect = System.Make(CharacterSelectLogic)
 

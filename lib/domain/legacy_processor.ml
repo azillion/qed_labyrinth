@@ -4,16 +4,6 @@ open Error_utils
 let process_event (state : State.t) (_trace_id : string option) (event : Event.t)
     : (unit, Qed_error.t) Result.t Lwt.t =
   match event with
-  | Event.CharacterListRequested { user_id } ->
-      Character_system.Character_list_system.handle_character_list_requested state user_id
-  | Event.CreateCharacter { user_id; name; description; starting_area_id; might; finesse; wits; grit; presence } ->
-      Character_system.Character_creation_system.handle_create_character state user_id name description starting_area_id might finesse wits grit presence
-  | Event.CharacterSelected { user_id; character_id } ->
-      Character_system.Character_selection_system.handle_character_selected state user_id character_id
-  | Event.LoadCharacterIntoECS { user_id=_; character_id } ->
-      Character_loading_system.handle_load_character state character_id
-  | Event.UnloadCharacterFromECS { user_id; character_id } ->
-      Character_unloading_system.handle_unload_character state user_id character_id
   | Event.AreaQuery { user_id; area_id } ->
       Area_management_system.Area_query_system.handle_area_query state user_id area_id
   | Event.AreaQueryResult { user_id; area } ->
