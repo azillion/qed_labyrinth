@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import redisClient from '../redisClient';
-import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand } from '../schemas_generated/input_pb';
+import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
   const traceId = randomUUID();
@@ -72,6 +72,11 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
         const requestInvCommand = new RequestInventoryCommand();
         requestInvCommand.setCharacterId(command.payload.characterId);
         playerCommand.setRequestInventory(requestInvCommand);
+        break;
+      }
+      case 'RequestAdminMetrics': {
+        const metricsCommand = new RequestAdminMetricsCommand();
+        playerCommand.setRequestAdminMetrics(metricsCommand);
         break;
       }
       default:

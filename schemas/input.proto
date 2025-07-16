@@ -49,6 +49,8 @@ message RequestInventoryCommand {
   string character_id = 1;
 }
 
+message RequestAdminMetricsCommand {}
+
 message PlayerCommand {
   oneof command {
     MoveCommand            move            = 1;
@@ -59,6 +61,7 @@ message PlayerCommand {
     TakeCommand            take             = 6;
     DropCommand            drop             = 7;
     RequestInventoryCommand request_inventory = 8;
+    RequestAdminMetricsCommand request_admin_metrics = 9;
   }
 }
 

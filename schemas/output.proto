@@ -79,6 +79,10 @@ message CharacterSheet {
   DerivedStats derived_stats = 8;
 }
 
+message MetricsReport {
+  string json_payload = 1;
+}
+
 message OutputEvent {
   repeated string target_user_ids = 1;
   oneof payload {
@@ -88,6 +92,7 @@ message OutputEvent {
     CharacterList character_list = 5;
     CharacterSheet character_sheet = 6;
     InventoryList inventory_list = 7;
+    MetricsReport metrics_report = 8;
   }
-  string trace_id = 8;
+  string trace_id = 9;
 }

@@ -365,6 +365,26 @@ export namespace CharacterSheet {
   }
 }
 
+export class MetricsReport extends jspb.Message {
+  getJsonPayload(): string;
+  setJsonPayload(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): MetricsReport.AsObject;
+  static toObject(includeInstance: boolean, msg: MetricsReport): MetricsReport.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: MetricsReport, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): MetricsReport;
+  static deserializeBinaryFromReader(message: MetricsReport, reader: jspb.BinaryReader): MetricsReport;
+}
+
+export namespace MetricsReport {
+  export type AsObject = {
+    jsonPayload: string,
+  }
+}
+
 export class OutputEvent extends jspb.Message {
   clearTargetUserIdsList(): void;
   getTargetUserIdsList(): Array<string>;
@@ -401,6 +421,11 @@ export class OutputEvent extends jspb.Message {
   getInventoryList(): InventoryList | undefined;
   setInventoryList(value?: InventoryList): void;
 
+  hasMetricsReport(): boolean;
+  clearMetricsReport(): void;
+  getMetricsReport(): MetricsReport | undefined;
+  setMetricsReport(value?: MetricsReport): void;
+
   getTraceId(): string;
   setTraceId(value: string): void;
 
@@ -424,6 +449,7 @@ export namespace OutputEvent {
     characterList?: CharacterList.AsObject,
     characterSheet?: CharacterSheet.AsObject,
     inventoryList?: InventoryList.AsObject,
+    metricsReport?: MetricsReport.AsObject,
     traceId: string,
   }
 
@@ -435,6 +461,7 @@ export namespace OutputEvent {
     CHARACTER_LIST = 5,
     CHARACTER_SHEET = 6,
     INVENTORY_LIST = 7,
+    METRICS_REPORT = 8,
   }
 }
 

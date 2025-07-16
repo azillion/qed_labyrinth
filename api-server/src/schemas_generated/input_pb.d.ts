@@ -187,6 +187,22 @@ export namespace RequestInventoryCommand {
   }
 }
 
+export class RequestAdminMetricsCommand extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RequestAdminMetricsCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: RequestAdminMetricsCommand): RequestAdminMetricsCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RequestAdminMetricsCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RequestAdminMetricsCommand;
+  static deserializeBinaryFromReader(message: RequestAdminMetricsCommand, reader: jspb.BinaryReader): RequestAdminMetricsCommand;
+}
+
+export namespace RequestAdminMetricsCommand {
+  export type AsObject = {
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -228,6 +244,11 @@ export class PlayerCommand extends jspb.Message {
   getRequestInventory(): RequestInventoryCommand | undefined;
   setRequestInventory(value?: RequestInventoryCommand): void;
 
+  hasRequestAdminMetrics(): boolean;
+  clearRequestAdminMetrics(): void;
+  getRequestAdminMetrics(): RequestAdminMetricsCommand | undefined;
+  setRequestAdminMetrics(value?: RequestAdminMetricsCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -249,6 +270,7 @@ export namespace PlayerCommand {
     take?: TakeCommand.AsObject,
     drop?: DropCommand.AsObject,
     requestInventory?: RequestInventoryCommand.AsObject,
+    requestAdminMetrics?: RequestAdminMetricsCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -261,6 +283,7 @@ export namespace PlayerCommand {
     TAKE = 6,
     DROP = 7,
     REQUEST_INVENTORY = 8,
+    REQUEST_ADMIN_METRICS = 9,
   }
 }
 

@@ -41,6 +41,7 @@ let string_of_event_type (event : Event.t) =
   | TakeItemFailed _ -> "TakeItemFailed"
   | DropItemFailed _ -> "DropItemFailed"
   | ActionFailed _ -> "ActionFailed"
+  | RequestAdminMetrics _ -> "RequestAdminMetrics"
   | _ -> "OtherEvent"
 
 let handlers : (string, handler) Hashtbl.t = Hashtbl.create (module String)

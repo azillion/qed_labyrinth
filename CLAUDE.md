@@ -6,56 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 QED Labyrinth is a living MUD system that creates intimate social spaces powered by autonomous agents. The system consists of an OCaml backend with a hybrid data model (Relational DB + ECS) and multiple frontend clients. The OCaml core engine now operates as a headless service, receiving commands and publishing state changes via Redis.
 
-## Development Commands
-
-### OCaml Backend
-- **Build**: `dune build`
-- **Run engine**: `dune exec chronos_engine`
-- **Run tests**: `dune runtest`
-- **Install dependencies**: `opam install . --deps-only`
-
-### Frontend - SolidJS App (/app)
-- **Development server**: `cd app && npm run dev` (or `bun run dev`)
-- **Build**: `cd app && npm run build`
-- **Preview build**: `cd app && npm run serve`
-
-### Frontend - Next.js App (/frontend)
-- **Development server**: `cd frontend && npm run dev` (runs on port 3001)
-- **Build**: `cd frontend && npm run build`
-- **Production server**: `cd frontend && npm start`
-- **Lint**: `cd frontend && npm run lint`
-
-### API Server (Fastify) (/api-server)
-- **Development server**: `cd api-server && npm run dev` (runs on port 3001)
-- **Build**: `cd api-server && npm run build`
-- **Production server**: `cd api-server && npm run start`
-- **Generate Protobuf schemas**: `sh ./generate-schemas.sh` (must be run whenever .proto files are changed)
-
 ## Core Architecture Tenets
 
-Our backend uses a hybrid data model. Understanding the distinction between the Relational Database and the Entity-Component-System (ECS) is critical for all development.
+Our backend uses a hybrid data model (Relational + ECS) and an observable, functor-based system architecture for event processing.
 
 ### Data Architecture: Relational vs. ECS
 
-This defines the rules for where different types of data should live.
+This defines where different types of data should live.
 
-#### **1. Relational Database (The "Blueprint Library")**
-The relational DB is the **System of Record for Templates and Permanent Identity**.
-
-**Use a Relational Table When:**
-*   **It's a Template or Blueprint:** The data defines a *type* of thing, not a specific, unique instance (e.g., the definition of an "Iron Sword").
-*   **It's Permanent, Rarely-Changing Character Data:** Data that defines who a character *is* (e.g., their allocated core stats, their known languages, their reputation).
-*   **We Need to Run Global Queries:** The data needs to be searched or aggregated across all characters, even those offline (e.g., "find all members of a guild").
-
-#### **2. Entity-Component-System (The "Redis-Backed Live World Cache")**
-The ECS is the **System of Record for Instances and Transient State**, backed by Redis for resilience and persistence.
-
-**Use an ECS Component When:**
-*   **It's a Unique Instance:** The data represents a *specific thing* existing in the world right now (e.g., a specific Iron Sword, entity ID `1234-abcd`, lying on the ground).
-*   **It's Transient, High-Volatility Data:** The data changes frequently during the game loop (e.g., current HP, position, active spell effects).
-*   **We Need to Query it Locally:** The data is for interactions within a single area (e.g., "find all entities with health within 10 meters").
-
-**Redis-Backed Resilience:** The ECS maintains all live world state in Redis, providing complete resilience against engine crashes. When the engine restarts, it loads the complete live state from Redis, ensuring no loss of transient game data. Only if Redis is empty does the system fall back to loading from PostgreSQL and then populating Redis.
+*   **Relational Database (The "Blueprint Library"):** The system of record for templates and permanent, rarely-changing data (e.g., character core stats, item definitions).
+*   **Entity-Component-System (The "Live World Cache"):** The system of record for unique instances and transient, high-volatility state, backed by Redis for resilience (e.g., current HP, position).
 
 ### Data Synchronization Doctrine
 
@@ -78,6 +38,23 @@ This defines the rules for how data moves between the Relational DB and the ECS 
     3.  It runs calculation systems (like the stat calculator) to generate derived data.
 *   **Benefit:** This guarantees every session starts from a consistent state, automatically correcting any potential drift.
 
+### Event-Driven Systems Architecture
+
+The engine is event-driven and architected around a Dispatcher and modular Systems. This provides "observability by construction."
+
+*   **System:** A self-contained OCaml module that handles one specific type of event (e.g., `TakeItem`). Each system implements a strict interface (`System.S`).
+*   **Observability Functor (`System.Make`):** A functor that wraps a logic-containing system. This wrapper automatically provides structured JSON logging, metrics (success/error counts), and timing for every execution, eliminating boilerplate and ensuring consistency.
+*   **Dispatcher:** A central module that holds a registry of all observable systems. The main game loop no longer contains business logic; it simply pops an event from the queue and passes it to the `Dispatcher`, which routes it to the correct, wrapped system handler.
+*   **Distributed Tracing:** Every command entering the `api-server` is assigned a unique `trace_id`. This ID is propagated through Redis, the OCaml engine's event queue, the dispatcher, and back out through Redis to the `api-server`, allowing for complete end-to-end tracing of any action.
+
+### Adding a New Game Action (Event)
+
+1.  Add a new variant to `lib/domain/event.ml`.
+2.  Create a new logic module in the relevant `systems/` file that implements the `System.S` interface.
+3.  Wrap the logic module with the `System.Make` functor.
+4.  In `bin/chronos_engine.ml`, register the new, wrapped system with the `Dispatcher`.
+5.  If the action originates from the client, add the command to `schemas/input.proto` and update the `api-server`'s `commandService.ts`.
+
 ## Shared Schemas (The Contract)
 
 The `schemas/` directory contains Protocol Buffer definitions that serve as the data contract between services. The `input.proto` file defines the structure for player commands sent from the API server to the Chronos Engine, ensuring consistent message format across the distributed system.
@@ -89,7 +66,7 @@ The build system automatically generates OCaml modules from Protocol Buffer sche
 To use generated types in your code:
 ```ocaml
 open Schemas_generated.Input
-let event = { user_id = "user123"; trace_id = "trace456"; payload = Some (Move { direction = North }) }
+let event = { user_id = \"user123\"; trace_id = \"trace456\"; payload = Some (Move { direction = North }) }
 ```
 
 ## Common Patterns
@@ -107,39 +84,31 @@ let event = { user_id = "user123"; trace_id = "trace456"; payload = Some (Move {
 4.  Wire the storage module into `World.init` and `World.sync_to_db` in `lib/domain/ecs.ml`.
 5.  Implement systems that operate on the component.
 
-### Adding New Events
-1.  Define event type in `lib/domain/event.ml`.
-2.  Add a handler case in `lib/domain/loop.ml`'s `process_event` function.
-3.  Create or modify systems to handle and queue the event.
-
-### Schema Development (Protocol Buffers)
-The system uses Protocol Buffers for message serialization between the API server and the OCaml engine. Schemas are defined in the `schemas/` directory and automatically generate OCaml code.
-
-**Schema Files:**
-- `schemas/input.proto` - Defines commands sent from API server to engine
-- `schemas/output.proto` - Defines events sent from engine to API server
-
-**Auto-Generation:**
-The build system automatically regenerates OCaml modules from Protocol Buffer schemas using `ocaml-protoc`. When you modify any `.proto` file, the generated code in `lib/schemas_generated/` is automatically updated on the next build.
-
-**Usage in Code:**
-```ocaml
-(* Decode incoming Redis message *)
-let proto_event = Schemas_generated.Input.decode_pb_input_event (Pbrt.Decoder.of_string message_content) in
-
-(* Create outgoing message *)
-let output_event = Schemas_generated.Output.{
-  target_user_ids = [user_id];
-  payload = Chat_message { sender_name = "System"; content = "Hello"; message_type = "System" };
-} in
-```
-
-**Adding New Message Types:**
-1. Edit the appropriate `.proto` file in `schemas/`
-2. Run `dune build` to regenerate OCaml code
-3. Update any conversion functions in `lib/domain/loop.ml`
-4. Update message handlers in the engine and API server
-
 ## Deployment
 
 The project is deployed via a GitHub Actions workflow that automatically builds and pushes Docker images to GitHub Container Registry (ghcr.io). Upon successful image builds, the workflow connects to the production server via SSH and uses `docker-compose` to pull and deploy the latest container versions. This ensures zero-downtime deployments with atomic service updates.
+
+## Development Commands
+
+### OCaml Backend
+- **Build**: `dune build`
+- **Run engine**: `dune exec chronos_engine`
+- **Run tests**: `dune runtest`
+- **Install dependencies**: `opam install . --deps-only`
+
+### Frontend - SolidJS App (/game-client)
+- **Development server**: `cd game-client && npm run dev` (or `bun run dev`)
+- **Build**: `cd game-client && npm run build`
+- **Preview build**: `cd game-client && npm run serve`
+
+### Frontend - Next.js App (/frontend)
+- **Development server**: `cd frontend && npm run dev` (runs on port 3000)
+- **Build**: `cd frontend && npm run build`
+- **Production server**: `cd frontend && npm start`
+- **Lint**: `cd frontend && npm run lint`
+
+### API Server (Fastify) (/api-server)
+- **Development server**: `cd api-server && npm run dev` (runs on port 3001)
+- **Build**: `cd api-server && npm run build`
+- **Production server**: `cd api-server && npm run start`
+- **Generate Protobuf schemas**: `cd api-server && sh ./generate-schemas.sh` (must be run whenever .proto files are changed)

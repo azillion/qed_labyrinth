@@ -12,6 +12,7 @@ import LoginPage from "@pages/auth";
 import CharacterPage from "@pages/character";
 import { isCharacterSelected } from "@features/auth/stores/character";
 import { InventoryPage } from "@pages/inventory";
+import AdminPage from "@pages/admin";
 
 const App = (props) => {
 	onMount(async () => {
@@ -45,6 +46,7 @@ const App = (props) => {
 						<Route path="/" component={GamePage} />
 						<Route path="/inventory" component={InventoryPage} />
 						<Route path="/sheet" component={CharacterSheetPage} />
+						<Route path="/admin" component={AdminPage} />
 					</Router>
 				</Show>
 			</Show>

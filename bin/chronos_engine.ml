@@ -31,7 +31,9 @@ let () =
         (* Area management systems *)
         Dispatcher.register "AreaQuery" Area_management_system.AreaQuery.handle;
         Dispatcher.register "AreaQueryResult" Area_management_system.AreaQueryResult.handle;
-        Dispatcher.register "LoadAreaIntoECS" Area_loading_system.LoadArea.handle
+        Dispatcher.register "LoadAreaIntoECS" Area_loading_system.LoadArea.handle;
+        (* Admin systems *)
+        Dispatcher.register "RequestAdminMetrics" Metrics_system.RequestMetrics.handle
       in
       Stdio.print_endline "All systems registered.";
       (* --- End System Registration --- *)

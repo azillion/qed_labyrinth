@@ -62,6 +62,7 @@ type send_inventory_payload = { user_id: string; items: (string * string * strin
 type take_item_failed_payload = { user_id: string; reason: string }
 type drop_item_failed_payload = { user_id: string; reason: string }
 type action_failed_payload = { user_id: string; reason: string }
+type request_admin_metrics_payload = { user_id: string }
 
 type t =
   | CreateCharacter of create_character_payload
@@ -111,6 +112,9 @@ type t =
   | DropItemFailed of drop_item_failed_payload
   | ActionFailed of action_failed_payload
 
+  (* Admin Events *)
+  | RequestAdminMetrics of request_admin_metrics_payload
+
 (* Helper to extract user_id for error reporting *)
 let get_user_id = function
   | CreateCharacter e -> Some e.user_id
@@ -146,4 +150,5 @@ let get_user_id = function
   | TakeItemFailed e -> Some e.user_id
   | DropItemFailed e -> Some e.user_id
   | ActionFailed e -> Some e.user_id
+  | RequestAdminMetrics e -> Some e.user_id
   | _ -> None

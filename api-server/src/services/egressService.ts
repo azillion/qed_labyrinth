@@ -73,6 +73,15 @@ export function startEgressService(log: FastifyBaseLogger) {
               }
             };
             socket.send(JSON.stringify(payload));
+          } else if (outputEvent.hasMetricsReport && outputEvent.hasMetricsReport()) {
+            const metricsReport = outputEvent.getMetricsReport()!;
+            const payload = {
+              type: 'AdminMetrics',
+              payload: {
+                metrics: metricsReport.getJsonPayload()
+              }
+            };
+            socket.send(JSON.stringify(payload));
           }
         }
       }

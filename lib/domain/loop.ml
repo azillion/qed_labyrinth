@@ -54,6 +54,8 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) : (str
           Some (trace_id, Event.DropItem { user_id = proto_event.user_id; character_id = drop_cmd.character_id; item_entity_id = drop_cmd.item_entity_id })
       | Request_inventory inv_cmd ->
           Some (trace_id, Event.RequestInventory { user_id = proto_event.user_id; character_id = inv_cmd.character_id })
+      | Request_admin_metrics ->
+          Some (trace_id, Event.RequestAdminMetrics { user_id = proto_event.user_id })
 
 (* Redis subscriber function *)
 let subscribe_to_player_commands (state : State.t) =
