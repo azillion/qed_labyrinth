@@ -1,5 +1,4 @@
 open Base
-open Lwt_result.Syntax
 open Error_utils
 
 (* This module implements passive Action Point regeneration for characters. *)

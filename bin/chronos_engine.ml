@@ -10,8 +10,8 @@ let register_systems () =
       | Some e -> handler s t (Some e)
       | None -> Lwt.return_ok ())
   in
-  let r_tick handler =
-    register ~schedule:Update ~criteria:OnTick (fun s t _ -> handler s t None)
+  let r_tick schedule handler =
+    register ~schedule ~criteria:OnTick handler
   in
 
   (* Event-based Systems *)
@@ -36,7 +36,8 @@ let register_systems () =
   r_event "RequestAdminMetrics" Metrics_system.RequestMetrics.handle;
 
   (* Tick-based Systems *)
-  r_tick Ap_regen_system.APRegen.handle
+  r_tick Update Ap_regen_system.APRegen.handle;
+  r_tick PostUpdate Entity_cleanup_system.EntityCleanup.handle
 
 let () =
   let config = Config.Database.from_env () in

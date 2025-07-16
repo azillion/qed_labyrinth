@@ -104,7 +104,9 @@ let rec game_loop (state : State.t) =
     (fun () ->
       let loop_start_time = Unix.gettimeofday () in
       let* () = tick state in
+      let* () = Scheduler.run PreUpdate state in
       let* () = Scheduler.run Update state in
+      let* () = Scheduler.run PostUpdate state in
       let* () = Ecs.World.step () in
       let* () =
         Lwt.catch
