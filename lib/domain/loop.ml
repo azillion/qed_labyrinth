@@ -102,8 +102,8 @@ let rec process_event (state : State.t) (trace_id : string option) (event : Even
   if Dispatcher.has_handler (string_of_event_type event) then
     Dispatcher.dispatch state trace_id event
   else
-    (* Legacy monolithic handler placeholder *)
-    Legacy_processor.process_event state trace_id event
+    (* Fallback simple publisher for utility events *)
+    Simple_event_publisher.process_event state trace_id event
 
 and process_events (state : State.t) =
   let start_time = Unix.gettimeofday () in
