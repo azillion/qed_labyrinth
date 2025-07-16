@@ -401,6 +401,9 @@ export class OutputEvent extends jspb.Message {
   getInventoryList(): InventoryList | undefined;
   setInventoryList(value?: InventoryList): void;
 
+  getTraceId(): string;
+  setTraceId(value: string): void;
+
   getPayloadCase(): OutputEvent.PayloadCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): OutputEvent.AsObject;
@@ -421,6 +424,7 @@ export namespace OutputEvent {
     characterList?: CharacterList.AsObject,
     characterSheet?: CharacterSheet.AsObject,
     inventoryList?: InventoryList.AsObject,
+    traceId: string,
   }
 
   export enum PayloadCase {

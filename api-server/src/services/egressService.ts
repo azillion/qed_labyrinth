@@ -1,15 +1,24 @@
 import { redisSubscriber } from '../redisClient';
 import { connectionManager } from '../connectionManager';
-import { OutputEvent, CharacterList, CharacterSheet, ChatHistory, InventoryList } from '../schemas_generated/output_pb';
+import { OutputEvent } from '../schemas_generated/output_pb';
+import { FastifyBaseLogger } from 'fastify';
 
-export function startEgressService() {
+export function startEgressService(log: FastifyBaseLogger) {
   // The third argument `true` tells node-redis to deliver messages as Buffer instead of string
+  // @ts-ignore - the node-redis typings may not include the boolean flag
   redisSubscriber.subscribe('engine_events', (message) => {
     try {
       // The message is already a Buffer (Uint8Array), we can feed it directly to protobuf
       const outputEvent = OutputEvent.deserializeBinary(message as unknown as Uint8Array);
       const targetUserIds = outputEvent.getTargetUserIdsList();
-      
+      const traceId = outputEvent.getTraceId();
+
+      log.info({
+        traceId,
+        targetUserIds,
+        payloadType: outputEvent.getPayloadCase()
+      }, 'Processing egress event');
+
       for (const userId of targetUserIds) {
         const socket = connectionManager.get(userId);
         if (socket) {
@@ -68,7 +77,7 @@ export function startEgressService() {
         }
       }
     } catch (error) {
-      console.error('Error processing engine event:', error);
+      log.error({ err: error }, 'Error processing engine event:');
     }
   }, true);
 }

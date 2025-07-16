@@ -49,12 +49,12 @@ module System = struct
         let* departure_msg =
           Communication.create ~message_type:System ~sender_id:None ~content:departure_msg_content ~area_id:(Some current_area_id)
         in
-        let* () = wrap_ok (Infra.Queue.push state.event_queue (Event.Announce { area_id = current_area_id; message = departure_msg })) in
+        let* () = wrap_ok (State.enqueue state (Event.Announce { area_id = current_area_id; message = departure_msg })) in
         
         let new_pos_comp = { position_comp with area_id = new_area_id } in
         let* () = wrap_ok (Ecs.CharacterPositionStorage.set char_entity_id new_pos_comp) in
 
-        let* () = wrap_ok (Infra.Queue.push state.event_queue
+        let* () = wrap_ok (State.enqueue state
           (Event.PlayerMoved { user_id; old_area_id = current_area_id; new_area_id; direction })) in
 
         Lwt_result.return ()

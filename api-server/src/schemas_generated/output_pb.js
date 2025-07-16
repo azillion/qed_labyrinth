@@ -2938,7 +2938,8 @@ proto.qed.schemas.output.OutputEvent.toObject = function(includeInstance, msg) {
     areaUpdate: (f = msg.getAreaUpdate()) && proto.qed.schemas.output.AreaUpdate.toObject(includeInstance, f),
     characterList: (f = msg.getCharacterList()) && proto.qed.schemas.output.CharacterList.toObject(includeInstance, f),
     characterSheet: (f = msg.getCharacterSheet()) && proto.qed.schemas.output.CharacterSheet.toObject(includeInstance, f),
-    inventoryList: (f = msg.getInventoryList()) && proto.qed.schemas.output.InventoryList.toObject(includeInstance, f)
+    inventoryList: (f = msg.getInventoryList()) && proto.qed.schemas.output.InventoryList.toObject(includeInstance, f),
+    traceId: jspb.Message.getFieldWithDefault(msg, 8, "")
   };
 
   if (includeInstance) {
@@ -3008,6 +3009,10 @@ proto.qed.schemas.output.OutputEvent.deserializeBinaryFromReader = function(msg,
       var value = new proto.qed.schemas.output.InventoryList;
       reader.readMessage(value,proto.qed.schemas.output.InventoryList.deserializeBinaryFromReader);
       msg.setInventoryList(value);
+      break;
+    case 8:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setTraceId(value);
       break;
     default:
       reader.skipField();
@@ -3091,6 +3096,13 @@ proto.qed.schemas.output.OutputEvent.serializeBinaryToWriter = function(message,
       7,
       f,
       proto.qed.schemas.output.InventoryList.serializeBinaryToWriter
+    );
+  }
+  f = message.getTraceId();
+  if (f.length > 0) {
+    writer.writeString(
+      8,
+      f
     );
   }
 };
@@ -3352,6 +3364,24 @@ proto.qed.schemas.output.OutputEvent.prototype.clearInventoryList = function() {
  */
 proto.qed.schemas.output.OutputEvent.prototype.hasInventoryList = function() {
   return jspb.Message.getField(this, 7) != null;
+};
+
+
+/**
+ * optional string trace_id = 8;
+ * @return {string}
+ */
+proto.qed.schemas.output.OutputEvent.prototype.getTraceId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 8, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.qed.schemas.output.OutputEvent} returns this
+ */
+proto.qed.schemas.output.OutputEvent.prototype.setTraceId = function(value) {
+  return jspb.Message.setProto3StringField(this, 8, value);
 };
 
 

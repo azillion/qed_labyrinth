@@ -19,6 +19,7 @@ module Character_list_system = struct
     let output_event : Schemas_generated.Output.output_event = {
       target_user_ids = [user_id];
       payload = Character_list character_list_msg;
+      trace_id = "";
     } in
 
     (* 4. Publish the event to the user. *)
@@ -41,9 +42,7 @@ module Character_creation_system = struct
     (* Log creation for observability *)
     Stdio.printf "[CREATE_CHARACTER] user=%s character_id=%s name=%s\n" user_id character.id name;
     (* Queue CharacterCreated event on success *)
-    let%lwt () = Infra.Queue.push state.State.event_queue (
-      Event.CharacterCreated { user_id; character_id = character.id }
-    ) in
+    let%lwt () = State.enqueue state (Event.CharacterCreated { user_id; character_id = character.id }) in
     Lwt_result.return ()
 
   let priority = 100
@@ -59,15 +58,11 @@ module Character_selection_system = struct
       match State.get_active_character state user_id with
       | Some old_entity ->
           let old_char_id = Uuidm.to_string old_entity in
-          Infra.Queue.push state.event_queue (
-            Event.UnloadCharacterFromECS { user_id; character_id = old_char_id }
-          )
+          State.enqueue state (Event.UnloadCharacterFromECS { user_id; character_id = old_char_id })
       | None -> Lwt.return_unit
     in
     (* Queue LoadCharacterIntoECS event *)
-    let%lwt () = Infra.Queue.push state.event_queue (
-      Event.LoadCharacterIntoECS { user_id; character_id }
-    ) in
+    let%lwt () = State.enqueue state (Event.LoadCharacterIntoECS { user_id; character_id }) in
     Lwt_result.return ()
 
   let priority = 100

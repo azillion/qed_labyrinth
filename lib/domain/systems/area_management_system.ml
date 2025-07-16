@@ -10,12 +10,10 @@ module Area_creation_system = struct
     | Error e -> 
         Stdio.eprintf "Failed to create area entity: %s\n" (Error.to_string_hum e);
         (* Queue event for area creation failure *)
-        let* () = Infra.Queue.push state.State.event_queue (
-          Event.AreaCreationFailed { 
-            user_id;
-            error = Qed_error.to_yojson (Qed_error.DatabaseError "Failed to create area entity") 
-          }
-        ) in
+        let* () = State.enqueue state (Event.AreaCreationFailed {
+          user_id;
+          error = Qed_error.to_yojson (Qed_error.DatabaseError "Failed to create area entity") 
+        }) in
         Lwt.return_unit
     | Ok entity_id ->
         let entity_id_str = Uuidm.to_string entity_id in
@@ -24,20 +22,17 @@ module Area_creation_system = struct
         let* area_result = Area.create ~id:entity_id_str ~name ~description ~x ~y ~z ?elevation ?temperature ?moisture () in
         match area_result with
         | Error e ->
-            let* () = Infra.Queue.push state.State.event_queue (
-              Event.AreaCreationFailed {
-                user_id;
-                error = Qed_error.to_yojson e
-              }) in
+            let* () = State.enqueue state (Event.AreaCreationFailed {
+              user_id;
+              error = Qed_error.to_yojson e
+            }) in
             Lwt.return_unit
         | Ok _area_record ->
             (* Queue event for area creation success *)
-            let* () = Infra.Queue.push state.State.event_queue (
-              Event.AreaCreated {
-                user_id;
-                area_id = entity_id_str
-              }
-            ) in
+            let* () = State.enqueue state (Event.AreaCreated {
+              user_id;
+              area_id = entity_id_str
+            }) in
             Lwt.return_unit
 
   let priority = 100
@@ -82,12 +77,10 @@ module Exit_creation_system = struct
     
     if not (from_area_valid && to_area_valid) then begin
       (* One or both areas don't exist *)
-      let* () = Infra.Queue.push state.State.event_queue (
-        Event.ExitCreationFailed {
+      let* () = State.enqueue state (Event.ExitCreationFailed {
           user_id;
           error = Qed_error.to_yojson Qed_error.AreaNotFound
-        }
-      ) in
+        }) in
       Lwt.return_unit
     end else begin
       (* Create exit and its reciprocal atomically *)
@@ -99,21 +92,17 @@ module Exit_creation_system = struct
       match exit_result with
       | Error e ->
           Stdio.eprintf "Failed to create exit pair: %s\n" (Qed_error.to_string e);
-          let* () = Infra.Queue.push state.State.event_queue (
-            Event.ExitCreationFailed {
+          let* () = State.enqueue state (Event.ExitCreationFailed {
               user_id;
               error = Qed_error.to_yojson e
-            }
-          ) in
+            }) in
           Lwt.return_unit
       | Ok exit_record ->
           (* Queue event for exit creation success. The reciprocal is already created. *)
-          let* () = Infra.Queue.push state.State.event_queue (
-            Event.ExitCreated {
+          let* () = State.enqueue state (Event.ExitCreated {
               user_id;
               exit_id = exit_record.id
-            }
-          ) in
+            }) in
           Lwt.return_unit
     end
 
@@ -160,19 +149,10 @@ module Area_query_system = struct
   (* Find all item entities in the specified area *)
   let find_items_in_area area_id =
     let%lwt item_positions = Ecs.ItemPositionStorage.all () in
-    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Found %d item positions" (List.length item_positions)) in
     let entities_in_area =
       List.filter item_positions ~f:(fun (_, pos) -> String.equal pos.Components.ItemPositionComponent.area_id area_id)
       |> List.map ~f:fst
     in
-    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Entities in area: %d" (List.length entities_in_area)) in
-    List.iter entities_in_area ~f:(fun eid ->
-      Lwt.async (fun () ->
-        let%lwt c = Ecs.ItemStorage.get eid in
-        let has = Option.is_some c in
-        Lwt_io.printl
-          (Printf.sprintf "[DEBUG] eid=%s comp=%b" (Uuidm.to_string eid) has))
-    );
     (* Fetch all item components first *)
     let%lwt item_comps =
       Lwt_list.filter_map_s (fun eid ->
@@ -180,16 +160,14 @@ module Area_query_system = struct
         Lwt.return (Option.map comp_opt ~f:(fun comp -> (eid, comp)))
       ) entities_in_area
     in
-    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Item components: %d" (List.length item_comps)) in
     let definition_ids = List.map item_comps ~f:(fun (_, comp) -> comp.Components.ItemComponent.item_definition_id) in
-    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Definition ids: %d" (List.length definition_ids)) in
     let unique_definition_ids = List.dedup_and_sort ~compare:String.compare definition_ids in
-    let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Unique definition ids: %d" (List.length unique_definition_ids)) in
     let%lwt items =
       let%lwt names_result = Item_definition.find_names_by_ids unique_definition_ids in
       match names_result with
       | Error _ ->
           (* fallback sequential lookup *)
+          let* () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Fallback lookup: %d" (List.length item_comps)) in
           Lwt_list.filter_map_s (fun (eid, comp) ->
             let%lwt def_res = Item_definition.find_by_id comp.Components.ItemComponent.item_definition_id in
             match def_res with
@@ -197,7 +175,6 @@ module Area_query_system = struct
             | _ -> Lwt.return_none)
             item_comps
       | Ok pairs ->
-          let%lwt () = Lwt_io.printl (Printf.sprintf "[AreaQuery] Items definitions fetched: %d" (List.length pairs)) in
           let name_map = Map.of_alist_exn (module String) pairs in
           let mapped = List.filter_map item_comps ~f:(fun (eid, comp) ->
             Map.find name_map comp.Components.ItemComponent.item_definition_id
@@ -208,25 +185,21 @@ module Area_query_system = struct
 
   let handle_area_query state user_id area_id =
     let open Lwt_result.Syntax in
-    let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Called by user %s for area %s" user_id area_id)) in
     (* Get area details *)
     match Uuidm.of_string area_id with
     | None ->
         let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Error] Invalid area_id: %s (user: %s)" area_id user_id)) in
-        let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
-          Event.AreaQueryFailed {
+        let* () = wrap_ok (State.enqueue state (Event.AreaQueryFailed {
             user_id;
             error = Qed_error.to_yojson Qed_error.AreaNotFound
-          }
-        )) in
+          })) in
         Lwt_result.return ()
     | Some entity_id ->
         let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery][Debug] Converted area_id to entity_id: %s" (Uuidm.to_string entity_id))) in
         (* Fetch area data directly from relational store *)
         match%lwt Area.find_by_id area_id with
         | Error _e ->
-            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
-              Event.AreaQueryFailed {
+            let* () = wrap_ok (State.enqueue state (Event.AreaQueryFailed {
                 user_id;
                 error = Qed_error.to_yojson Qed_error.AreaNotFound
               })) in
@@ -249,22 +222,17 @@ module Area_query_system = struct
               temperature = area_model.temperature;
               moisture = area_model.moisture;
             } in
-            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
-              Event.AreaQueryResult {
+            let* () = wrap_ok (State.enqueue state (Event.AreaQueryResult {
                 user_id;
                 area = area_info
-              }
-            )) in
-            let* () = wrap_ok (Infra.Queue.push state.State.event_queue
-              (Event.RequestChatHistory { user_id; area_id })) in
+              })) in
+            let* () = wrap_ok (State.enqueue state (Event.RequestChatHistory { user_id; area_id })) in
             let* characters_here = wrap_val (find_characters_in_area area_id) in
             let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[AreaQuery] Characters present in area %s: %d" area_id (List.length characters_here))) in
-            let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
-              Event.UpdateAreaPresence {
+            let* () = wrap_ok (State.enqueue state (Event.UpdateAreaPresence {
                 area_id;
                 characters = characters_here
-              }
-            )) in
+              })) in
             Lwt_result.return ()
 
   let priority = 100
@@ -293,6 +261,7 @@ module Area_query_communication_system = struct
     let output_event = Schemas_generated.Output.{
       target_user_ids = [user_id];
       payload = Area_update area_update;
+      trace_id = "";
     } in
     let* () = Publisher.publish_event state output_event in
     Lwt_result.return ()

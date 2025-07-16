@@ -84,7 +84,7 @@ module System = struct
     in
 
     (* Announce the persisted message *)
-    let* () = Error_utils.wrap_ok (Infra.Queue.push state.State.event_queue (Event.Announce { area_id; message })) in
+    let* () = Error_utils.wrap_ok (State.enqueue state (Event.Announce { area_id; message })) in
     Lwt.return_ok ()
 
   let handle_announce state area_id message =
@@ -92,7 +92,7 @@ module System = struct
     let* user_ids = find_user_ids_in_area state area_id |> Lwt.map (fun u -> Ok u) in
     let* () = Error_utils.wrap_ok (
       Lwt_list.iter_s (fun user_id ->
-        Infra.Queue.push state.event_queue (Event.Tell { user_id; message })
+        State.enqueue state (Event.Tell { user_id; message })
       ) user_ids)
     in
     Lwt_result.return ()
@@ -115,6 +115,7 @@ module System = struct
     let output_event = Schemas_generated.Output.{
       target_user_ids = [user_id];
       payload = Chat_message chat_message;
+      trace_id = "";
     } in
     let* () = Publisher.publish_event state output_event in
     Lwt_result.return ()
@@ -126,7 +127,7 @@ module Chat_history_system = struct
     let* messages = Communication.find_by_area_id area_id in
     let chat_messages = List.map messages ~f:Types.chat_message_of_model in
 
-    let%lwt () = Infra.Queue.push state.event_queue (Event.SendChatHistory { user_id; messages = chat_messages }) in
+    let%lwt () = State.enqueue state (Event.SendChatHistory { user_id; messages = chat_messages }) in
     Lwt.return_ok ()
 
   (* Publish the requested chat history to the user as a single payload *)
@@ -158,6 +159,7 @@ module Chat_history_system = struct
     let output_event : Schemas_generated.Output.output_event = {
       target_user_ids = [user_id];
       payload = Chat_history chat_history_msg;
+      trace_id = "";
     } in
 
     let* () = Publisher.publish_event state output_event in

@@ -138,6 +138,7 @@ let handle_load_character state character_id =
           let output_event : Schemas_generated.Output.output_event = {
             target_user_ids = [character.user_id];
             payload = Character_sheet character_sheet_msg;
+            trace_id = "";
           } in
 
           let* () = Publisher.publish_event state output_event in
@@ -146,8 +147,6 @@ let handle_load_character state character_id =
           let area_id = match _position_opt with
             | Some pos -> pos.Components.CharacterPositionComponent.area_id
             | None -> "00000000-0000-0000-0000-000000000000" in
-          let* () = wrap_ok (Infra.Queue.push state.State.event_queue (
-            Event.AreaQuery { user_id = character.user_id; area_id }
-          )) in
+          let* () = wrap_ok (State.enqueue state (Event.AreaQuery { user_id = character.user_id; area_id })) in
           
           Lwt_result.return ()

@@ -2,7 +2,7 @@ open Base
 
 type t = {
   mutable last_tick : float;
-  event_queue: Event.t Infra.Queue.t;
+  event_queue: (string option * Event.t) Infra.Queue.t;
   redis_conn: Redis_lwt.Client.connection;
   (** Map of user_id -> currently active character entity *)
   active_characters: (string, Uuidm.t) Base.Hashtbl.t;
@@ -28,3 +28,6 @@ let unset_active_character t ~user_id =
 
 let get_active_character t user_id =
   Base.Hashtbl.find t.active_characters user_id
+
+let enqueue ?trace_id t event =
+  Infra.Queue.push t.event_queue (trace_id, event)

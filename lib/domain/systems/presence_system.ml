@@ -37,10 +37,10 @@ module System = struct
               ~content:arrival_msg_content
               ~area_id:(Some new_area_id)
           in
-          Error_utils.wrap_ok (Infra.Queue.push state.event_queue (Event.Announce { area_id = new_area_id; message = arrival_msg }))
+          Error_utils.wrap_ok (State.enqueue state (Event.Announce { area_id = new_area_id; message = arrival_msg }))
     in
 
     (* 4. Send the new area info and chat history to the moving player regardless. *)
-    let* () = Error_utils.wrap_ok (Infra.Queue.push state.event_queue (Event.AreaQuery { user_id; area_id = new_area_id })) in
+    let* () = Error_utils.wrap_ok (State.enqueue state (Event.AreaQuery { user_id; area_id = new_area_id })) in
     Lwt.return_ok ()
 end

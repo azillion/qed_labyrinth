@@ -3,22 +3,17 @@ import redisClient from '../redisClient';
 import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
+  const traceId = randomUUID();
   try {
-    // Generate a unique trace ID for this command
-    const traceId = randomUUID();
-    
-    // Create the InputEvent message structure
     const inputEvent = new InputEvent();
     inputEvent.setUserId(userId);
     inputEvent.setTraceId(traceId);
     
-    // Create PlayerCommand based on the command type
     const playerCommand = new PlayerCommand();
     
     switch (command.type) {
       case 'Move': {
         const moveCommand = new MoveCommand();
-        // Map direction string to Direction enum
         const directionMap: { [key: string]: typeof Direction[keyof typeof Direction] } = {
           'NORTH': Direction.NORTH,
           'SOUTH': Direction.SOUTH,
@@ -50,7 +45,6 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
       }
       case 'ListCharacters': {
         const listCharactersCommand = new ListCharactersCommand();
-        // No fields to set – empty message
         playerCommand.setListCharacters(listCharactersCommand);
         break;
       }
@@ -86,18 +80,33 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
     
     inputEvent.setPayload(playerCommand);
     
-    // Serialize the InputEvent to binary format
     const serializedEvent = inputEvent.serializeBinary();
     
-    // Publish to the player_commands channel
     await redisClient.publish(
       'player_commands',
-      Buffer.from(serializedEvent).toString('latin1')   // preserves raw bytes 0–255
+      Buffer.from(serializedEvent).toString('latin1')
     );
     
-    console.log(`Published command for user ${userId} with trace ID ${traceId}`);
+    console.log(JSON.stringify({
+      level: 'info',
+      timestamp: new Date().toISOString(),
+      message: 'Published player command',
+      userId,
+      traceId,
+      commandType: command.type
+    }));
+
   } catch (error) {
-    console.error('Error publishing player command:', error);
+    const err = error as Error;
+    console.error(JSON.stringify({
+        level: 'error',
+        timestamp: new Date().toISOString(),
+        message: 'Error publishing player command',
+        userId,
+        traceId,
+        commandType: command.type,
+        error: { message: err.message, stack: err.stack }
+    }));
     throw error;
   }
 }

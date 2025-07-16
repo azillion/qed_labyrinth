@@ -45,6 +45,6 @@ const start = async () => {
   }
 };
 
-startEgressService();
+startEgressService(server.log);
 
 start();
