@@ -31,10 +31,6 @@ let process_event (state : State.t) (_trace_id : string option) (event : Event.t
         state user_id exit_id
   | Event.ExitCreationFailed { user_id; error } ->
       Area_management_system.Exit_creation_communication_system.handle_exit_creation_failed state user_id error
-  | Event.Move { user_id; direction } ->
-      Movement_system.System.handle_move state user_id direction
-  | Event.PlayerMoved { user_id; old_area_id; new_area_id; direction } ->
-      Presence_system.System.handle_player_moved state user_id old_area_id new_area_id direction
   | Event.SendMovementFailed { user_id; reason } ->
       let open Lwt_result.Syntax in
       let* () = Publisher.publish_system_message_to_user state user_id reason in

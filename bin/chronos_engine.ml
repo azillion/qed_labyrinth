@@ -19,7 +19,9 @@ let () =
         Dispatcher.register "CreateCharacter" Character_system.CharacterCreate.handle;
         Dispatcher.register "CharacterSelected" Character_system.CharacterSelect.handle;
         Dispatcher.register "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
-        Dispatcher.register "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle
+        Dispatcher.register "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle;
+        Dispatcher.register "Move" Movement_system.Move.handle;
+        Dispatcher.register "PlayerMoved" Presence_system.PlayerMoved.handle
       in
       Stdio.print_endline "Systems registered.";
       (* --- End System Registration --- *)
