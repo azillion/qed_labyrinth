@@ -8,7 +8,7 @@
       "slot": "MAIN_HAND",
       "weight": 1.5,
       "is_stackable": false,
-      "properties": { "damage": 5 }
+      "properties": { "physical_power": 5 }
     },
     {
       "id": "a1b2c3d4-0002-0000-0000-000000000000",
