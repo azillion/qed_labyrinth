@@ -54,6 +54,7 @@ module CharacterCreateLogic : System.S with type event = Event.create_character_
     let open Lwt_result.Syntax in
     let* character = Character.create ~user_id ~name ~might ~finesse ~wits ~grit ~presence in
     let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterCreated { user_id; character_id = character.id })) in
+    let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterSelected { user_id; character_id = character.id })) in
     Lwt_result.return ()
 end
 module CharacterCreate = System.Make(CharacterCreateLogic)

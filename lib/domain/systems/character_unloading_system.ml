@@ -10,9 +10,11 @@ module UnloadCharacterLogic : System.S with type event = Event.unload_character_
     let character_id = payload.character_id in
     match Uuidm.of_string character_id with
     | None -> Lwt_result.fail InvalidCharacter
-    | Some entity_id ->
+    | Some _entity_id ->
         let open Lwt.Syntax in
-        let* () = Ecs.CharacterPositionStorage.remove entity_id in
+        (* Preserve the character's position so they respawn where they left off. *)
+        (* let* () = Ecs.CharacterPositionStorage.remove entity_id in *)
+        let* () = Lwt.return_unit in
         State.unset_active_character state ~user_id;
         Lwt_result.return ()
 end

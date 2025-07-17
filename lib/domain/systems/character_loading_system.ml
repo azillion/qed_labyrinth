@@ -65,7 +65,14 @@ module LoadCharacterLogic : System.S with type event = Event.load_character_into
             let output_event : Schemas_generated.Output.output_event = { target_user_ids=[character.user_id]; payload=Character_sheet sheet_msg; trace_id="" } in
             
             let* () = Publisher.publish_event state ?trace_id output_event in
-            let area_id = "00000000-0000-0000-0000-000000000000" in
+            (* Determine which area to load for the player.  If the character already has a
+               stored position, honour that; otherwise fall back to the default starting
+               area. *)
+            let area_id =
+              match pos_opt with
+              | Some pos -> pos.area_id
+              | None -> "00000000-0000-0000-0000-000000000000"
+            in
             let* () = wrap_ok (State.enqueue ?trace_id state (Event.AreaQuery { user_id=character.user_id; area_id })) in
             Lwt_result.return ()
 end
