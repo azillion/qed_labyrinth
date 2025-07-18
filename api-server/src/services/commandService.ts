@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import redisClient from '../redisClient';
-import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand } from '../schemas_generated/input_pb';
+import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand, EquipCommand, UnequipCommand, ItemSlot } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
   const traceId = randomUUID();
@@ -77,6 +77,24 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
       case 'RequestAdminMetrics': {
         const metricsCommand = new RequestAdminMetricsCommand();
         playerCommand.setRequestAdminMetrics(metricsCommand);
+        break;
+      }
+      case 'Equip': {
+        const equipCommand = new EquipCommand();
+        equipCommand.setCharacterId(command.payload.characterId);
+        equipCommand.setItemEntityId(command.payload.itemEntityId);
+        playerCommand.setEquip(equipCommand);
+        break;
+      }
+      case 'Unequip': {
+        const unequipCommand = new UnequipCommand();
+        unequipCommand.setCharacterId(command.payload.characterId);
+        
+        // The client now sends the correct enum string (e.g., "MAIN_HAND")
+        const slotEnumValue = (ItemSlot as any)[command.payload.slot] ?? ItemSlot.NONE;
+        unequipCommand.setSlot(slotEnumValue);
+        
+        playerCommand.setUnequip(unequipCommand);
         break;
       }
       default:

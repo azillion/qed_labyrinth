@@ -22,6 +22,8 @@ let register_systems () =
   r_event "TakeItem" Item_system.TakeItem.handle;
   r_event "DropItem" Item_system.DropItem.handle;
   r_event "RequestInventory" Item_system.RequestInventory.handle;
+  r_event "Equip" Equipment_system.Equip.handle;
+  r_event "Unequip" Equipment_system.Unequip.handle;
   r_event ~after:["character-create"] "CharacterListRequested" Character_system.CharacterList.handle;
   r_event "CreateCharacter" Character_system.CharacterCreate.handle;
   r_event "CharacterSelected" Character_system.CharacterSelect.handle;
@@ -43,6 +45,9 @@ let register_systems () =
   r_tick "ap-regen" Update Ap_regen_system.APRegen.handle;
   r_tick "recovery" Update Recovery_system.Recovery.handle;
   r_tick "entity-cleanup" PostUpdate Entity_cleanup_system.EntityCleanup.handle;
+
+  (* PostUpdate tickable systems *)
+  r_tick "equipment-update" PostUpdate Equipment_update_system.EquipmentUpdate.handle;
 
   (* Change-based Systems *)
   r_change ~after:["damage-application"] "knockout" Update "healths" Knockout_system.Knockout.handle

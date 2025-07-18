@@ -152,6 +152,8 @@ let string_of_event_type (event : Event.t) =
   | RequestAdminMetrics _ -> "RequestAdminMetrics"
   | CreateArea _ -> "CreateArea"
   | CreateExit _ -> "CreateExit"
+  | Equip _ -> "Equip"
+  | Unequip _ -> "Unequip"
 
 (* ------------------------------------------------------------------------- *)
 (* Helper to filter runnable systems                                          *)

@@ -156,3 +156,9 @@ let calculate_time_of_day () =
   else if hour < 12 then "morning"
   else if hour < 18 then "afternoon"
   else "evening"
+
+(* Utility: remove only the first occurrence of an item ID from a list *)
+let rec remove_first_item_by_id lst item_id =
+  match lst with
+  | [] -> []
+  | hd :: tl -> if String.equal hd item_id then tl else hd :: remove_first_item_by_id tl item_id

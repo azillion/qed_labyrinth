@@ -115,6 +115,8 @@ module Schema = struct
         let* () = C.exec (create_component_table "inventories") () in
         let* () = C.exec (create_component_table "item_positions") () in
         let* () = C.exec (create_component_table "unconscious_states") () in
+        let* () = C.exec (create_component_table "equipments") () in
+        let* () = C.exec (create_component_table "bonus_stats") () in
 
 
         (* Tier-1 relational tables *)

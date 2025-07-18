@@ -365,6 +365,82 @@ export namespace CharacterSheet {
   }
 }
 
+export class EquippedItem extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
+  getName(): string;
+  setName(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): EquippedItem.AsObject;
+  static toObject(includeInstance: boolean, msg: EquippedItem): EquippedItem.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: EquippedItem, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): EquippedItem;
+  static deserializeBinaryFromReader(message: EquippedItem, reader: jspb.BinaryReader): EquippedItem;
+}
+
+export namespace EquippedItem {
+  export type AsObject = {
+    id: string,
+    name: string,
+  }
+}
+
+export class EquipmentUpdate extends jspb.Message {
+  hasMainHand(): boolean;
+  clearMainHand(): void;
+  getMainHand(): EquippedItem | undefined;
+  setMainHand(value?: EquippedItem): void;
+
+  hasOffHand(): boolean;
+  clearOffHand(): void;
+  getOffHand(): EquippedItem | undefined;
+  setOffHand(value?: EquippedItem): void;
+
+  hasHead(): boolean;
+  clearHead(): void;
+  getHead(): EquippedItem | undefined;
+  setHead(value?: EquippedItem): void;
+
+  hasChest(): boolean;
+  clearChest(): void;
+  getChest(): EquippedItem | undefined;
+  setChest(value?: EquippedItem): void;
+
+  hasLegs(): boolean;
+  clearLegs(): void;
+  getLegs(): EquippedItem | undefined;
+  setLegs(value?: EquippedItem): void;
+
+  hasFeet(): boolean;
+  clearFeet(): void;
+  getFeet(): EquippedItem | undefined;
+  setFeet(value?: EquippedItem): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): EquipmentUpdate.AsObject;
+  static toObject(includeInstance: boolean, msg: EquipmentUpdate): EquipmentUpdate.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: EquipmentUpdate, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): EquipmentUpdate;
+  static deserializeBinaryFromReader(message: EquipmentUpdate, reader: jspb.BinaryReader): EquipmentUpdate;
+}
+
+export namespace EquipmentUpdate {
+  export type AsObject = {
+    mainHand?: EquippedItem.AsObject,
+    offHand?: EquippedItem.AsObject,
+    head?: EquippedItem.AsObject,
+    chest?: EquippedItem.AsObject,
+    legs?: EquippedItem.AsObject,
+    feet?: EquippedItem.AsObject,
+  }
+}
+
 export class MetricsReport extends jspb.Message {
   getJsonPayload(): string;
   setJsonPayload(value: string): void;
@@ -426,6 +502,11 @@ export class OutputEvent extends jspb.Message {
   getMetricsReport(): MetricsReport | undefined;
   setMetricsReport(value?: MetricsReport): void;
 
+  hasEquipmentUpdate(): boolean;
+  clearEquipmentUpdate(): void;
+  getEquipmentUpdate(): EquipmentUpdate | undefined;
+  setEquipmentUpdate(value?: EquipmentUpdate): void;
+
   getTraceId(): string;
   setTraceId(value: string): void;
 
@@ -450,6 +531,7 @@ export namespace OutputEvent {
     characterSheet?: CharacterSheet.AsObject,
     inventoryList?: InventoryList.AsObject,
     metricsReport?: MetricsReport.AsObject,
+    equipmentUpdate?: EquipmentUpdate.AsObject,
     traceId: string,
   }
 
@@ -462,6 +544,7 @@ export namespace OutputEvent {
     CHARACTER_SHEET = 6,
     INVENTORY_LIST = 7,
     METRICS_REPORT = 8,
+    EQUIPMENT_UPDATE = 9,
   }
 }
 

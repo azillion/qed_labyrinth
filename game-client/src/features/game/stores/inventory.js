@@ -5,6 +5,14 @@ import { character } from '@features/auth/stores/character';
 
 // Core inventory state
 export const [inventory, setInventory] = createStore([]);
+export const [equipment, setEquipment] = createStore({
+  mainHand: null,
+  offHand: null,
+  head: null,
+  chest: null,
+  legs: null,
+  feet: null,
+});
 
 // Loading and error states
 export const [isLoading, setIsLoading] = createSignal(false);
@@ -23,7 +31,11 @@ export const inventoryHandlers = {
   'InventoryError': (payload) => {
     setError(payload.error);
     setIsLoading(false);
-  }
+  },
+  'EquipmentUpdate': (payload) => {
+    // Payload is now a clean object like { mainHand: {id, name}, offHand: null, ... }
+    setEquipment(payload);
+  },
 };
 
 // Actions that components can call
@@ -51,5 +63,15 @@ export const inventoryActions = {
     const charId = character.id;
     if (!charId) return;
     socketManager.send('Drop', { characterId: charId, itemEntityId });
+  },
+  equip: (itemEntityId) => {
+    const charId = character.id;
+    if (!charId) return;
+    socketManager.send('Equip', { characterId: charId, itemEntityId });
+  },
+  unequip: (slot) => {
+    const charId = character.id;
+    if (!charId) return;
+    socketManager.send('Unequip', { characterId: charId, slot });
   }
 }; 

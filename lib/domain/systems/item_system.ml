@@ -77,7 +77,7 @@ module DropItemLogic : System.S with type event = Event.drop_item_payload = stru
       let* () = wrap_ok (State.enqueue ?trace_id state (Event.ActionFailed { user_id; reason = "You do not have that item." })) in
       Lwt_result.return ()
     ) else
-      let updated_inventory = { inventory with items = List.filter inventory.items ~f:(fun id -> not (String.equal id item_entity_id)) } in
+      let updated_inventory = { inventory with items = Utils.remove_first_item_by_id inventory.items item_entity_id } in
       let* () = wrap_ok (Ecs.InventoryStorage.set char_entity updated_inventory) in
       let* char_pos = Ecs.CharacterPositionStorage.get char_entity |> Lwt.map (Result.of_option ~error:(LogicError "Character has no position")) in
       let* item_entity =
@@ -133,6 +133,52 @@ module RequestInventoryLogic : System.S with type event = Event.request_inventor
       trace_id = Option.value trace_id ~default:""
     } in
     let* () = Publisher.publish_event state ?trace_id output_event in
+
+    (* Send current equipment state using new EquipmentUpdate message *)
+    let%lwt equip_comp_opt = Ecs.EquipmentStorage.get char_entity in
+    let equip_comp = Option.value equip_comp_opt ~default:(Equipment_component.empty (Uuidm.to_string char_entity)) in
+
+    let to_pb_item_opt (id_name_opt : (string * string) option) : Schemas_generated.Output.equipped_item option =
+      Option.map id_name_opt ~f:(fun (eid, nm) -> (Schemas_generated.Output.{ id = eid; name = nm } : Schemas_generated.Output.equipped_item))
+    in
+
+    let get_item_details eid_str =
+      match Uuidm.of_string eid_str with
+      | None -> Lwt.return_none
+      | Some eid ->
+          let%lwt item_comp_opt = Ecs.ItemStorage.get eid in
+          match item_comp_opt with
+          | None -> Lwt.return_none
+          | Some item_comp ->
+              let%lwt name_res = Item_definition.find_by_id item_comp.item_definition_id in
+              (match name_res with
+              | Ok (Some def) -> Lwt.return (Some (eid_str, def.name))
+              | _ -> Lwt.return_none)
+    in
+
+    let%lwt main_hand_det = Option.value_map equip_comp.main_hand ~default:Lwt.return_none ~f:get_item_details in
+    let%lwt off_hand_det = Option.value_map equip_comp.off_hand ~default:Lwt.return_none ~f:get_item_details in
+    let%lwt head_det = Option.value_map equip_comp.head ~default:Lwt.return_none ~f:get_item_details in
+    let%lwt chest_det = Option.value_map equip_comp.chest ~default:Lwt.return_none ~f:get_item_details in
+    let%lwt legs_det = Option.value_map equip_comp.legs ~default:Lwt.return_none ~f:get_item_details in
+    let%lwt feet_det = Option.value_map equip_comp.feet ~default:Lwt.return_none ~f:get_item_details in
+
+    let equip_payload : Schemas_generated.Output.equipment_update = {
+      main_hand = to_pb_item_opt main_hand_det;
+      off_hand = to_pb_item_opt off_hand_det;
+      head = to_pb_item_opt head_det;
+      chest = to_pb_item_opt chest_det;
+      legs = to_pb_item_opt legs_det;
+      feet = to_pb_item_opt feet_det;
+    } in
+
+    let equip_event : Schemas_generated.Output.output_event = {
+      target_user_ids = [ user_id ];
+      payload = Equipment_update equip_payload;
+      trace_id = Option.value trace_id ~default:"";
+    } in
+    let* () = Publisher.publish_event state ?trace_id equip_event in
+
     Lwt_result.return ()
 end
 module RequestInventory = System.Make(RequestInventoryLogic) 

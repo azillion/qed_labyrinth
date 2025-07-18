@@ -79,6 +79,20 @@ message CharacterSheet {
   DerivedStats derived_stats = 8;
 }
 
+message EquippedItem {
+  string id = 1;
+  string name = 2;
+}
+
+message EquipmentUpdate {
+  optional EquippedItem main_hand = 1;
+  optional EquippedItem off_hand = 2;
+  optional EquippedItem head = 3;
+  optional EquippedItem chest = 4;
+  optional EquippedItem legs = 5;
+  optional EquippedItem feet = 6;
+}
+
 message MetricsReport {
   string json_payload = 1;
 }
@@ -93,6 +107,7 @@ message OutputEvent {
     CharacterSheet character_sheet = 6;
     InventoryList inventory_list = 7;
     MetricsReport metrics_report = 8;
+    EquipmentUpdate equipment_update = 9;
   }
-  string trace_id = 9;
+  string trace_id = 10;
 }

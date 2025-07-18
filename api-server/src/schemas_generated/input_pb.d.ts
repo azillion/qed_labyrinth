@@ -203,6 +203,54 @@ export namespace RequestAdminMetricsCommand {
   }
 }
 
+export class EquipCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  getItemEntityId(): string;
+  setItemEntityId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): EquipCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: EquipCommand): EquipCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: EquipCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): EquipCommand;
+  static deserializeBinaryFromReader(message: EquipCommand, reader: jspb.BinaryReader): EquipCommand;
+}
+
+export namespace EquipCommand {
+  export type AsObject = {
+    characterId: string,
+    itemEntityId: string,
+  }
+}
+
+export class UnequipCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  getSlot(): ItemSlotMap[keyof ItemSlotMap];
+  setSlot(value: ItemSlotMap[keyof ItemSlotMap]): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): UnequipCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: UnequipCommand): UnequipCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: UnequipCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): UnequipCommand;
+  static deserializeBinaryFromReader(message: UnequipCommand, reader: jspb.BinaryReader): UnequipCommand;
+}
+
+export namespace UnequipCommand {
+  export type AsObject = {
+    characterId: string,
+    slot: ItemSlotMap[keyof ItemSlotMap],
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -249,6 +297,16 @@ export class PlayerCommand extends jspb.Message {
   getRequestAdminMetrics(): RequestAdminMetricsCommand | undefined;
   setRequestAdminMetrics(value?: RequestAdminMetricsCommand): void;
 
+  hasEquip(): boolean;
+  clearEquip(): void;
+  getEquip(): EquipCommand | undefined;
+  setEquip(value?: EquipCommand): void;
+
+  hasUnequip(): boolean;
+  clearUnequip(): void;
+  getUnequip(): UnequipCommand | undefined;
+  setUnequip(value?: UnequipCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -271,6 +329,8 @@ export namespace PlayerCommand {
     drop?: DropCommand.AsObject,
     requestInventory?: RequestInventoryCommand.AsObject,
     requestAdminMetrics?: RequestAdminMetricsCommand.AsObject,
+    equip?: EquipCommand.AsObject,
+    unequip?: UnequipCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -284,6 +344,8 @@ export namespace PlayerCommand {
     DROP = 7,
     REQUEST_INVENTORY = 8,
     REQUEST_ADMIN_METRICS = 9,
+    EQUIP = 10,
+    UNEQUIP = 11,
   }
 }
 
@@ -328,4 +390,16 @@ export interface DirectionMap {
 }
 
 export const Direction: DirectionMap;
+
+export interface ItemSlotMap {
+  NONE: 0;
+  MAIN_HAND: 1;
+  OFF_HAND: 2;
+  HEAD: 3;
+  CHEST: 4;
+  LEGS: 5;
+  FEET: 6;
+}
+
+export const ItemSlot: ItemSlotMap;
 

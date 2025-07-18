@@ -73,6 +73,22 @@ export function startEgressService(log: FastifyBaseLogger) {
               }
             };
             socket.send(JSON.stringify(payload));
+          } else if (outputEvent.hasEquipmentUpdate && outputEvent.hasEquipmentUpdate()) {
+            const equipmentUpdate = outputEvent.getEquipmentUpdate()!;
+            const obj = equipmentUpdate.toObject();
+            // Convert optional fields to null if missing
+            const payload = {
+              type: 'EquipmentUpdate',
+              payload: {
+                mainHand: obj.mainHand ?? null,
+                offHand: obj.offHand ?? null,
+                head: obj.head ?? null,
+                chest: obj.chest ?? null,
+                legs: obj.legs ?? null,
+                feet: obj.feet ?? null,
+              }
+            };
+            socket.send(JSON.stringify(payload));
           } else if (outputEvent.hasMetricsReport && outputEvent.hasMetricsReport()) {
             const metricsReport = outputEvent.getMetricsReport()!;
             const payload = {

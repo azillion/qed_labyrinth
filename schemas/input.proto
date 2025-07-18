@@ -12,6 +12,17 @@ enum Direction {
   DOWN = 6;
 }
 
+// Represents the character slots where an item can be equipped.
+enum ItemSlot {
+  NONE      = 0;
+  MAIN_HAND = 1;
+  OFF_HAND  = 2;
+  HEAD      = 3;
+  CHEST     = 4;
+  LEGS      = 5;
+  FEET      = 6;
+}
+
 message MoveCommand {
   Direction direction = 1;
 }
@@ -51,6 +62,18 @@ message RequestInventoryCommand {
 
 message RequestAdminMetricsCommand {}
 
+// Command messages related to equipment management
+
+message EquipCommand {
+  string character_id = 1;
+  string item_entity_id = 2;
+}
+
+message UnequipCommand {
+  string character_id = 1;
+  ItemSlot slot = 2;
+}
+
 message PlayerCommand {
   oneof command {
     MoveCommand            move            = 1;
@@ -62,6 +85,8 @@ message PlayerCommand {
     DropCommand            drop             = 7;
     RequestInventoryCommand request_inventory = 8;
     RequestAdminMetricsCommand request_admin_metrics = 9;
+    EquipCommand            equip              = 10;
+    UnequipCommand          unequip            = 11;
   }
 }
 
