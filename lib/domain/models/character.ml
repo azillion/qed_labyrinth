@@ -116,3 +116,31 @@ let find_all_by_user ~user_id =
   match%lwt Database.Pool.use db_operation with
   | Ok characters -> Lwt.return_ok characters
   | Error e -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum e))
+
+let find_many_by_ids character_ids =
+  if List.is_empty character_ids then Lwt.return_ok []
+  else
+    let db_operation (module Db : Caqti_lwt.CONNECTION) =
+      let open Caqti_type.Std in
+      let query =
+        Caqti_request.Infix.(string ->*
+          (t8 string string string int int int int int))
+          {| SELECT c.id, c.user_id, c.name, s.might, s.finesse, s.wits, s.grit, s.presence
+             FROM characters c
+             JOIN character_core_stats s ON c.id = s.character_id
+             WHERE c.id = ANY (?::text[]) |}
+      in
+      let pg_array = "{" ^ (String.concat ~sep:"," character_ids) ^ "}" in
+      let%lwt result = Db.collect_list query pg_array in
+      match result with
+      | Ok rows ->
+          let characters = List.map rows ~f:(fun (id, user_id, name, might, finesse, wits, grit, presence) ->
+            let core_stats = { CoreStats.character_id = id; might; finesse; wits; grit; presence } in
+            { id; user_id; name; core_stats })
+          in
+          Lwt_result.return characters
+      | Error e -> Lwt_result.fail e
+    in
+    match%lwt Database.Pool.use db_operation with
+    | Ok characters -> Lwt.return_ok characters
+    | Error e -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum e))

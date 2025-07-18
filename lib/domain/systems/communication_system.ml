@@ -104,24 +104,44 @@ module SendChatHistoryLogic : System.S with type event = Event.send_chat_history
     type event = Event.send_chat_history_payload
     let event_type = function Event.SendChatHistory e -> Some e | _ -> None
 
-    let get_sender_name sender_id =
-      match sender_id with
-      | None -> Lwt.return "System"
-      | Some id_str ->
-        let%lwt name_opt = (let%lwt res = Character.find_by_id id_str in Lwt.return (Result.ok res |> Option.bind ~f:Fn.id |> Option.map ~f:(fun c -> c.name))) in
-        Lwt.return (Option.value name_opt ~default:"Unknown")
-
     let execute state trace_id ({ user_id; messages } : event) =
         let open Lwt_result.Syntax in
-        let* pb_messages =
-            Lwt_list.map_s (fun (msg : Types.chat_message) ->
-              let message_type_str = match msg.message_type with
-                | Communication.Chat -> "Chat" | Communication.System -> "System" | _ -> "Chat"
-              in
-              let%lwt sender_name = get_sender_name msg.sender_id in
-              Lwt.return Schemas_generated.Output.{ sender_name; content = msg.content; message_type = message_type_str; }
-            ) messages |> wrap_val
+
+        (* 1. Collect unique sender IDs *)
+        let sender_ids =
+            List.filter_map messages ~f:(fun msg -> msg.sender_id)
+            |> List.dedup_and_sort ~compare:String.compare
         in
+
+        (* 2. Bulk fetch character names *)
+        let* char_name_map =
+            if List.is_empty sender_ids then Lwt.return_ok (Map.empty (module String))
+            else
+              match%lwt Character.find_many_by_ids sender_ids with
+              | Ok chars ->
+                  let map =
+                      List.map chars ~f:(fun c -> (c.id, c.name))
+                      |> Map.of_alist_exn (module String)
+                  in
+                  Lwt.return_ok map
+              | Error e -> Lwt.return_error e
+        in
+
+        (* 3. Convert messages to protobuf *)
+        let pb_messages =
+            List.map messages ~f:(fun (msg : Types.chat_message) ->
+                let sender_name =
+                    match msg.sender_id with
+                    | Some id -> Map.find char_name_map id |> Option.value ~default:"Unknown"
+                    | None -> "System"
+                in
+                let message_type_str = match msg.message_type with
+                  | Communication.Chat -> "Chat" | Communication.System -> "System" | _ -> "Chat"
+                in
+                Schemas_generated.Output.{ sender_name; content = msg.content; message_type = message_type_str }
+            )
+        in
+
         let chat_history_msg : Schemas_generated.Output.chat_history = { messages = pb_messages } in
         let output_event : Schemas_generated.Output.output_event = { target_user_ids = [user_id]; payload = Chat_history chat_history_msg; trace_id = "" } in
         let* () = Publisher.publish_event state ?trace_id output_event in
