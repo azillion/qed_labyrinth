@@ -57,6 +57,9 @@ export const characterHandlers = {
     } else {
         setCharacterError('Failed to create character');
     }
+  },
+  'CharacterSheet': (payload) => {
+    setCharacter(payload);
   }
 };
 
@@ -90,6 +93,15 @@ export const characterActions = {
             setCharacterError(error.message);
             throw error;
         }
+    },
+    /** Fetch latest character sheet (stats & attributes) */
+    requestSheet: () => {
+        const charId = character.id;
+        if (!charId) {
+            console.error('No active character to request sheet for.');
+            return;
+        }
+        socketManager.send('RequestCharacterSheet', { characterId: charId });
     }
 };
 

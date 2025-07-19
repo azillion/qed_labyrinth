@@ -35,7 +35,10 @@ module LoadCharacterLogic : System.S with type event = Event.load_character_into
               presence = character.core_stats.presence;
             } in
             let* () = wrap_ok (Ecs.CoreStatsStorage.set entity_id core_stats_comp) in
-            
+
+            (* Recalculate and apply equipment bonuses before calculating final stats *)
+            let* () = Bonus_stat_recalculation_system.recalculate_and_set_bonus_stats entity_id in
+
             let* pos_opt = wrap_val (Ecs.CharacterPositionStorage.get entity_id) in
             let* () = match pos_opt with
               | Some _ -> Lwt_result.return ()

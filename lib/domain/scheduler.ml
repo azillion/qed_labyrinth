@@ -154,6 +154,7 @@ let string_of_event_type (event : Event.t) =
   | CreateExit _ -> "CreateExit"
   | Equip _ -> "Equip"
   | Unequip _ -> "Unequip"
+  | RequestCharacterSheet _ -> "RequestCharacterSheet"
 
 (* ------------------------------------------------------------------------- *)
 (* Helper to filter runnable systems                                          *)

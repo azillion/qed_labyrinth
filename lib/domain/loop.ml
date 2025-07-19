@@ -43,6 +43,7 @@ let string_of_event_type (event : Event.t) =
   | CreateExit _ -> "CreateExit"
   | Equip _ -> "Equip"
   | Unequip _ -> "Unequip"
+  | RequestCharacterSheet _ -> "RequestCharacterSheet"
 
 let direction_of_proto = function
   | Schemas_generated.Input.North -> Components.ExitComponent.North
@@ -84,6 +85,7 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) : (str
         | Request_admin_metrics -> Some (Event.RequestAdminMetrics { user_id = proto_event.user_id })
         | Equip equip_cmd -> Some (Event.Equip { user_id = proto_event.user_id; character_id = equip_cmd.character_id; item_entity_id = equip_cmd.item_entity_id })
         | Unequip unequip_cmd -> Some (Event.Unequip { user_id = proto_event.user_id; character_id = unequip_cmd.character_id; slot = slot_of_proto unequip_cmd.slot })
+        | Request_character_sheet req_cmd -> Some (Event.RequestCharacterSheet { user_id = proto_event.user_id; character_id = req_cmd.character_id })
       in
       Option.map event_opt ~f:(fun event -> (trace_id, event))
 

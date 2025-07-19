@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import redisClient from '../redisClient';
-import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand, EquipCommand, UnequipCommand, ItemSlot } from '../schemas_generated/input_pb';
+import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand, EquipCommand, UnequipCommand, ItemSlot, RequestCharacterSheetCommand } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
   const traceId = randomUUID();
@@ -95,6 +95,12 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
         unequipCommand.setSlot(slotEnumValue);
         
         playerCommand.setUnequip(unequipCommand);
+        break;
+      }
+      case 'RequestCharacterSheet': {
+        const reqSheetCmd = new RequestCharacterSheetCommand();
+        reqSheetCmd.setCharacterId(command.payload.characterId ?? command.payload.character_id);
+        playerCommand.setRequestCharacterSheet(reqSheetCmd);
         break;
       }
       default:

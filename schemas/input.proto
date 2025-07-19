@@ -74,6 +74,10 @@ message UnequipCommand {
   ItemSlot slot = 2;
 }
 
+message RequestCharacterSheetCommand {
+  string character_id = 1;
+}
+
 message PlayerCommand {
   oneof command {
     MoveCommand            move            = 1;
@@ -87,6 +91,7 @@ message PlayerCommand {
     RequestAdminMetricsCommand request_admin_metrics = 9;
     EquipCommand            equip              = 10;
     UnequipCommand          unequip            = 11;
+    RequestCharacterSheetCommand request_character_sheet = 12;
   }
 }
 

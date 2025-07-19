@@ -24,7 +24,7 @@ let register_systems () =
   r_event "RequestInventory" Item_system.RequestInventory.handle;
   r_event "Equip" Equipment_system.Equip.handle;
   r_event "Unequip" Equipment_system.Unequip.handle;
-  r_event ~after:["character-create"] "CharacterListRequested" Character_system.CharacterList.handle;
+  r_event ~after:["CreateCharacter"] "CharacterListRequested" Character_system.CharacterList.handle;
   r_event "CreateCharacter" Character_system.CharacterCreate.handle;
   r_event "CharacterSelected" Character_system.CharacterSelect.handle;
   r_event "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
@@ -40,6 +40,7 @@ let register_systems () =
   r_event "AreaQueryResult" Area_management_system.AreaQueryResult.handle;
   r_event "LoadAreaIntoECS" Area_loading_system.LoadArea.handle;
   r_event "RequestAdminMetrics" Metrics_system.RequestMetrics.handle;
+  r_event "RequestCharacterSheet" Character_sheet_system.RequestCharacterSheet.handle;
 
   (* Tick-based Systems *)
   r_tick "ap-regen" Update Ap_regen_system.APRegen.handle;
@@ -50,7 +51,9 @@ let register_systems () =
   r_tick "equipment-update" PostUpdate Equipment_update_system.EquipmentUpdate.handle;
 
   (* Change-based Systems *)
-  r_change ~after:["damage-application"] "knockout" Update "healths" Knockout_system.Knockout.handle
+  r_change ~after:["damage-application"] "knockout" Update "healths" Knockout_system.Knockout.handle;
+  r_change "bonus-stat-recalc" Update "equipments" Bonus_stat_recalculation_system.BonusStatRecalculation.handle;
+  ()
 
 let () =
   let config = Config.Database.from_env () in

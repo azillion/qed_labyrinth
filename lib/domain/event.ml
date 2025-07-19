@@ -65,6 +65,7 @@ type action_failed_payload = { user_id: string; reason: string }
 type request_admin_metrics_payload = { user_id: string }
 type equip_payload = { user_id: string; character_id: string; item_entity_id: string }
 type unequip_payload = { user_id: string; character_id: string; slot: Item_definition.slot }
+type request_character_sheet_payload = { user_id: string; character_id: string }
 
 type t =
   | CreateCharacter of create_character_payload
@@ -121,6 +122,9 @@ type t =
   | Equip of equip_payload
   | Unequip of unequip_payload
 
+  (* Character Sheet Events *)
+  | RequestCharacterSheet of request_character_sheet_payload
+
 (* Helper to extract user_id for error reporting *)
 let get_user_id = function
   | CreateCharacter e -> Some e.user_id
@@ -159,4 +163,5 @@ let get_user_id = function
   | RequestAdminMetrics e -> Some e.user_id
   | Equip e -> Some e.user_id
   | Unequip e -> Some e.user_id
+  | RequestCharacterSheet e -> Some e.user_id
   | _ -> None

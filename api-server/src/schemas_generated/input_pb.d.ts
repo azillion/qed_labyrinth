@@ -251,6 +251,26 @@ export namespace UnequipCommand {
   }
 }
 
+export class RequestCharacterSheetCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RequestCharacterSheetCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: RequestCharacterSheetCommand): RequestCharacterSheetCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RequestCharacterSheetCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RequestCharacterSheetCommand;
+  static deserializeBinaryFromReader(message: RequestCharacterSheetCommand, reader: jspb.BinaryReader): RequestCharacterSheetCommand;
+}
+
+export namespace RequestCharacterSheetCommand {
+  export type AsObject = {
+    characterId: string,
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -307,6 +327,11 @@ export class PlayerCommand extends jspb.Message {
   getUnequip(): UnequipCommand | undefined;
   setUnequip(value?: UnequipCommand): void;
 
+  hasRequestCharacterSheet(): boolean;
+  clearRequestCharacterSheet(): void;
+  getRequestCharacterSheet(): RequestCharacterSheetCommand | undefined;
+  setRequestCharacterSheet(value?: RequestCharacterSheetCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -331,6 +356,7 @@ export namespace PlayerCommand {
     requestAdminMetrics?: RequestAdminMetricsCommand.AsObject,
     equip?: EquipCommand.AsObject,
     unequip?: UnequipCommand.AsObject,
+    requestCharacterSheet?: RequestCharacterSheetCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -346,6 +372,7 @@ export namespace PlayerCommand {
     REQUEST_ADMIN_METRICS = 9,
     EQUIP = 10,
     UNEQUIP = 11,
+    REQUEST_CHARACTER_SHEET = 12,
   }
 }
 
