@@ -2,7 +2,7 @@ open Base
 open Qed_error
 
 module LoadAreaLogic : System.S with type event = Event.load_area_into_ecs_payload = struct
-  let name = "area-load"
+  let name = "LoadAreaIntoECS"
   type event = Event.load_area_into_ecs_payload
   let event_type = function Event.LoadAreaIntoECS e -> Some e | _ -> None
 

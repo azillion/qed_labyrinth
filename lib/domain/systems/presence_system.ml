@@ -3,7 +3,7 @@ open Infra
 open Error_utils
 
 module PlayerMovedLogic : System.S with type event = Event.player_moved_payload = struct
-  let name = "player-moved"
+  let name = "PlayerMoved"
   type event = Event.player_moved_payload
   let event_type = function Event.PlayerMoved e -> Some e | _ -> None
 

@@ -3,7 +3,7 @@ open Error_utils
 
 (* --- Character List System --- *)
 module CharacterListLogic : System.S with type event = Event.character_list_requested_payload = struct
-  let name = "character-list"
+  let name = "CharacterListRequested"
   type event = Event.character_list_requested_payload
   let event_type = function Event.CharacterListRequested e -> Some e | _ -> None
 
@@ -39,7 +39,7 @@ module CharacterList = System.Make(CharacterListLogic)
 
 (* --- Character Creation System --- *)
 module CharacterCreateLogic : System.S with type event = Event.create_character_payload = struct
-  let name = "character-create"
+  let name = "CreateCharacter"
   type event = Event.create_character_payload
   let event_type = function Event.CreateCharacter e -> Some e | _ -> None
 
@@ -62,7 +62,7 @@ module CharacterCreate = System.Make(CharacterCreateLogic)
 
 (* --- Character Selection System --- *)
 module CharacterSelectLogic : System.S with type event = Event.character_selected_payload = struct
-  let name = "character-select"
+  let name = "CharacterSelected"
   type event = Event.character_selected_payload
   let event_type = function Event.CharacterSelected e -> Some e | _ -> None
 

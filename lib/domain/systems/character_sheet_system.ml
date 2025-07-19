@@ -15,7 +15,7 @@ let authenticate_character_action (state : State.t) (user_id : string) (characte
           Lwt_result.fail (LogicError "Character action authorization failed"))
 
 module RequestCharacterSheetLogic : System.S with type event = Event.request_character_sheet_payload = struct
-  let name = "request-character-sheet"
+  let name = "RequestCharacterSheet"
   type event = Event.request_character_sheet_payload
   let event_type = function Event.RequestCharacterSheet e -> Some e | _ -> None
 

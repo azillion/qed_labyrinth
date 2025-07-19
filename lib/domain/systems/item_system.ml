@@ -27,7 +27,7 @@ let get_character_inventory (char_entity : Uuidm.t) =
 
 (* --- Take Item System --- *)
 module TakeItemLogic : System.S with type event = Event.take_item_payload = struct
-  let name = "take-item"
+  let name = "TakeItem"
   type event = Event.take_item_payload
   let event_type = function Event.TakeItem e -> Some e | _ -> None
 
@@ -61,7 +61,7 @@ module TakeItem = System.Make(TakeItemLogic)
 
 (* --- Drop Item System --- *)
 module DropItemLogic : System.S with type event = Event.drop_item_payload = struct
-  let name = "drop-item"
+  let name = "DropItem"
   type event = Event.drop_item_payload
   let event_type = function Event.DropItem e -> Some e | _ -> None
 
@@ -95,7 +95,7 @@ module DropItem = System.Make(DropItemLogic)
 
 (* --- Request Inventory System --- *)
 module RequestInventoryLogic : System.S with type event = Event.request_inventory_payload = struct
-  let name = "request-inventory"
+  let name = "RequestInventory"
   type event = Event.request_inventory_payload
   let event_type = function Event.RequestInventory e -> Some e | _ -> None
 

@@ -4,7 +4,7 @@ open Error_utils
 
 (* --- Say System --- *)
 module SayLogic : System.S with type event = Event.say_payload = struct
-  let name = "say"
+  let name = "Say"
   type event = Event.say_payload
   let event_type = function Event.Say e -> Some e | _ -> None
 
@@ -26,7 +26,7 @@ module Say = System.Make(SayLogic)
 
 (* --- Announce System --- *)
 module AnnounceLogic : System.S with type event = Event.announce_payload = struct
-  let name = "announce"
+  let name = "Announce"
   type event = Event.announce_payload
   let event_type = function Event.Announce e -> Some e | _ -> None
 
@@ -56,7 +56,7 @@ module Announce = System.Make(AnnounceLogic)
 
 (* --- Tell System --- *)
 module TellLogic : System.S with type event = Event.tell_payload = struct
-  let name = "tell"
+  let name = "Tell"
   type event = Event.tell_payload
   let event_type = function Event.Tell e -> Some e | _ -> None
 
@@ -85,7 +85,7 @@ module Tell = System.Make(TellLogic)
 
 (* --- Request Chat History System --- *)
 module RequestChatHistoryLogic : System.S with type event = Event.request_chat_history_payload = struct
-    let name = "request-chat-history"
+    let name = "RequestChatHistory"
     type event = Event.request_chat_history_payload
     let event_type = function Event.RequestChatHistory e -> Some e | _ -> None
 
@@ -100,7 +100,7 @@ module RequestChatHistory = System.Make(RequestChatHistoryLogic)
 
 (* --- Send Chat History System --- *)
 module SendChatHistoryLogic : System.S with type event = Event.send_chat_history_payload = struct
-    let name = "send-chat-history"
+    let name = "SendChatHistory"
     type event = Event.send_chat_history_payload
     let event_type = function Event.SendChatHistory e -> Some e | _ -> None
 

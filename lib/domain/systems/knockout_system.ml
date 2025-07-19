@@ -2,7 +2,7 @@ open Base
 open Infra
 
 module KnockoutLogic : System.Tickable = struct
-  let name = "knockout"
+  let name = "Knockout"
 
   let execute _state =
     let open Lwt_result.Syntax in

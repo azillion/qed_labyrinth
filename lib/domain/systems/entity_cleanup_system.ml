@@ -1,7 +1,7 @@
 (* open Infra *)
 
 module EntityCleanupLogic : System.Tickable = struct
-  let name = "entity-cleanup"
+  let name = "EntityCleanup"
 
   let execute _state =
     (* In a real implementation, this would query for entities marked for deletion

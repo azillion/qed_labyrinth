@@ -16,7 +16,7 @@ let get_or_create_equipment entity_id =
 
 (* --- Equip System --- *)
 module EquipLogic : System.S with type event = Event.equip_payload = struct
-  let name = "equip"
+  let name = "Equip"
   type event = Event.equip_payload
   let event_type = function Event.Equip p -> Some p | _ -> None
 
@@ -95,7 +95,7 @@ module Equip = System.Make (EquipLogic)
 
 (* --- Unequip System --- *)
 module UnequipLogic : System.S with type event = Event.unequip_payload = struct
-  let name = "unequip"
+  let name = "Unequip"
   type event = Event.unequip_payload
   let event_type = function Event.Unequip p -> Some p | _ -> None
 

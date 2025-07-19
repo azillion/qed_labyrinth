@@ -4,7 +4,7 @@ open Error_utils
 (* This module implements passive Action Point regeneration for characters. *)
 module AP_regen_system = struct
   module APRegenLogic : System.Tickable = struct
-    let name = "ap-regen"
+    let name = "ApRegen"
 
     (* Track the last time each entity received AP regeneration. Using entity_id string keys
        because they are easy to hash/comparison with Base.Hashtbl. *)

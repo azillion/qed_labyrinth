@@ -5,7 +5,7 @@ open Error_utils
 open Infra
 
 module MoveLogic : System.S with type event = Event.move_payload = struct
-  let name = "move"
+  let name = "Move"
   type event = Event.move_payload
   let event_type = function Event.Move e -> Some e | _ -> None
 

@@ -3,7 +3,7 @@ open Qed_error
 open Error_utils
 
 module LoadCharacterLogic : System.S with type event = Event.load_character_into_ecs_payload = struct
-  let name = "character-load"
+  let name = "LoadCharacterIntoECS"
   type event = Event.load_character_into_ecs_payload
   let event_type = function Event.LoadCharacterIntoECS e -> Some e | _ -> None
 

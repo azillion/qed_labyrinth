@@ -43,16 +43,16 @@ let register_systems () =
   r_event "RequestCharacterSheet" Character_sheet_system.RequestCharacterSheet.handle;
 
   (* Tick-based Systems *)
-  r_tick "ap-regen" Update Ap_regen_system.APRegen.handle;
-  r_tick "recovery" Update Recovery_system.Recovery.handle;
-  r_tick "entity-cleanup" PostUpdate Entity_cleanup_system.EntityCleanup.handle;
+  r_tick "ApRegen" Update Ap_regen_system.APRegen.handle;
+  r_tick "Recovery" Update Recovery_system.Recovery.handle;
+  r_tick "EntityCleanup" PostUpdate Entity_cleanup_system.EntityCleanup.handle;
 
   (* PostUpdate tickable systems *)
-  r_tick "equipment-update" PostUpdate Equipment_update_system.EquipmentUpdate.handle;
+  r_tick "EquipmentUpdate" PostUpdate Equipment_update_system.EquipmentUpdate.handle;
 
   (* Change-based Systems *)
-  r_change ~after:["damage-application"] "knockout" Update "healths" Knockout_system.Knockout.handle;
-  r_change "bonus-stat-recalc" Update "equipments" Bonus_stat_recalculation_system.BonusStatRecalculation.handle;
+  r_change ~after:["damage-application"] "Knockout" Update "healths" Knockout_system.Knockout.handle;
+  r_change "BonusStatRecalculation" Update "equipments" Bonus_stat_recalculation_system.BonusStatRecalculation.handle;
   ()
 
 let () =

@@ -2,7 +2,7 @@ open Base
 open Infra
 
 module RecoveryLogic : System.Tickable = struct
-  let name = "recovery"
+  let name = "Recovery"
   let recovery_duration = 15.0 (* seconds *)
 
   let execute _state =

@@ -2,7 +2,7 @@ open Base
 open Infra
 
 module RequestMetricsLogic : System.S with type event = Event.request_admin_metrics_payload = struct
-  let name = "request-admin-metrics"
+  let name = "RequestAdminMetrics"
 
   type event = Event.request_admin_metrics_payload
 

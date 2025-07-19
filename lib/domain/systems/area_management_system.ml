@@ -3,7 +3,7 @@ open Error_utils
 
 (* --- Area Query System --- *)
 module AreaQueryLogic : System.S with type event = Event.area_query_payload = struct
-  let name = "area-query"
+  let name = "AreaQuery"
   type event = Event.area_query_payload
   let event_type = function Event.AreaQuery e -> Some e | _ -> None
 
@@ -65,7 +65,7 @@ module AreaQuery = System.Make(AreaQueryLogic)
 
 (* --- Area Query Result System --- *)
 module AreaQueryResultLogic : System.S with type event = Event.area_query_result_payload = struct
-  let name = "area-query-result"
+  let name = "AreaQueryResult"
   type event = Event.area_query_result_payload
   let event_type = function Event.AreaQueryResult e -> Some e | _ -> None
 

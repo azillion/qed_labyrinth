@@ -58,7 +58,7 @@ let recalculate_and_set_bonus_stats (entity_id : Uuidm.t) : (unit, Qed_error.t) 
   Lwt.return_ok ()
 
 module BonusStatRecalculationLogic : System.S with type event = unit = struct
-  let name = "bonus-stat-recalculation"
+  let name = "BonusStatRecalculation"
   type event = unit
   let event_type _ = None (* Triggered by component change, not event payload *)
 

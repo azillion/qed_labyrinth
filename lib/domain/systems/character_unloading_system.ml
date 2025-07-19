@@ -1,7 +1,7 @@
 open Qed_error
 
 module UnloadCharacterLogic : System.S with type event = Event.unload_character_from_ecs_payload = struct
-  let name = "character-unload"
+  let name = "UnloadCharacterFromECS"
   type event = Event.unload_character_from_ecs_payload
   let event_type = function Event.UnloadCharacterFromECS e -> Some e | _ -> None
 

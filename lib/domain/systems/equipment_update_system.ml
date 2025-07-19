@@ -20,7 +20,7 @@ let get_item_details_from_entity_id entity_id_str =
 
 (* System that watches for changes in equipment or inventory and sends updates to the client. *)
 module EquipmentUpdateLogic : System.Tickable = struct
-  let name = "equipment-update"
+  let name = "EquipmentUpdate"
 
   let execute state =
     let open Lwt_result.Syntax in
