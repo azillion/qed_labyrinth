@@ -139,3 +139,38 @@ module ItemPositionComponent = struct
 
   let table_name = "item_positions"
 end
+
+module ProgressionComponent = struct
+  type t = {
+    entity_id: string;
+    proficiency_level: int;
+    current_xp: int;
+    saga_tier: int;
+    current_ip: int;
+    power_budget: int;
+  } [@@deriving yojson]
+
+  let table_name = "progression"
+end
+
+module ActiveBonusesComponent = struct
+  type t = {
+    entity_id: string;
+    might: int;
+    finesse: int;
+    wits: int;
+    grit: int;
+    presence: int;
+  } [@@deriving yojson]
+
+  let table_name = "active_bonuses"
+end
+
+module AbilitiesComponent = struct
+  type t = {
+    entity_id: string;
+    unlocked_abilities: string list;
+  } [@@deriving yojson]
+
+  let table_name = "abilities"
+end

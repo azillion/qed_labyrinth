@@ -70,6 +70,33 @@ module Schema = struct
            UNIQUE(from_area_id, direction)
          ) |}
 
+  let create_lore_card_templates_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS lore_card_templates (
+           id TEXT PRIMARY KEY,
+           card_name TEXT NOT NULL,
+           power_cost INTEGER NOT NULL,
+           required_saga_tier INTEGER NOT NULL DEFAULT 1,
+           bonus_1_type TEXT,
+           bonus_1_value INTEGER,
+           bonus_2_type TEXT,
+           bonus_2_value INTEGER,
+           bonus_3_type TEXT,
+           bonus_3_value INTEGER,
+           grants_ability TEXT
+         ) |}
+
+  let create_player_lore_cards_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS player_lore_cards (
+           id TEXT PRIMARY KEY,
+           character_id TEXT NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+           template_id TEXT NOT NULL REFERENCES lore_card_templates(id),
+           title TEXT NOT NULL,
+           description TEXT NOT NULL,
+           is_active BOOLEAN NOT NULL DEFAULT false
+         ) |}
+
   let create_comm_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS communications (
@@ -117,6 +144,9 @@ module Schema = struct
         let* () = C.exec (create_component_table "unconscious_states") () in
         let* () = C.exec (create_component_table "equipments") () in
         let* () = C.exec (create_component_table "bonus_stats") () in
+        let* () = C.exec (create_component_table "progression") () in
+        let* () = C.exec (create_component_table "active_bonuses") () in
+        let* () = C.exec (create_component_table "abilities") () in
 
 
         (* Tier-1 relational tables *)
@@ -124,11 +154,15 @@ module Schema = struct
         let* () = C.exec create_areas_table () in
         let* () = C.exec create_exits_table () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-          "CREATE TABLE IF NOT EXISTS characters (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL UNIQUE, FOREIGN KEY(user_id) REFERENCES users(id))") () in
+          "CREATE TABLE IF NOT EXISTS characters (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL UNIQUE, proficiency_level INTEGER NOT NULL DEFAULT 1, current_xp INTEGER NOT NULL DEFAULT 0, saga_tier INTEGER NOT NULL DEFAULT 1, current_ip INTEGER NOT NULL DEFAULT 0, FOREIGN KEY(user_id) REFERENCES users(id))") () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
           "CREATE TABLE IF NOT EXISTS character_core_stats (character_id TEXT PRIMARY KEY, might INTEGER NOT NULL, finesse INTEGER NOT NULL, wits INTEGER NOT NULL, grit INTEGER NOT NULL, presence INTEGER NOT NULL, FOREIGN KEY(character_id) REFERENCES characters(id))") () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
           "CREATE TABLE IF NOT EXISTS item_definitions (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL, item_type TEXT NOT NULL CHECK (item_type IN ('WEAPON', 'ARMOR', 'CONSUMABLE', 'MISC')), slot TEXT CHECK (slot IN ('MAIN_HAND', 'OFF_HAND', 'HEAD', 'CHEST', 'LEGS', 'FEET', 'NONE')), weight REAL NOT NULL DEFAULT 0.0, is_stackable BOOLEAN NOT NULL DEFAULT false, properties JSONB)") () in
+
+        (* Lore card tables *)
+        let* () = C.exec create_lore_card_templates_table () in
+        let* () = C.exec create_player_lore_cards_table () in
 
         (* communications table used for chat and system messages *)
         let* () = C.exec create_comm_table () in

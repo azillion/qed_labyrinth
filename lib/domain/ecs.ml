@@ -399,6 +399,10 @@ module ItemStorage = MakeComponentStorage(ItemComponent)
 module InventoryStorage = MakeComponentStorage(InventoryComponent)
 module ItemPositionStorage = MakeComponentStorage(ItemPositionComponent)
 
+module ProgressionStorage = MakeComponentStorage(ProgressionComponent)
+module ActiveBonusesStorage = MakeComponentStorage(ActiveBonusesComponent)
+module AbilitiesStorage = MakeComponentStorage(AbilitiesComponent)
+
 module UnconsciousStorage = MakeComponentStorage(Unconscious_component)
 module BonusStatsStorage = MakeComponentStorage(Bonus_stats_component)
 module EquipmentStorage = MakeComponentStorage(Equipment_component)
@@ -437,6 +441,9 @@ module World = struct
       let* () = ItemPositionStorage.load_from_db () in
       let* () = BonusStatsStorage.load_from_db () in
       let* () = EquipmentStorage.load_from_db () in
+      let* () = ProgressionStorage.load_from_db () in
+      let* () = ActiveBonusesStorage.load_from_db () in
+      let* () = AbilitiesStorage.load_from_db () in
       Lwt.return_ok ()
 
   let sync_to_db () =
@@ -451,6 +458,9 @@ module World = struct
       let* () = ItemPositionStorage.sync_to_db (module Db) in
       let* () = BonusStatsStorage.sync_to_db (module Db) in
       let* () = EquipmentStorage.sync_to_db (module Db) in
+      let* () = ProgressionStorage.sync_to_db (module Db) in
+      let* () = ActiveBonusesStorage.sync_to_db (module Db) in
+      let* () = AbilitiesStorage.sync_to_db (module Db) in
       (* Sync other component storages here *)
 
       let deleted = Entity.cleanup_deleted () in
