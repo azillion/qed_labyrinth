@@ -44,6 +44,15 @@ let string_of_event_type (event : Event.t) =
   | Equip _ -> "Equip"
   | Unequip _ -> "Unequip"
   | RequestCharacterSheet _ -> "RequestCharacterSheet"
+  (* Progression & Lore Card *)
+  | AwardExperience _ -> "AwardExperience"
+  | PlayerGainedExperience _ -> "PlayerGainedExperience"
+  | PlayerLeveledUp _ -> "PlayerLeveledUp"
+  | AwardLoreCard _ -> "AwardLoreCard"
+  | LoreCardAwarded _ -> "LoreCardAwarded"
+  | ActivateLoreCard _ -> "ActivateLoreCard"
+  | DeactivateLoreCard _ -> "DeactivateLoreCard"
+  | LoadoutChanged _ -> "LoadoutChanged"
 
 let direction_of_proto = function
   | Schemas_generated.Input.North -> Components.ExitComponent.North
@@ -86,6 +95,10 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) : (str
         | Equip equip_cmd -> Some (Event.Equip { user_id = proto_event.user_id; character_id = equip_cmd.character_id; item_entity_id = equip_cmd.item_entity_id })
         | Unequip unequip_cmd -> Some (Event.Unequip { user_id = proto_event.user_id; character_id = unequip_cmd.character_id; slot = slot_of_proto unequip_cmd.slot })
         | Request_character_sheet req_cmd -> Some (Event.RequestCharacterSheet { user_id = proto_event.user_id; character_id = req_cmd.character_id })
+        | Activate_lore_card act_cmd ->
+            Some (Event.ActivateLoreCard { user_id = proto_event.user_id; character_id = act_cmd.character_id; card_instance_id = act_cmd.card_instance_id })
+        | Deactivate_lore_card de_cmd ->
+            Some (Event.DeactivateLoreCard { user_id = proto_event.user_id; character_id = de_cmd.character_id; card_instance_id = de_cmd.card_instance_id })
       in
       Option.map event_opt ~f:(fun event -> (trace_id, event))
 

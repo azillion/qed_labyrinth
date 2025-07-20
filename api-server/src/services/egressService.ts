@@ -98,6 +98,27 @@ export function startEgressService(log: FastifyBaseLogger) {
               }
             };
             socket.send(JSON.stringify(payload));
+          } else if (outputEvent.hasLoreCardCollection && outputEvent.hasLoreCardCollection()) {
+            const coll = outputEvent.getLoreCardCollection()!;
+            const payload = {
+              type: 'LoreCardCollection',
+              payload: coll.toObject()
+            };
+            socket.send(JSON.stringify(payload));
+          } else if (outputEvent.hasLevelUpNotification && outputEvent.hasLevelUpNotification()) {
+            const lvl = outputEvent.getLevelUpNotification()!;
+            const payload = {
+              type: 'LevelUpNotification',
+              payload: lvl.toObject()
+            };
+            socket.send(JSON.stringify(payload));
+          } else if (outputEvent.hasLoreCardAwarded && outputEvent.hasLoreCardAwarded()) {
+            const awarded = outputEvent.getLoreCardAwarded()!;
+            const payload = {
+              type: 'LoreCardAwarded',
+              payload: awarded.toObject()
+            };
+            socket.send(JSON.stringify(payload));
           }
         }
       }

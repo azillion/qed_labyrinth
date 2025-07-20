@@ -97,6 +97,38 @@ message MetricsReport {
   string json_payload = 1;
 }
 
+// ------------------------------------------------------------------
+// Lore Card Progression Messages
+// ------------------------------------------------------------------
+
+message LoreCardInstance {
+  string id = 1;
+  string template_id = 2;
+  string title = 3;
+  string description = 4;
+  bool is_active = 5;
+  int32 power_cost = 6;
+  repeated LoreCardBonus bonuses = 7;
+}
+
+message LoreCardBonus {
+  string type = 1;
+  int32  value = 2;
+}
+
+message LoreCardCollection {
+  repeated LoreCardInstance cards = 1;
+}
+
+message LevelUpNotification {
+  int32 new_level = 1;
+  int32 new_power_budget = 2;
+}
+
+message LoreCardAwarded {
+  LoreCardInstance card = 1;
+}
+
 message OutputEvent {
   repeated string target_user_ids = 1;
   oneof payload {
@@ -108,6 +140,9 @@ message OutputEvent {
     InventoryList inventory_list = 7;
     MetricsReport metrics_report = 8;
     EquipmentUpdate equipment_update = 9;
+    LoreCardCollection lore_card_collection = 11;
+    LevelUpNotification level_up_notification = 12;
+    LoreCardAwarded lore_card_awarded = 13;
   }
   string trace_id = 10;
 }

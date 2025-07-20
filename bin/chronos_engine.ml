@@ -42,6 +42,16 @@ let register_systems () =
   r_event "RequestAdminMetrics" Metrics_system.RequestMetrics.handle;
   r_event "RequestCharacterSheet" Character_sheet_system.RequestCharacterSheet.handle;
 
+  (* Progression & Lore Card Systems *)
+  r_event "AwardExperience" Experience_system.AwardExperience.handle;
+  r_event ~after:["AwardExperience"] "PlayerGainedExperience" Progression_system.CheckForProgression.handle;
+  r_event "AwardLoreCard" Award_lore_card_system.AwardLoreCard.handle;
+
+  (* Lore Card Loadout Systems *)
+  r_event "ActivateLoreCard" Manage_loadout_system.ActivateLoreCard.handle;
+  r_event "DeactivateLoreCard" Manage_loadout_system.DeactivateLoreCard.handle;
+  r_event ~after:["ActivateLoreCard"; "DeactivateLoreCard"] "LoadoutChanged" Stat_recalculation_system.RecalculateStats.handle;
+
   (* Tick-based Systems *)
   r_tick "ApRegen" Update Ap_regen_system.APRegen.handle;
   r_tick "Recovery" Update Recovery_system.Recovery.handle;

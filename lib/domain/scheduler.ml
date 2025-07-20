@@ -155,6 +155,15 @@ let string_of_event_type (event : Event.t) =
   | Equip _ -> "Equip"
   | Unequip _ -> "Unequip"
   | RequestCharacterSheet _ -> "RequestCharacterSheet"
+  (* Progression & Lore Card *)
+  | AwardExperience _ -> "AwardExperience"
+  | PlayerGainedExperience _ -> "PlayerGainedExperience"
+  | PlayerLeveledUp _ -> "PlayerLeveledUp"
+  | AwardLoreCard _ -> "AwardLoreCard"
+  | LoreCardAwarded _ -> "LoreCardAwarded"
+  | ActivateLoreCard _ -> "ActivateLoreCard"
+  | DeactivateLoreCard _ -> "DeactivateLoreCard"
+  | LoadoutChanged _ -> "LoadoutChanged"
 
 (* ------------------------------------------------------------------------- *)
 (* Helper to filter runnable systems                                          *)

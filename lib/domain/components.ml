@@ -164,6 +164,8 @@ module ActiveBonusesComponent = struct
   } [@@deriving yojson]
 
   let table_name = "active_bonuses"
+
+  let empty entity_id = { entity_id; might=0; finesse=0; wits=0; grit=0; presence=0 }
 end
 
 module AbilitiesComponent = struct

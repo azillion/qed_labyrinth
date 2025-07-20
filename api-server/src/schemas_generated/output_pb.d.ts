@@ -461,6 +461,144 @@ export namespace MetricsReport {
   }
 }
 
+export class LoreCardInstance extends jspb.Message {
+  getId(): string;
+  setId(value: string): void;
+
+  getTemplateId(): string;
+  setTemplateId(value: string): void;
+
+  getTitle(): string;
+  setTitle(value: string): void;
+
+  getDescription(): string;
+  setDescription(value: string): void;
+
+  getIsActive(): boolean;
+  setIsActive(value: boolean): void;
+
+  getPowerCost(): number;
+  setPowerCost(value: number): void;
+
+  clearBonusesList(): void;
+  getBonusesList(): Array<LoreCardBonus>;
+  setBonusesList(value: Array<LoreCardBonus>): void;
+  addBonuses(value?: LoreCardBonus, index?: number): LoreCardBonus;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): LoreCardInstance.AsObject;
+  static toObject(includeInstance: boolean, msg: LoreCardInstance): LoreCardInstance.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: LoreCardInstance, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): LoreCardInstance;
+  static deserializeBinaryFromReader(message: LoreCardInstance, reader: jspb.BinaryReader): LoreCardInstance;
+}
+
+export namespace LoreCardInstance {
+  export type AsObject = {
+    id: string,
+    templateId: string,
+    title: string,
+    description: string,
+    isActive: boolean,
+    powerCost: number,
+    bonusesList: Array<LoreCardBonus.AsObject>,
+  }
+}
+
+export class LoreCardBonus extends jspb.Message {
+  getType(): string;
+  setType(value: string): void;
+
+  getValue(): number;
+  setValue(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): LoreCardBonus.AsObject;
+  static toObject(includeInstance: boolean, msg: LoreCardBonus): LoreCardBonus.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: LoreCardBonus, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): LoreCardBonus;
+  static deserializeBinaryFromReader(message: LoreCardBonus, reader: jspb.BinaryReader): LoreCardBonus;
+}
+
+export namespace LoreCardBonus {
+  export type AsObject = {
+    type: string,
+    value: number,
+  }
+}
+
+export class LoreCardCollection extends jspb.Message {
+  clearCardsList(): void;
+  getCardsList(): Array<LoreCardInstance>;
+  setCardsList(value: Array<LoreCardInstance>): void;
+  addCards(value?: LoreCardInstance, index?: number): LoreCardInstance;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): LoreCardCollection.AsObject;
+  static toObject(includeInstance: boolean, msg: LoreCardCollection): LoreCardCollection.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: LoreCardCollection, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): LoreCardCollection;
+  static deserializeBinaryFromReader(message: LoreCardCollection, reader: jspb.BinaryReader): LoreCardCollection;
+}
+
+export namespace LoreCardCollection {
+  export type AsObject = {
+    cardsList: Array<LoreCardInstance.AsObject>,
+  }
+}
+
+export class LevelUpNotification extends jspb.Message {
+  getNewLevel(): number;
+  setNewLevel(value: number): void;
+
+  getNewPowerBudget(): number;
+  setNewPowerBudget(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): LevelUpNotification.AsObject;
+  static toObject(includeInstance: boolean, msg: LevelUpNotification): LevelUpNotification.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: LevelUpNotification, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): LevelUpNotification;
+  static deserializeBinaryFromReader(message: LevelUpNotification, reader: jspb.BinaryReader): LevelUpNotification;
+}
+
+export namespace LevelUpNotification {
+  export type AsObject = {
+    newLevel: number,
+    newPowerBudget: number,
+  }
+}
+
+export class LoreCardAwarded extends jspb.Message {
+  hasCard(): boolean;
+  clearCard(): void;
+  getCard(): LoreCardInstance | undefined;
+  setCard(value?: LoreCardInstance): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): LoreCardAwarded.AsObject;
+  static toObject(includeInstance: boolean, msg: LoreCardAwarded): LoreCardAwarded.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: LoreCardAwarded, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): LoreCardAwarded;
+  static deserializeBinaryFromReader(message: LoreCardAwarded, reader: jspb.BinaryReader): LoreCardAwarded;
+}
+
+export namespace LoreCardAwarded {
+  export type AsObject = {
+    card?: LoreCardInstance.AsObject,
+  }
+}
+
 export class OutputEvent extends jspb.Message {
   clearTargetUserIdsList(): void;
   getTargetUserIdsList(): Array<string>;
@@ -507,6 +645,21 @@ export class OutputEvent extends jspb.Message {
   getEquipmentUpdate(): EquipmentUpdate | undefined;
   setEquipmentUpdate(value?: EquipmentUpdate): void;
 
+  hasLoreCardCollection(): boolean;
+  clearLoreCardCollection(): void;
+  getLoreCardCollection(): LoreCardCollection | undefined;
+  setLoreCardCollection(value?: LoreCardCollection): void;
+
+  hasLevelUpNotification(): boolean;
+  clearLevelUpNotification(): void;
+  getLevelUpNotification(): LevelUpNotification | undefined;
+  setLevelUpNotification(value?: LevelUpNotification): void;
+
+  hasLoreCardAwarded(): boolean;
+  clearLoreCardAwarded(): void;
+  getLoreCardAwarded(): LoreCardAwarded | undefined;
+  setLoreCardAwarded(value?: LoreCardAwarded): void;
+
   getTraceId(): string;
   setTraceId(value: string): void;
 
@@ -532,6 +685,9 @@ export namespace OutputEvent {
     inventoryList?: InventoryList.AsObject,
     metricsReport?: MetricsReport.AsObject,
     equipmentUpdate?: EquipmentUpdate.AsObject,
+    loreCardCollection?: LoreCardCollection.AsObject,
+    levelUpNotification?: LevelUpNotification.AsObject,
+    loreCardAwarded?: LoreCardAwarded.AsObject,
     traceId: string,
   }
 
@@ -545,6 +701,9 @@ export namespace OutputEvent {
     INVENTORY_LIST = 7,
     METRICS_REPORT = 8,
     EQUIPMENT_UPDATE = 9,
+    LORE_CARD_COLLECTION = 11,
+    LEVEL_UP_NOTIFICATION = 12,
+    LORE_CARD_AWARDED = 13,
   }
 }
 

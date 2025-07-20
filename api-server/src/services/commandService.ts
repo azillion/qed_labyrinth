@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import redisClient from '../redisClient';
-import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand, EquipCommand, UnequipCommand, ItemSlot, RequestCharacterSheetCommand } from '../schemas_generated/input_pb';
+import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand, EquipCommand, UnequipCommand, ItemSlot, RequestCharacterSheetCommand, ActivateLoreCardCommand, DeactivateLoreCardCommand } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
   const traceId = randomUUID();
@@ -95,6 +95,20 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
         unequipCommand.setSlot(slotEnumValue);
         
         playerCommand.setUnequip(unequipCommand);
+        break;
+      }
+      case 'ActivateLoreCard': {
+        const actCmd = new ActivateLoreCardCommand();
+        actCmd.setCharacterId(command.payload.characterId ?? command.payload.character_id);
+        actCmd.setCardInstanceId(command.payload.cardInstanceId ?? command.payload.card_instance_id);
+        playerCommand.setActivateLoreCard(actCmd);
+        break;
+      }
+      case 'DeactivateLoreCard': {
+        const deactCmd = new DeactivateLoreCardCommand();
+        deactCmd.setCharacterId(command.payload.characterId ?? command.payload.character_id);
+        deactCmd.setCardInstanceId(command.payload.cardInstanceId ?? command.payload.card_instance_id);
+        playerCommand.setDeactivateLoreCard(deactCmd);
         break;
       }
       case 'RequestCharacterSheet': {

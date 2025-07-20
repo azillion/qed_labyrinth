@@ -271,6 +271,54 @@ export namespace RequestCharacterSheetCommand {
   }
 }
 
+export class ActivateLoreCardCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  getCardInstanceId(): string;
+  setCardInstanceId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ActivateLoreCardCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: ActivateLoreCardCommand): ActivateLoreCardCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ActivateLoreCardCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ActivateLoreCardCommand;
+  static deserializeBinaryFromReader(message: ActivateLoreCardCommand, reader: jspb.BinaryReader): ActivateLoreCardCommand;
+}
+
+export namespace ActivateLoreCardCommand {
+  export type AsObject = {
+    characterId: string,
+    cardInstanceId: string,
+  }
+}
+
+export class DeactivateLoreCardCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  getCardInstanceId(): string;
+  setCardInstanceId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DeactivateLoreCardCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: DeactivateLoreCardCommand): DeactivateLoreCardCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: DeactivateLoreCardCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DeactivateLoreCardCommand;
+  static deserializeBinaryFromReader(message: DeactivateLoreCardCommand, reader: jspb.BinaryReader): DeactivateLoreCardCommand;
+}
+
+export namespace DeactivateLoreCardCommand {
+  export type AsObject = {
+    characterId: string,
+    cardInstanceId: string,
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -332,6 +380,16 @@ export class PlayerCommand extends jspb.Message {
   getRequestCharacterSheet(): RequestCharacterSheetCommand | undefined;
   setRequestCharacterSheet(value?: RequestCharacterSheetCommand): void;
 
+  hasActivateLoreCard(): boolean;
+  clearActivateLoreCard(): void;
+  getActivateLoreCard(): ActivateLoreCardCommand | undefined;
+  setActivateLoreCard(value?: ActivateLoreCardCommand): void;
+
+  hasDeactivateLoreCard(): boolean;
+  clearDeactivateLoreCard(): void;
+  getDeactivateLoreCard(): DeactivateLoreCardCommand | undefined;
+  setDeactivateLoreCard(value?: DeactivateLoreCardCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -357,6 +415,8 @@ export namespace PlayerCommand {
     equip?: EquipCommand.AsObject,
     unequip?: UnequipCommand.AsObject,
     requestCharacterSheet?: RequestCharacterSheetCommand.AsObject,
+    activateLoreCard?: ActivateLoreCardCommand.AsObject,
+    deactivateLoreCard?: DeactivateLoreCardCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -373,6 +433,8 @@ export namespace PlayerCommand {
     EQUIP = 10,
     UNEQUIP = 11,
     REQUEST_CHARACTER_SHEET = 12,
+    ACTIVATE_LORE_CARD = 13,
+    DEACTIVATE_LORE_CARD = 14,
   }
 }
 

@@ -67,6 +67,16 @@ type equip_payload = { user_id: string; character_id: string; item_entity_id: st
 type unequip_payload = { user_id: string; character_id: string; slot: Item_definition.slot }
 type request_character_sheet_payload = { user_id: string; character_id: string }
 
+(* Progression & Lore Card Events *)
+type award_experience_payload = { character_id: string; xp: int; ip: int }
+type player_gained_experience_payload = { character_id: string }
+type player_leveled_up_payload = { user_id: string; new_level: int; new_power_budget: int }
+type award_lore_card_payload = { character_id: string; template_id: string; context: string }
+type lore_card_awarded_payload = { user_id: string; card_title: string }
+type activate_lore_card_payload = { user_id: string; character_id: string; card_instance_id: string }
+type deactivate_lore_card_payload = { user_id: string; character_id: string; card_instance_id: string }
+type loadout_changed_payload = { character_id: string }
+
 type t =
   | CreateCharacter of create_character_payload
   | CharacterCreated of character_created_payload
@@ -125,6 +135,16 @@ type t =
   (* Character Sheet Events *)
   | RequestCharacterSheet of request_character_sheet_payload
 
+  (* Progression & Lore Card Events *)
+  | AwardExperience of award_experience_payload
+  | PlayerGainedExperience of player_gained_experience_payload
+  | PlayerLeveledUp of player_leveled_up_payload
+  | AwardLoreCard of award_lore_card_payload
+  | LoreCardAwarded of lore_card_awarded_payload
+  | ActivateLoreCard of activate_lore_card_payload
+  | DeactivateLoreCard of deactivate_lore_card_payload
+  | LoadoutChanged of loadout_changed_payload
+
 (* Helper to extract user_id for error reporting *)
 let get_user_id = function
   | CreateCharacter e -> Some e.user_id
@@ -164,4 +184,8 @@ let get_user_id = function
   | Equip e -> Some e.user_id
   | Unequip e -> Some e.user_id
   | RequestCharacterSheet e -> Some e.user_id
+  | PlayerLeveledUp e -> Some e.user_id
+  | LoreCardAwarded e -> Some e.user_id
+  | ActivateLoreCard e -> Some e.user_id
+  | DeactivateLoreCard e -> Some e.user_id
   | _ -> None
