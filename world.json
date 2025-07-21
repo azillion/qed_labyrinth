@@ -88,5 +88,33 @@
       "to_id": "55555555-5555-5555-5555-555555555555",
       "direction": "south"
     }
+  ],
+  "lore_card_templates": [
+    {
+      "id": "birthright_unwavering_gaze",
+      "card_name": "Birthright: Unwavering Gaze",
+      "power_cost": 0,
+      "required_saga_tier": 1,
+      "bonus_1_type": "grit",
+      "bonus_1_value": 1,
+      "bonus_2_type": null,
+      "bonus_2_value": null,
+      "bonus_3_type": null,
+      "bonus_3_value": null,
+      "grants_ability": null
+    },
+    {
+      "id": "generic_quest_might",
+      "card_name": "Generic Quest Reward (Might)",
+      "power_cost": 2,
+      "required_saga_tier": 1,
+      "bonus_1_type": "might",
+      "bonus_1_value": 1,
+      "bonus_2_type": null,
+      "bonus_2_value": null,
+      "bonus_3_type": null,
+      "bonus_3_value": null,
+      "grants_ability": null
+    }
   ]
 } 

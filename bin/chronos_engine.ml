@@ -51,6 +51,7 @@ let register_systems () =
   r_event "ActivateLoreCard" Manage_loadout_system.ActivateLoreCard.handle;
   r_event "DeactivateLoreCard" Manage_loadout_system.DeactivateLoreCard.handle;
   r_event ~after:["ActivateLoreCard"; "DeactivateLoreCard"] "LoadoutChanged" Stat_recalculation_system.RecalculateStats.handle;
+  r_event "RequestLoreCollection" Request_lore_collection_system.RequestLoreCollection.handle;
 
   (* Tick-based Systems *)
   r_tick "ApRegen" Update Ap_regen_system.APRegen.handle;
