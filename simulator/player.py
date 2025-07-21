@@ -26,6 +26,9 @@ class SimulatedPlayer:
         }
         self.total_gear_score = 0
 
+        # Initialize power score once
+        self.recalculate_power_score()
+
     def gain_xp(self, amount):
         """Add XP and handle level ups if thresholds are crossed."""
         self.xp += amount
@@ -92,42 +95,48 @@ class SimulatedPlayer:
         # The single source of truth for stat and power updates
         self.recalculate_power_score()
 
-    def recalculate_power_score(self):
-        """
-        Calculates the player's total power score based on their final, combined stats
-        from both active Lore Cards and equipped gear.
-        """
-        # 1. Initialize all stat totals to zero
+    # --- Power Calculation ---
+    def _update_total_stats(self):
+        """Aggregate total stats from active cards and equipped gear."""
+        # Reset totals
         for stat in STAT_BONUS_KEYS:
             setattr(self, f"total_{stat}", 0)
 
-        # 2. Sum stat bonuses from active Lore Cards
+        # Sum bonuses from cards
         for card in self.active_loadout:
             for stat in STAT_BONUS_KEYS:
-                bonus = card.get(f"{stat}_bonus", 0)
-                current_total = getattr(self, f"total_{stat}")
-                setattr(self, f"total_{stat}", current_total + bonus)
+                setattr(
+                    self,
+                    f"total_{stat}",
+                    getattr(self, f"total_{stat}") + card.get(f"{stat}_bonus", 0),
+                )
 
-        # 3. Sum stat bonuses from equipped gear
+        # Sum bonuses from gear
         for item_id in self.equipment.values():
             if item_id:
                 stats = ITEM_TEMPLATES[item_id].get("stats", {})
                 for stat in STAT_BONUS_KEYS:
-                    bonus = stats.get(stat, 0)
-                    current_total = getattr(self, f"total_{stat}")
-                    setattr(self, f"total_{stat}", current_total + bonus)
+                    setattr(
+                        self,
+                        f"total_{stat}",
+                        getattr(self, f"total_{stat}") + stats.get(stat, 0),
+                    )
 
-        # 4. Calculate final power score from the character's total stats
-        final_power = 0
-        for stat in STAT_BONUS_KEYS:
-            total_stat_value = getattr(self, f"total_{stat}")
-            weight = STAT_POWER_WEIGHTS.get(stat, 1.0)
-            final_power += total_stat_value * weight
+    def recalculate_power_score(self):
+        """Recalculate power score after stats or gear change."""
+        # 1. Update combined stats
+        self._update_total_stats()
 
-        self.player_power_score = final_power
+        # 2. Power from stats
+        power_from_stats = sum(
+            getattr(self, f"total_{stat}") * STAT_POWER_WEIGHTS.get(stat, 1.0)
+            for stat in STAT_BONUS_KEYS
+        )
 
-        # Recalculate total_gear_score for analysis (not added to power score)
-        self.total_gear_score = 0
-        for item_id in self.equipment.values():
-            if item_id:
-                self.total_gear_score += ITEM_TEMPLATES[item_id].get("gear_score", 0) 
+        # 3. Gear score (quality bonus)
+        self.total_gear_score = sum(
+            ITEM_TEMPLATES[item_id]["gear_score"] for item_id in self.equipment.values() if item_id
+        )
+
+        # 4. Final power score combines both components
+        self.player_power_score = power_from_stats + self.total_gear_score 
