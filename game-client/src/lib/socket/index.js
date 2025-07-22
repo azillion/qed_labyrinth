@@ -6,6 +6,7 @@ import { characterHandlers } from '@features/auth/stores/character';
 import { mapHandlers } from '@features/map/stores/map';
 import { authHandlers } from '@features/auth/stores/auth';
 import { inventoryHandlers } from '@features/game/stores/inventory';
+import { loreHandlers } from '@features/game/stores/lore';
 
 export const socketManager = new SocketManager();
 
@@ -33,6 +34,11 @@ export function registerCoreHandlers() {
 
   // Inventory handlers
   Object.entries(inventoryHandlers).forEach(([type, handler]) => {
+    socketManager.registerHandler(type, handler);
+  });
+
+  // Lore / Progression handlers
+  Object.entries(loreHandlers).forEach(([type, handler]) => {
     socketManager.registerHandler(type, handler);
   });
 

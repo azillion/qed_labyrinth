@@ -77,6 +77,8 @@ message CharacterSheet {
   int32 max_action_points = 6;
   CoreAttributes core_attributes = 7;
   DerivedStats derived_stats = 8;
+  int32 proficiency_level = 9;
+  int32 power_budget = 10;
 }
 
 message EquippedItem {

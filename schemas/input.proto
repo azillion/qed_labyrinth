@@ -79,7 +79,6 @@ message RequestCharacterSheetCommand {
 }
 
 // Commands for managing Lore Card loadouts
-
 message ActivateLoreCardCommand {
   string character_id = 1;
   string card_instance_id = 2;
@@ -88,6 +87,10 @@ message ActivateLoreCardCommand {
 message DeactivateLoreCardCommand {
   string character_id = 1;
   string card_instance_id = 2;
+}
+
+message RequestLoreCollectionCommand {
+  string character_id = 1;
 }
 
 message PlayerCommand {
@@ -106,6 +109,7 @@ message PlayerCommand {
     RequestCharacterSheetCommand request_character_sheet = 12;
     ActivateLoreCardCommand     activate_lore_card      = 13;
     DeactivateLoreCardCommand   deactivate_lore_card    = 14;
+    RequestLoreCollectionCommand request_lore_collection = 15;
   }
 }
 

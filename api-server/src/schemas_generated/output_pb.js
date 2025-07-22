@@ -2696,7 +2696,9 @@ proto.qed.schemas.output.CharacterSheet.toObject = function(includeInstance, msg
     actionPoints: jspb.Message.getFieldWithDefault(msg, 5, 0),
     maxActionPoints: jspb.Message.getFieldWithDefault(msg, 6, 0),
     coreAttributes: (f = msg.getCoreAttributes()) && proto.qed.schemas.output.CoreAttributes.toObject(includeInstance, f),
-    derivedStats: (f = msg.getDerivedStats()) && proto.qed.schemas.output.DerivedStats.toObject(includeInstance, f)
+    derivedStats: (f = msg.getDerivedStats()) && proto.qed.schemas.output.DerivedStats.toObject(includeInstance, f),
+    proficiencyLevel: jspb.Message.getFieldWithDefault(msg, 9, 0),
+    powerBudget: jspb.Message.getFieldWithDefault(msg, 10, 0)
   };
 
   if (includeInstance) {
@@ -2766,6 +2768,14 @@ proto.qed.schemas.output.CharacterSheet.deserializeBinaryFromReader = function(m
       var value = new proto.qed.schemas.output.DerivedStats;
       reader.readMessage(value,proto.qed.schemas.output.DerivedStats.deserializeBinaryFromReader);
       msg.setDerivedStats(value);
+      break;
+    case 9:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setProficiencyLevel(value);
+      break;
+    case 10:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setPowerBudget(value);
       break;
     default:
       reader.skipField();
@@ -2852,6 +2862,20 @@ proto.qed.schemas.output.CharacterSheet.serializeBinaryToWriter = function(messa
       8,
       f,
       proto.qed.schemas.output.DerivedStats.serializeBinaryToWriter
+    );
+  }
+  f = message.getProficiencyLevel();
+  if (f !== 0) {
+    writer.writeInt32(
+      9,
+      f
+    );
+  }
+  f = message.getPowerBudget();
+  if (f !== 0) {
+    writer.writeInt32(
+      10,
+      f
     );
   }
 };
@@ -3036,6 +3060,42 @@ proto.qed.schemas.output.CharacterSheet.prototype.clearDerivedStats = function()
  */
 proto.qed.schemas.output.CharacterSheet.prototype.hasDerivedStats = function() {
   return jspb.Message.getField(this, 8) != null;
+};
+
+
+/**
+ * optional int32 proficiency_level = 9;
+ * @return {number}
+ */
+proto.qed.schemas.output.CharacterSheet.prototype.getProficiencyLevel = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 9, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.qed.schemas.output.CharacterSheet} returns this
+ */
+proto.qed.schemas.output.CharacterSheet.prototype.setProficiencyLevel = function(value) {
+  return jspb.Message.setProto3IntField(this, 9, value);
+};
+
+
+/**
+ * optional int32 power_budget = 10;
+ * @return {number}
+ */
+proto.qed.schemas.output.CharacterSheet.prototype.getPowerBudget = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 10, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.qed.schemas.output.CharacterSheet} returns this
+ */
+proto.qed.schemas.output.CharacterSheet.prototype.setPowerBudget = function(value) {
+  return jspb.Message.setProto3IntField(this, 10, value);
 };
 
 

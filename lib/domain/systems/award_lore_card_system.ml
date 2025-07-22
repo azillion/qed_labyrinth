@@ -1,5 +1,3 @@
-open Base
-open Infra
 open Error_utils
 
 module AwardLoreCardLogic : System.S with type event = Event.award_lore_card_payload = struct
@@ -20,29 +18,11 @@ module AwardLoreCardLogic : System.S with type event = Event.award_lore_card_pay
     in
     let user_id = char_rec.user_id in
 
-    (* Build prompts for LLM *)
-    let system_prompt =
-      "You are a narrative designer crafting collectible Lore Cards for a fantasy RPG." in
-    let user_prompt =
-      Printf.sprintf
-        "Generate a short, flavorful title and a two-sentence description for a lore card based on this event: %s. Return the title on the first line and the description on the next."
-        context
-    in
+    (* Context string is used directly by the LLM helper *)
 
-    (* Call LLM *)
-    let* llm_result =
-      Llm_client.generate_with_openai ~system_prompt ~user_prompt
-      |> Lwt.map (function
-        | Ok txt -> Ok txt
-        | Error err -> Error (Qed_error.ServerError err))
-    in
-    let text = llm_result in
-    let lines = String.split_lines text in
-    let title, description =
-      match lines with
-      | [] -> ("Untitled Lore", "A mysterious tale yet to be told.")
-      | [only] -> (only, "")
-      | first :: rest -> (first, String.concat ~sep:" " rest)
+    (* Ask the LLM for structured metadata; if it fails, use safe defaults. *)
+    let* (title, description) =
+      Lore_card_generator.generate_metadata ~context
     in
 
     (* Persist lore card instance *)

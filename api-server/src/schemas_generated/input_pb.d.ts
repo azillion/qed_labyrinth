@@ -319,6 +319,26 @@ export namespace DeactivateLoreCardCommand {
   }
 }
 
+export class RequestLoreCollectionCommand extends jspb.Message {
+  getCharacterId(): string;
+  setCharacterId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RequestLoreCollectionCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: RequestLoreCollectionCommand): RequestLoreCollectionCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RequestLoreCollectionCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RequestLoreCollectionCommand;
+  static deserializeBinaryFromReader(message: RequestLoreCollectionCommand, reader: jspb.BinaryReader): RequestLoreCollectionCommand;
+}
+
+export namespace RequestLoreCollectionCommand {
+  export type AsObject = {
+    characterId: string,
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -390,6 +410,11 @@ export class PlayerCommand extends jspb.Message {
   getDeactivateLoreCard(): DeactivateLoreCardCommand | undefined;
   setDeactivateLoreCard(value?: DeactivateLoreCardCommand): void;
 
+  hasRequestLoreCollection(): boolean;
+  clearRequestLoreCollection(): void;
+  getRequestLoreCollection(): RequestLoreCollectionCommand | undefined;
+  setRequestLoreCollection(value?: RequestLoreCollectionCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -417,6 +442,7 @@ export namespace PlayerCommand {
     requestCharacterSheet?: RequestCharacterSheetCommand.AsObject,
     activateLoreCard?: ActivateLoreCardCommand.AsObject,
     deactivateLoreCard?: DeactivateLoreCardCommand.AsObject,
+    requestLoreCollection?: RequestLoreCollectionCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -435,6 +461,7 @@ export namespace PlayerCommand {
     REQUEST_CHARACTER_SHEET = 12,
     ACTIVATE_LORE_CARD = 13,
     DEACTIVATE_LORE_CARD = 14,
+    REQUEST_LORE_COLLECTION = 15,
   }
 }
 

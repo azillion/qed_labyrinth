@@ -32,6 +32,7 @@ module UnconsciousStorage        : ComponentStorage with type component = Uncons
 module BonusStatsStorage         : ComponentStorage with type component = Bonus_stats_component.t
 module EquipmentStorage          : ComponentStorage with type component = Equipment_component.t
 module ActiveBonusesStorage     : ComponentStorage with type component = Components.ActiveBonusesComponent.t
+module ProgressionStorage       : ComponentStorage with type component = Components.ProgressionComponent.t
 
 (** {2 World functions} *)
 module World : sig

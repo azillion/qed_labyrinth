@@ -16,6 +16,7 @@ export const CharacterSheetPage = () => {
 
                 <div class="mb-8">
                     <TerminalText class="text-xl mb-4">Core Attributes</TerminalText>
+                    <TerminalText class="text-xs text-yellow-400 mb-2">Core Attributes are a reflection of your active Saga and cannot be allocated directly.</TerminalText>
                     <div class="ml-4 space-y-2">
                         <TerminalText>Might: {character.coreAttributes.might}</TerminalText>
                         <TerminalText>Finesse: {character.coreAttributes.finesse}</TerminalText>

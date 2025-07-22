@@ -161,9 +161,11 @@ let string_of_event_type (event : Event.t) =
   | PlayerLeveledUp _ -> "PlayerLeveledUp"
   | AwardLoreCard _ -> "AwardLoreCard"
   | LoreCardAwarded _ -> "LoreCardAwarded"
+  | CharacterActivated _ -> "CharacterActivated"
   | ActivateLoreCard _ -> "ActivateLoreCard"
   | DeactivateLoreCard _ -> "DeactivateLoreCard"
   | LoadoutChanged _ -> "LoadoutChanged"
+  | RequestLoreCollection _ -> "RequestLoreCollection"
 
 (* ------------------------------------------------------------------------- *)
 (* Helper to filter runnable systems                                          *)

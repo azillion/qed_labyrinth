@@ -98,6 +98,37 @@ module Q = struct
       Caqti_type.Std.(t6 string string string string string bool)
   ;;
 
+  (* Combined type for instance + template *)
+  let instance_with_template_type : (Instance.t * Template.t) Caqti_type.t =
+    Caqti_type.Std.t2 instance_type template_type
+  ;;
+
+  let find_active_with_templates =
+    Caqti_request.Infix.(Caqti_type.Std.string ->* instance_with_template_type)
+      {| SELECT plc.id, plc.character_id, plc.template_id, plc.title, plc.description, plc.is_active,
+               tmpl.id, tmpl.card_name, tmpl.power_cost, tmpl.required_saga_tier,
+               tmpl.bonus_1_type, tmpl.bonus_1_value,
+               tmpl.bonus_2_type, tmpl.bonus_2_value,
+               tmpl.bonus_3_type, tmpl.bonus_3_value,
+               tmpl.grants_ability
+         FROM player_lore_cards plc
+         JOIN lore_card_templates tmpl ON plc.template_id = tmpl.id
+         WHERE plc.character_id = ? AND plc.is_active = TRUE |}
+  ;;
+
+  (* Fetch template via instance ID using a JOIN for efficiency *)
+  let find_template_by_instance_id =
+    Caqti_request.Infix.(Caqti_type.Std.string ->? template_type)
+      {| SELECT tmpl.id, tmpl.card_name, tmpl.power_cost, tmpl.required_saga_tier,
+               tmpl.bonus_1_type, tmpl.bonus_1_value,
+               tmpl.bonus_2_type, tmpl.bonus_2_value,
+               tmpl.bonus_3_type, tmpl.bonus_3_value,
+               tmpl.grants_ability
+         FROM lore_card_templates tmpl
+         JOIN player_lore_cards plc ON tmpl.id = plc.template_id
+         WHERE plc.id = ? |}
+  ;;
+
   (* Queries *)
   let insert_instance =
     Caqti_request.Infix.(instance_type ->. Caqti_type.unit)
@@ -183,6 +214,16 @@ let find_active_instances_by_character_id character_id =
   | Ok list -> Lwt.return_ok list
   | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))
 
+let find_active_instances_with_templates character_id =
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    match%lwt Db.collect_list Q.find_active_with_templates character_id with
+    | Ok rows -> Lwt_result.return rows
+    | Error e -> Lwt_result.fail e
+  in
+  match%lwt Database.Pool.use db_operation with
+  | Ok rows -> Lwt.return_ok rows
+  | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))
+
 let set_active_status ~instance_id ~is_active =
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     match%lwt Db.exec Q.set_active_status (is_active, instance_id) with
@@ -191,4 +232,14 @@ let set_active_status ~instance_id ~is_active =
   in
   match%lwt Database.Pool.use db_operation with
   | Ok () -> Lwt.return_ok ()
+  | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err)) 
+
+let find_template_by_instance_id instance_id =
+  let db_operation (module Db : Caqti_lwt.CONNECTION) =
+    match%lwt Db.find_opt Q.find_template_by_instance_id instance_id with
+    | Ok tmpl_opt -> Lwt_result.return tmpl_opt
+    | Error e -> Lwt_result.fail e
+  in
+  match%lwt Database.Pool.use db_operation with
+  | Ok tmpl_opt -> Lwt.return_ok tmpl_opt
   | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err)) 

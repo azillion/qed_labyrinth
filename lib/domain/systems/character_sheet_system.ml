@@ -25,15 +25,12 @@ module RequestCharacterSheetLogic : System.S with type event = Event.request_cha
     let open Lwt_result.Syntax in
     let* char_entity = authenticate_character_action state user_id character_id in
 
-    (* Ensure stats are up to date *)
-    let* () = Bonus_stat_recalculation_system.recalculate_and_set_bonus_stats char_entity in
-    let* () = Character_stat_system.calculate_and_update_stats char_entity in
-
     (* Fetch components *)
     let* health_opt = wrap_val (Ecs.HealthStorage.get char_entity) in
     let* ap_opt = wrap_val (Ecs.ActionPointsStorage.get char_entity) in
     let* core_stats_opt = wrap_val (Ecs.CoreStatsStorage.get char_entity) in
     let* derived_opt = wrap_val (Ecs.DerivedStatsStorage.get char_entity) in
+    let* prog_opt = wrap_val (Ecs.ProgressionStorage.get char_entity) in
 
     match core_stats_opt with
     | None -> Lwt_result.return () (* Should not happen *)
@@ -46,7 +43,12 @@ module RequestCharacterSheetLogic : System.S with type event = Event.request_cha
         let of_i = Int32.of_int_exn in
         let pb_core_attrs : Schemas_generated.Output.core_attributes = { might=of_i sheet.core_attributes.might; finesse=of_i sheet.core_attributes.finesse; wits=of_i sheet.core_attributes.wits; grit=of_i sheet.core_attributes.grit; presence=of_i sheet.core_attributes.presence } in
         let pb_derived_stats : Schemas_generated.Output.derived_stats = { physical_power=of_i sheet.derived_stats.physical_power; spell_power=of_i sheet.derived_stats.spell_power; accuracy=of_i sheet.derived_stats.accuracy; evasion=of_i sheet.derived_stats.evasion; armor=of_i sheet.derived_stats.armor; resolve=of_i sheet.derived_stats.resolve } in
-        let sheet_msg : Schemas_generated.Output.character_sheet = { id=sheet.id; name=sheet.name; health=of_i sheet.health; max_health=of_i sheet.max_health; action_points=of_i sheet.action_points; max_action_points=of_i sheet.max_action_points; core_attributes=Some pb_core_attrs; derived_stats=Some pb_derived_stats } in
+        let (prof_lvl, p_budget) =
+          match prog_opt with
+          | Some p -> (p.proficiency_level, p.power_budget)
+          | None -> (1, 0)
+        in
+        let sheet_msg : Schemas_generated.Output.character_sheet = { id=sheet.id; name=sheet.name; health=of_i sheet.health; max_health=of_i sheet.max_health; action_points=of_i sheet.action_points; max_action_points=of_i sheet.max_action_points; core_attributes=Some pb_core_attrs; derived_stats=Some pb_derived_stats; proficiency_level = Int32.of_int_exn prof_lvl; power_budget = Int32.of_int_exn p_budget } in
         let output_event : Schemas_generated.Output.output_event = { target_user_ids=[user_id]; payload=Character_sheet sheet_msg; trace_id=Option.value trace_id ~default:"" } in
         let* () = Publisher.publish_event state ?trace_id output_event in
         Lwt_result.return ()

@@ -342,6 +342,12 @@ export class CharacterSheet extends jspb.Message {
   getDerivedStats(): DerivedStats | undefined;
   setDerivedStats(value?: DerivedStats): void;
 
+  getProficiencyLevel(): number;
+  setProficiencyLevel(value: number): void;
+
+  getPowerBudget(): number;
+  setPowerBudget(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): CharacterSheet.AsObject;
   static toObject(includeInstance: boolean, msg: CharacterSheet): CharacterSheet.AsObject;
@@ -362,6 +368,8 @@ export namespace CharacterSheet {
     maxActionPoints: number,
     coreAttributes?: CoreAttributes.AsObject,
     derivedStats?: DerivedStats.AsObject,
+    proficiencyLevel: number,
+    powerBudget: number,
   }
 }
 

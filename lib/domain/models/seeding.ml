@@ -52,6 +52,21 @@ module Internal = struct
     item_definitions : item_definition_props list;
     areas : area list;
     exits : exit list;
+    lore_card_templates : lore_card_template list [@default []];
+  } [@@deriving yojson { strict = false }]
+
+  and lore_card_template = {
+    id : string;
+    card_name : string;
+    power_cost : int;
+    required_saga_tier : int;
+    bonus_1_type : string option;
+    bonus_1_value : int option;
+    bonus_2_type : string option;
+    bonus_2_value : int option;
+    bonus_3_type : string option;
+    bonus_3_value : int option;
+    grants_ability : string option;
   } [@@deriving yojson { strict = false }]
 end
 
@@ -99,3 +114,11 @@ let get_areas world =
 
 let get_exits world =
   List.map world.Internal.exits ~f:(fun e -> (e.Internal.from_id, e.Internal.to_id, e.Internal.direction)) 
+
+let get_lore_card_templates world =
+  List.map world.Internal.lore_card_templates ~f:(fun (t : Internal.lore_card_template) ->
+    ( t.id, t.card_name, t.power_cost, t.required_saga_tier,
+      t.bonus_1_type, t.bonus_1_value,
+      t.bonus_2_type, t.bonus_2_value,
+      t.bonus_3_type, t.bonus_3_value,
+      t.grants_ability )) 

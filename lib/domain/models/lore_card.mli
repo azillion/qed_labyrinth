@@ -37,4 +37,8 @@ val create_instance :
 val find_template_by_id : string -> (Template.t option, Qed_error.t) Result.t Lwt.t
 val find_instances_by_character_id : string -> (Instance.t list, Qed_error.t) Result.t Lwt.t
 val find_active_instances_by_character_id : string -> (Instance.t list, Qed_error.t) Result.t Lwt.t
+val find_active_instances_with_templates : string -> ((Instance.t * Template.t) list, Qed_error.t) Result.t Lwt.t
+
+(* Retrieve the template for a given lore card instance in a single join *)
+val find_template_by_instance_id : string -> (Template.t option, Qed_error.t) Result.t Lwt.t
 val set_active_status : instance_id:string -> is_active:bool -> (unit, Qed_error.t) Result.t Lwt.t 

@@ -26,6 +26,12 @@ export const NavBar = () => {
             >
                 Character
             </Button>
+            <Button 
+                onClick={() => navigate("/saga")} 
+                variant={location.pathname === "/saga" ? "active" : "primary"}
+            >
+                Saga
+            </Button>
             {(userRole() === "admin" || userRole() === "super admin") && (
             <Button 
                 onClick={() => navigate("/map")} 

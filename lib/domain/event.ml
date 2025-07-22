@@ -12,6 +12,7 @@ type create_character_payload = {
 type character_created_payload = { user_id: string; character_id: string }
 type character_creation_failed_payload = { user_id: string; error: string }
 type character_selected_payload = { user_id: string; character_id: string }
+type character_activated_payload = { user_id: string; character_id: string }
 type character_selection_failed_payload = { user_id: string; error: string }
 type load_character_into_ecs_payload = { user_id: string; character_id: string }
 type unload_character_from_ecs_payload = { user_id: string; character_id: string }
@@ -76,12 +77,14 @@ type lore_card_awarded_payload = { user_id: string; card_title: string }
 type activate_lore_card_payload = { user_id: string; character_id: string; card_instance_id: string }
 type deactivate_lore_card_payload = { user_id: string; character_id: string; card_instance_id: string }
 type loadout_changed_payload = { character_id: string }
+type request_lore_collection_payload = { user_id: string; character_id: string }
 
 type t =
   | CreateCharacter of create_character_payload
   | CharacterCreated of character_created_payload
   | CharacterCreationFailed of character_creation_failed_payload
   | CharacterSelected of character_selected_payload
+  | CharacterActivated of character_activated_payload
   | CharacterSelectionFailed of character_selection_failed_payload
   | LoadCharacterIntoECS of load_character_into_ecs_payload
   | UnloadCharacterFromECS of unload_character_from_ecs_payload
@@ -144,6 +147,7 @@ type t =
   | ActivateLoreCard of activate_lore_card_payload
   | DeactivateLoreCard of deactivate_lore_card_payload
   | LoadoutChanged of loadout_changed_payload
+  | RequestLoreCollection of request_lore_collection_payload
 
 (* Helper to extract user_id for error reporting *)
 let get_user_id = function
@@ -151,6 +155,7 @@ let get_user_id = function
   | CharacterCreated e -> Some e.user_id
   | CharacterCreationFailed e -> Some e.user_id
   | CharacterSelected e -> Some e.user_id
+  | CharacterActivated e -> Some e.user_id
   | CharacterSelectionFailed e -> Some e.user_id
   | LoadCharacterIntoECS e -> Some e.user_id
   | UnloadCharacterFromECS e -> Some e.user_id
@@ -188,4 +193,6 @@ let get_user_id = function
   | LoreCardAwarded e -> Some e.user_id
   | ActivateLoreCard e -> Some e.user_id
   | DeactivateLoreCard e -> Some e.user_id
+  | LoadoutChanged _ -> None
+  | RequestLoreCollection e -> Some e.user_id
   | _ -> None

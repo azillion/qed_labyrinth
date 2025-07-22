@@ -15,7 +15,10 @@ module UnloadCharacterLogic : System.S with type event = Event.unload_character_
         (* Preserve the character's position so they respawn where they left off. *)
         (* let* () = Ecs.CharacterPositionStorage.remove entity_id in *)
         let* () = Lwt.return_unit in
-        State.unset_active_character state ~user_id;
+        (match State.get_active_character state user_id with
+         | Some current when String.equal (Uuidm.to_string current) character_id ->
+             State.unset_active_character state ~user_id
+         | _ -> ());
         Lwt_result.return ()
 end
 module UnloadCharacter = System.Make(UnloadCharacterLogic) 

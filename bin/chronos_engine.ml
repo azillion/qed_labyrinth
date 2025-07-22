@@ -28,6 +28,7 @@ let register_systems () =
   r_event "CreateCharacter" Character_system.CharacterCreate.handle;
   r_event "CharacterSelected" Character_system.CharacterSelect.handle;
   r_event "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
+  r_event ~after:["LoadCharacterIntoECS"] "CharacterActivated" Character_activation_system.CharacterActivated.handle;
   r_event "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle;
   r_event "Move" Movement_system.Move.handle;
   r_event "PlayerMoved" Presence_system.PlayerMoved.handle;

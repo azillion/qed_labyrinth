@@ -2,6 +2,7 @@ import { createStore } from "solid-js/store";
 import { createSignal } from "solid-js";
 import { socketManager } from '@lib/socket';
 import { inventoryActions } from '@features/game/stores/inventory';
+import { setProficiencyLevel, setPowerBudget, loreActions } from '@features/game/stores/lore';
 
 export const [character, setCharacter] = createStore({
   id: null,
@@ -39,7 +40,10 @@ export const characterHandlers = {
   },
   'CharacterSelected': (payload) => {
     setCharacter(payload.character_sheet);
+    setProficiencyLevel(payload.character_sheet.proficiencyLevel || 1);
+    setPowerBudget(payload.character_sheet.powerBudget || 0);
     inventoryActions.request();
+    loreActions.requestCollection();
   },
   'CharacterSelectionFailed': (payload) => {
     setCharacterError(payload.message);
@@ -60,6 +64,8 @@ export const characterHandlers = {
   },
   'CharacterSheet': (payload) => {
     setCharacter(payload);
+    setProficiencyLevel(payload.proficiencyLevel || 1);
+    setPowerBudget(payload.powerBudget || 0);
   }
 };
 

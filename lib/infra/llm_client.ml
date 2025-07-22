@@ -1,5 +1,8 @@
 open Llm
 open Types
+open Base
+
+let getenv_default var default = try Sys.getenv_exn var with _ -> default
 
 module ClaudeClient = Client.Make(Anthropic.Anthropic)(Provider_limits.ClaudeLimits)
 module OpenAIClient = Client.Make(Openai.Openai)(Provider_limits.OpenAILimits)
@@ -10,25 +13,27 @@ let openai_client_ref : OpenAIClient.t option ref = ref None
 let deepseek_client_ref : DeepseekClient.t option ref = ref None
 
 let create_openai_client () =
+  let key = getenv_default "OPENAI_API_KEY" "" in
   let config = Openai.Openai.create_config
-    ~api_key:(Sys.getenv "OPENAI_API_KEY")
-    ~model:"o1-mini"
-    ~use_options:false
-    () in
-  OpenAIClient.create config
+    ~api_key:key
+        ~model:"gpt-4o-nano"
+        ~use_options:false
+        () in
+      Ok (OpenAIClient.create config)
 
 let get_openai_client () =
   match !openai_client_ref with
-  | Some client -> 
-      client
+  | Some client -> Ok client
   | None ->
-      let client = create_openai_client () in
-      openai_client_ref := Some client;
-      client
+      (match create_openai_client () with
+       | Error _ as e -> e
+       | Ok client ->
+           openai_client_ref := Some client;
+           Ok client)
 
 let create_deepseek_client () =
   let config = Deepseek.Deepseek.create_config
-    ~api_key:(Sys.getenv "DEEPSEEK_API_KEY")
+    ~api_key:(getenv_default "DEEPSEEK_API_KEY" "")
     ~model:"deepseek-chat"
     ~base_url:"https://api.deepseek.com/v1"
     () in
@@ -45,7 +50,7 @@ let get_deepseek_client () =
 
 let create_claude_client () =
   let config = Anthropic.Anthropic.create_config
-    ~api_key:(Sys.getenv "ANTHROPIC_API_KEY")
+    ~api_key:(getenv_default "ANTHROPIC_API_KEY" "")
     () in
   ClaudeClient.create config
 
@@ -59,7 +64,9 @@ let get_claude_client () =
       client
 
 let generate_with_openai ~system_prompt ~user_prompt =
-  let client = get_openai_client () in
+  match get_openai_client () with
+  | Error e -> Lwt.return (Error e)
+  | Ok client ->
   let messages = [
     { role = User;
       content = system_prompt;
@@ -72,10 +79,8 @@ let generate_with_openai ~system_prompt ~user_prompt =
   ] in
   let%lwt result = OpenAIClient.complete client ~messages () in
   match result with
-  | Ok response -> 
-      Lwt.return (Ok response.text)
-  | Error e -> 
-      Lwt.return (Error (string_of_error e))
+  | Ok response -> Lwt.return (Ok response.text)
+  | Error e -> Lwt.return (Error (string_of_error e))
 
 let generate_with_deepseek ~system_prompt ~user_prompt =
   let client = get_deepseek_client () in
