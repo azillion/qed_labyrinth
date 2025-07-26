@@ -26,16 +26,6 @@ module LoadCharacterLogic : System.S with type event = Event.load_character_into
             let char_comp = Components.CharacterComponent.{ entity_id = character.id; user_id = character.user_id } in
             let* () = wrap_ok (Ecs.CharacterStorage.set entity_id char_comp) in
 
-            let core_stats_comp = Components.CoreStatsComponent.{
-              entity_id = character.id;
-              might = character.core_stats.might;
-              finesse = character.core_stats.finesse;
-              wits = character.core_stats.wits;
-              grit = character.core_stats.grit;
-              presence = character.core_stats.presence;
-            } in
-            let* () = wrap_ok (Ecs.CoreStatsStorage.set entity_id core_stats_comp) in
-
             (* Create / update ProgressionComponent *)
             let power_budget = Game_balance.power_budget_for_level character.proficiency_level in
             let prog_comp = Components.ProgressionComponent.{

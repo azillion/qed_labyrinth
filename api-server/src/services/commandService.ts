@@ -35,11 +35,6 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
       case 'CreateCharacter': {
         const createCharacterCommand = new CreateCharacterCommand();
         createCharacterCommand.setName(command.payload.name);
-        createCharacterCommand.setMight(command.payload.might);
-        createCharacterCommand.setFinesse(command.payload.finesse);
-        createCharacterCommand.setWits(command.payload.wits);
-        createCharacterCommand.setGrit(command.payload.grit);
-        createCharacterCommand.setPresence(command.payload.presence);
         playerCommand.setCreateCharacter(createCharacterCommand);
         break;
       }

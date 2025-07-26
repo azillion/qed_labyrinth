@@ -33,11 +33,6 @@ message SayCommand {
 
 message CreateCharacterCommand {
   string name = 1;
-  int32 might = 2;
-  int32 finesse = 3;
-  int32 wits = 4;
-  int32 grit = 5;
-  int32 presence = 6;
 }
 
 message ListCharactersCommand {}

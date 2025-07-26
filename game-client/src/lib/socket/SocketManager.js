@@ -17,6 +17,16 @@ export class SocketManager {
         this.manuallyDisconnected = false;
         this.connectionStatus = createSignal('disconnected');
         this.socket = createSignal(null);
+        this.messageQueue = [];
+        // Indicates the server has confirmed which character the user controls.
+        this.characterReady = false;
+        // Commands allowed before character has been selected
+        this.immediateTypes = new Set([
+            'CreateCharacter',
+            'ListCharacters',
+            'SelectCharacter',
+            'RequestAdminMetrics'
+        ]);
     }
 
     initialize() {
@@ -67,18 +77,52 @@ export class SocketManager {
         this.handlers.delete(type);
     }
 
+    // New method to handle actual sending once the socket is ready
+    sendMessage(type, payload) {
+        const ws = this.socket[0]();
+        try {
+            const message = payload ? JSON.stringify([type, payload]) : JSON.stringify([type]);
+            ws.send(message);
+            DEBUG && console.log('Sent:', type, payload);
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
+    }
+
     send(type, payload) {
         const ws = this.socket[0]();
+        // If character is not yet ready and this command depends on a character, queue it.
+        if (!this.characterReady && !this.immediateTypes.has(type)) {
+            this.messageQueue.push({ type, payload });
+            DEBUG && console.warn('Character not ready. Message queued:', type);
+            return;
+        }
+
         if (ws?.readyState === WebSocket.OPEN) {
-            try {
-                const message = payload ? JSON.stringify([type, payload]) : JSON.stringify([type]);
-                ws.send(message);
-                DEBUG && console.log('Sent:', type, payload);
-            } catch (error) {
-                console.error('Error sending message:', error);
-            }
+            this.sendMessage(type, payload);
         } else {
-            console.warn('WebSocket not connected. Message not sent:', type);
+            // Queue the message for later sending once the socket is open
+            this.messageQueue.push({ type, payload });
+            console.warn('WebSocket not connected. Message queued:', type);
+        }
+    }
+
+    setCharacterReady(ready = true) {
+        this.characterReady = ready;
+        if (ready) {
+            this.flushQueue();
+        }
+    }
+
+    // Flush any queued messages; should be called once the server is ready to
+    // accept character-scoped commands (e.g., after CharacterSelected).
+    flushQueue() {
+        const ws = this.socket[0]();
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+        while (this.messageQueue.length > 0) {
+            const { type, payload } = this.messageQueue.shift();
+            this.sendMessage(type, payload);
         }
     }
 
@@ -90,6 +134,21 @@ export class SocketManager {
         this.isReconnecting = false;
         this.retryCount = 0;
         this.retryDelay = INITIAL_RETRY_DELAY;
+        // Character not yet ready after a fresh connection
+        this.characterReady = false;
+
+        // Send any queued immediate commands (e.g., SelectCharacter)
+        if (this.messageQueue.length > 0) {
+            const remaining = [];
+            for (const { type, payload } of this.messageQueue) {
+                if (this.immediateTypes.has(type)) {
+                    this.sendMessage(type, payload);
+                } else {
+                    remaining.push({ type, payload });
+                }
+            }
+            this.messageQueue = remaining;
+        }
     }
 
     handleClose(event) {

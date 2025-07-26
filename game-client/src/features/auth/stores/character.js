@@ -42,6 +42,8 @@ export const characterHandlers = {
     setCharacter(payload.character_sheet);
     setProficiencyLevel(payload.character_sheet.proficiencyLevel || 1);
     setPowerBudget(payload.character_sheet.powerBudget || 0);
+    // Inform socket manager that character is now ready; this will flush any queued messages.
+    socketManager.setCharacterReady(true);
     inventoryActions.request();
     loreActions.requestCollection();
   },
@@ -93,7 +95,7 @@ export const characterActions = {
     },
     create: async (characterData) => {
         try {
-            socketManager.send('CreateCharacter', characterData);
+            socketManager.send('CreateCharacter', { name: characterData.name });
             setCharacterError(null);
         } catch (error) {
             setCharacterError(error.message);

@@ -46,20 +46,19 @@ module CharacterCreateLogic : System.S with type event = Event.create_character_
   let execute state trace_id payload =
     let user_id = (payload : event).user_id in
     let name = payload.name in
-    let might = payload.might in
-    let finesse = payload.finesse in
-    let wits = payload.wits in
-    let grit = payload.grit in
-    let presence = payload.presence in
     let open Lwt_result.Syntax in
-    let* character = Character.create ~user_id ~name ~might ~finesse ~wits ~grit ~presence in
-    let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterCreated { user_id; character_id = character.id })) in
-    (* Award Birthright lore card to new character *)
-    let* () = wrap_ok (State.enqueue ?trace_id state (Event.AwardLoreCard { character_id = character.id; template_id = "birthright_unwavering_gaze"; context = "This card represents the unyielding spirit with which you were born." })) in
-    (* Give initial Influence Points to kickstart saga *)
-    let* () = wrap_ok (State.enqueue ?trace_id state (Event.AwardExperience { character_id = character.id; xp = 0; ip = 10 })) in
-    let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterSelected { user_id; character_id = character.id })) in
-    Lwt_result.return ()
+    match%lwt Character.create ~user_id ~name with
+    | Ok character ->
+        let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterCreated { user_id; character_id = character.id })) in
+        (* Award Birthright lore card to new character *)
+        let* () = wrap_ok (State.enqueue ?trace_id state (Event.AwardLoreCard { character_id = character.id; template_id = "birthright_unwavering_gaze"; context = "This card represents the unyielding spirit with which you were born." })) in
+        (* Give initial Influence Points to kickstart saga *)
+        let* () = wrap_ok (State.enqueue ?trace_id state (Event.AwardExperience { character_id = character.id; xp = 0; ip = 10 })) in
+        let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterSelected { user_id; character_id = character.id })) in
+        Lwt_result.return ()
+    | Error err ->
+        let* () = wrap_ok (State.enqueue ?trace_id state (Event.CharacterCreationFailed { user_id; error = Qed_error.to_string err })) in
+        Lwt_result.return ()
 end
 module CharacterCreate = System.Make(CharacterCreateLogic)
 

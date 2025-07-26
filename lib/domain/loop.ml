@@ -84,10 +84,18 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) : (str
         | Move move_cmd -> Some (Event.Move { user_id = proto_event.user_id; direction = direction_of_proto move_cmd.direction })
         | Say say_cmd -> Some (Event.Say { user_id = proto_event.user_id; content = say_cmd.content })
         | Create_character create_cmd ->
-            (match Int32.to_int create_cmd.might, Int32.to_int create_cmd.finesse, Int32.to_int create_cmd.wits, Int32.to_int create_cmd.grit, Int32.to_int create_cmd.presence with
-            | Some might, Some finesse, Some wits, Some grit, Some presence ->
-                Some (Event.CreateCharacter { user_id = proto_event.user_id; name = create_cmd.name; description = ""; starting_area_id = "00000000-0000-0000-0000-000000000000"; might; finesse; wits; grit; presence })
-            | _ -> None)
+            (* Core attributes are now purely loadout-driven; use baseline values *)
+            let baseline = 1 in
+            Some (Event.CreateCharacter
+                    { user_id = proto_event.user_id;
+                      name = create_cmd.name;
+                      description = "";
+                      starting_area_id = "00000000-0000-0000-0000-000000000000";
+                      might = baseline;
+                      finesse = baseline;
+                      wits = baseline;
+                      grit = baseline;
+                      presence = baseline })
         | List_characters -> Some (Event.CharacterListRequested { user_id = proto_event.user_id })
         | Select_character select_cmd -> Some (Event.CharacterSelected { user_id = proto_event.user_id; character_id = select_cmd.character_id })
         | Take take_cmd -> Some (Event.TakeItem { user_id = proto_event.user_id; character_id = take_cmd.character_id; item_entity_id = take_cmd.item_entity_id })
