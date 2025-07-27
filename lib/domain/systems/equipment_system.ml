@@ -89,6 +89,8 @@ module EquipLogic : System.S with type event = Event.equip_payload = struct
                     (* 5. Send feedback and trigger updates *)
                     let* () = Publisher.publish_system_message_to_user state ?trace_id user_id ("You equip the " ^ def.name ^ ".") in
                     let* () = wrap_ok (State.enqueue ?trace_id state (Event.RequestInventory { user_id; character_id })) in
+                    (* Notify that the character's loadout has changed *)
+                    let* () = wrap_ok (State.enqueue ?trace_id state (Event.LoadoutChanged { character_id })) in
                     Lwt_result.return ())
 end
 module Equip = System.Make (EquipLogic)
@@ -144,6 +146,8 @@ module UnequipLogic : System.S with type event = Event.unequip_payload = struct
             let* () = Publisher.publish_system_message_to_user state ?trace_id user_id ("You unequip the " ^ item_name ^ ".") in
             (* Request updated inventory list after unequipping *)
             let* () = wrap_ok (State.enqueue ?trace_id state (Event.RequestInventory { user_id; character_id })) in
+            (* Notify that the character's loadout has changed *)
+            let* () = wrap_ok (State.enqueue ?trace_id state (Event.LoadoutChanged { character_id })) in
             Lwt_result.return ())
 end
 module Unequip = System.Make (UnequipLogic) 

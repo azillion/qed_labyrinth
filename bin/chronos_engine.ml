@@ -27,9 +27,10 @@ let register_systems () =
   r_event ~after:["CreateCharacter"] "CharacterListRequested" Character_system.CharacterList.handle;
   r_event "CreateCharacter" Character_system.CharacterCreate.handle;
   r_event "CharacterSelected" Character_system.CharacterSelect.handle;
-  r_event "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
+  r_event ~after:["UnloadCharacterFromECS"] "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
   r_event ~after:["LoadCharacterIntoECS"] "CharacterActivated" Character_activation_system.CharacterActivated.handle;
-  r_event "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle;
+  r_event "PlayerDisconnected" Character_disconnection_system.CharacterDisconnection.handle;
+  r_event ~after:["PlayerDisconnected"] "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle;
   r_event "Move" Movement_system.Move.handle;
   r_event "PlayerMoved" Presence_system.PlayerMoved.handle;
   r_event "Say" Communication_system.Say.handle;
@@ -51,7 +52,15 @@ let register_systems () =
   (* Lore Card Loadout Systems *)
   r_event "ActivateLoreCard" Manage_loadout_system.ActivateLoreCard.handle;
   r_event "DeactivateLoreCard" Manage_loadout_system.DeactivateLoreCard.handle;
-  r_event ~after:["ActivateLoreCard"; "DeactivateLoreCard"] "LoadoutChanged" Stat_recalculation_system.RecalculateStats.handle;
+  r_event ~after:["ActivateLoreCard"; "DeactivateLoreCard"; "Equip"; "Unequip"] "LoadoutChanged" Stat_recalculation_system.RecalculateStats.handle;
+  (* Register BonusStatRecalculation as a separate system listening for LoadoutChanged,
+     but give it a unique name to avoid duplicate registration cycles. *)
+  register ~after:["ActivateLoreCard"; "DeactivateLoreCard"; "Equip"; "Unequip"]
+    ~name:"BonusStatRecalculation" ~schedule:Update ~criteria:(OnEvent "LoadoutChanged")
+    (fun s t e_opt ->
+      match e_opt with
+      | Some e -> Bonus_stat_recalculation_system.BonusStatRecalculation.handle s t (Some e)
+      | None -> Lwt.return_ok ());
   r_event "RequestLoreCollection" Request_lore_collection_system.RequestLoreCollection.handle;
 
   (* Tick-based Systems *)
@@ -64,7 +73,6 @@ let register_systems () =
 
   (* Change-based Systems *)
   r_change ~after:["damage-application"] "Knockout" Update "healths" Knockout_system.Knockout.handle;
-  r_change "BonusStatRecalculation" Update "equipments" Bonus_stat_recalculation_system.BonusStatRecalculation.handle;
   ()
 
 let () =

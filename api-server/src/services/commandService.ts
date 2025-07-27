@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import redisClient from '../redisClient';
-import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand, EquipCommand, UnequipCommand, ItemSlot, RequestCharacterSheetCommand, ActivateLoreCardCommand, DeactivateLoreCardCommand, RequestLoreCollectionCommand } from '../schemas_generated/input_pb';
+import { InputEvent, PlayerCommand, MoveCommand, SayCommand, CreateCharacterCommand, ListCharactersCommand, Direction, SelectCharacterCommand, TakeCommand, DropCommand, RequestInventoryCommand, RequestAdminMetricsCommand, EquipCommand, UnequipCommand, ItemSlot, RequestCharacterSheetCommand, ActivateLoreCardCommand, DeactivateLoreCardCommand, RequestLoreCollectionCommand, PlayerDisconnectedCommand } from '../schemas_generated/input_pb';
 
 export async function publishPlayerCommand(userId: string, command: any): Promise<void> {
   const traceId = randomUUID();
@@ -118,6 +118,11 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
         playerCommand.setRequestCharacterSheet(reqSheetCmd);
         break;
       }
+      case 'PlayerDisconnected': {
+        const discCmd = new PlayerDisconnectedCommand();
+        playerCommand.setPlayerDisconnected(discCmd);
+        break;
+      }
       default:
         throw new Error(`Unknown command type: ${command.type}`);
     }
@@ -128,7 +133,7 @@ export async function publishPlayerCommand(userId: string, command: any): Promis
     
     await redisClient.publish(
       'player_commands',
-      Buffer.from(serializedEvent).toString('latin1')
+      Buffer.from(serializedEvent)
     );
     
     console.log(JSON.stringify({

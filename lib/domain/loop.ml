@@ -55,6 +55,7 @@ let string_of_event_type (event : Event.t) =
   | DeactivateLoreCard _ -> "DeactivateLoreCard"
   | LoadoutChanged _ -> "LoadoutChanged"
   | RequestLoreCollection _ -> "RequestLoreCollection"
+  | PlayerDisconnected _ -> "PlayerDisconnected"
 
 let direction_of_proto = function
   | Schemas_generated.Input.North -> Components.ExitComponent.North
@@ -111,6 +112,8 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) : (str
             Some (Event.DeactivateLoreCard { user_id = proto_event.user_id; character_id = de_cmd.character_id; card_instance_id = de_cmd.card_instance_id })
         | Request_lore_collection req_cmd ->
             Some (Event.RequestLoreCollection { user_id = proto_event.user_id; character_id = req_cmd.character_id })
+        | Player_disconnected ->
+            Some (Event.PlayerDisconnected { user_id = proto_event.user_id })
       in
       Option.map event_opt ~f:(fun event -> (trace_id, event))
 

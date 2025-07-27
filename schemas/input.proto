@@ -88,6 +88,9 @@ message RequestLoreCollectionCommand {
   string character_id = 1;
 }
 
+// Command message for when a player disconnects
+message PlayerDisconnectedCommand {}
+
 message PlayerCommand {
   oneof command {
     MoveCommand            move            = 1;
@@ -105,6 +108,7 @@ message PlayerCommand {
     ActivateLoreCardCommand     activate_lore_card      = 13;
     DeactivateLoreCardCommand   deactivate_lore_card    = 14;
     RequestLoreCollectionCommand request_lore_collection = 15;
+    PlayerDisconnectedCommand   player_disconnected     = 16;
   }
 }
 

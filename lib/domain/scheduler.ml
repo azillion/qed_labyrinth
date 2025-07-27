@@ -166,6 +166,7 @@ let string_of_event_type (event : Event.t) =
   | DeactivateLoreCard _ -> "DeactivateLoreCard"
   | LoadoutChanged _ -> "LoadoutChanged"
   | RequestLoreCollection _ -> "RequestLoreCollection"
+  | PlayerDisconnected _ -> "PlayerDisconnected"
 
 (* ------------------------------------------------------------------------- *)
 (* Helper to filter runnable systems                                          *)

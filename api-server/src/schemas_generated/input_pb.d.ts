@@ -47,21 +47,6 @@ export class CreateCharacterCommand extends jspb.Message {
   getName(): string;
   setName(value: string): void;
 
-  getMight(): number;
-  setMight(value: number): void;
-
-  getFinesse(): number;
-  setFinesse(value: number): void;
-
-  getWits(): number;
-  setWits(value: number): void;
-
-  getGrit(): number;
-  setGrit(value: number): void;
-
-  getPresence(): number;
-  setPresence(value: number): void;
-
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): CreateCharacterCommand.AsObject;
   static toObject(includeInstance: boolean, msg: CreateCharacterCommand): CreateCharacterCommand.AsObject;
@@ -75,11 +60,6 @@ export class CreateCharacterCommand extends jspb.Message {
 export namespace CreateCharacterCommand {
   export type AsObject = {
     name: string,
-    might: number,
-    finesse: number,
-    wits: number,
-    grit: number,
-    presence: number,
   }
 }
 
@@ -339,6 +319,22 @@ export namespace RequestLoreCollectionCommand {
   }
 }
 
+export class PlayerDisconnectedCommand extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): PlayerDisconnectedCommand.AsObject;
+  static toObject(includeInstance: boolean, msg: PlayerDisconnectedCommand): PlayerDisconnectedCommand.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: PlayerDisconnectedCommand, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): PlayerDisconnectedCommand;
+  static deserializeBinaryFromReader(message: PlayerDisconnectedCommand, reader: jspb.BinaryReader): PlayerDisconnectedCommand;
+}
+
+export namespace PlayerDisconnectedCommand {
+  export type AsObject = {
+  }
+}
+
 export class PlayerCommand extends jspb.Message {
   hasMove(): boolean;
   clearMove(): void;
@@ -415,6 +411,11 @@ export class PlayerCommand extends jspb.Message {
   getRequestLoreCollection(): RequestLoreCollectionCommand | undefined;
   setRequestLoreCollection(value?: RequestLoreCollectionCommand): void;
 
+  hasPlayerDisconnected(): boolean;
+  clearPlayerDisconnected(): void;
+  getPlayerDisconnected(): PlayerDisconnectedCommand | undefined;
+  setPlayerDisconnected(value?: PlayerDisconnectedCommand): void;
+
   getCommandCase(): PlayerCommand.CommandCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlayerCommand.AsObject;
@@ -443,6 +444,7 @@ export namespace PlayerCommand {
     activateLoreCard?: ActivateLoreCardCommand.AsObject,
     deactivateLoreCard?: DeactivateLoreCardCommand.AsObject,
     requestLoreCollection?: RequestLoreCollectionCommand.AsObject,
+    playerDisconnected?: PlayerDisconnectedCommand.AsObject,
   }
 
   export enum CommandCase {
@@ -462,6 +464,7 @@ export namespace PlayerCommand {
     ACTIVATE_LORE_CARD = 13,
     DEACTIVATE_LORE_CARD = 14,
     REQUEST_LORE_COLLECTION = 15,
+    PLAYER_DISCONNECTED = 16,
   }
 }
 

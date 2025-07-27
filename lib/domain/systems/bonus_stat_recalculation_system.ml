@@ -1,6 +1,6 @@
 (* Bonus Stat Recalculation System *)
 open Base
-open Error_utils
+open Qed_error
 
 (* Helper to parse stat bonuses from an item definition's properties *)
 let parse_bonuses_from_json (json_opt : Yojson.Safe.t option) =
@@ -57,10 +57,10 @@ let recalculate_and_set_bonus_stats (entity_id : Uuidm.t) : (unit, Qed_error.t) 
   let%lwt () = Ecs.BonusStatsStorage.set entity_id total_bonuses in
   Lwt.return_ok ()
 
-module BonusStatRecalculationLogic : System.S with type event = unit = struct
+module BonusStatRecalculationLogic : System.S with type event = Event.loadout_changed_payload = struct
   let name = "BonusStatRecalculation"
-  type event = unit
-  let event_type _ = None (* Triggered by component change, not event payload *)
+  type event = Event.loadout_changed_payload
+  let event_type = function Event.LoadoutChanged p -> Some p | _ -> None
 
   let execute_for_entity (entity_id : Uuidm.t) =
     let open Lwt_result.Syntax in
@@ -68,18 +68,13 @@ module BonusStatRecalculationLogic : System.S with type event = unit = struct
     let* () = Character_stat_system.calculate_and_update_stats entity_id in
     Lwt_result.return ()
 
-  let execute _state _trace_id _event =
-    let modified_entities = Ecs.EquipmentStorage.get_modified () in
-
-    Lwt_list.iter_p (fun entity_id ->
-      let%lwt res = execute_for_entity entity_id in
-      match res with
-      | Ok () -> Lwt.return_unit
-      | Error e ->
-          let%lwt () = Infra.Monitoring.Log.error "Stat recalculation failed for entity"
-            ~data:[("entity_id", Uuidm.to_string entity_id); ("error", Qed_error.to_string e)] () in
-          Lwt.return_unit
-    ) modified_entities |> wrap_ok
-end
+  let execute _state _trace_id ({ character_id } : event) =
+    let open Lwt_result.Syntax in
+    match Uuidm.of_string character_id with
+    | None -> Lwt_result.fail (LogicError "Invalid character_id in LoadoutChanged event")
+    | Some entity_id ->
+        let* () = execute_for_entity entity_id in
+        Lwt_result.return ()
+  end
 
 module BonusStatRecalculation = System.Make(BonusStatRecalculationLogic) 

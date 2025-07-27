@@ -32,8 +32,16 @@ export async function websocketRoutes(server: FastifyInstance, _options: any) {
     // Store the socket for later use (eg. server-push events).
     connectionManager.add(userId, socket);
 
-    socket.on('close', () => {
-      connectionManager.remove(userId);
+    socket.on('close', async () => {
+      // Remove connection only if it matches the closing socket to avoid race conditions
+      connectionManager.remove(userId, socket);
+
+      // Publish a PlayerDisconnected command so the engine can clean up state.
+      try {
+        await publishPlayerCommand(userId, { type: 'PlayerDisconnected', payload: {} });
+      } catch (err) {
+        server.log.error({ err }, 'Failed to publish PlayerDisconnected command');
+      }
     });
 
     socket.on('message', async (message: Buffer) => {

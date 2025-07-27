@@ -79,6 +79,9 @@ type deactivate_lore_card_payload = { user_id: string; character_id: string; car
 type loadout_changed_payload = { character_id: string }
 type request_lore_collection_payload = { user_id: string; character_id: string }
 
+(* Disconnection Events *)
+type player_disconnected_payload = { user_id: string }
+
 type t =
   | CreateCharacter of create_character_payload
   | CharacterCreated of character_created_payload
@@ -148,6 +151,8 @@ type t =
   | DeactivateLoreCard of deactivate_lore_card_payload
   | LoadoutChanged of loadout_changed_payload
   | RequestLoreCollection of request_lore_collection_payload
+  (* Connection Management Events *)
+  | PlayerDisconnected of player_disconnected_payload
 
 (* Helper to extract user_id for error reporting *)
 let get_user_id = function
@@ -195,4 +200,5 @@ let get_user_id = function
   | DeactivateLoreCard e -> Some e.user_id
   | LoadoutChanged _ -> None
   | RequestLoreCollection e -> Some e.user_id
+  | PlayerDisconnected e -> Some e.user_id
   | _ -> None

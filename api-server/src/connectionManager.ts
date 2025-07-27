@@ -7,8 +7,12 @@ export class ConnectionManager {
     this.connections.set(userId, socket);
   }
 
-  remove(userId: string): void {
-    this.connections.delete(userId);
+  remove(userId: string, socket: WebSocket): void {
+    const existing = this.connections.get(userId);
+    // Only delete if the existing socket is the same instance to avoid race conditions
+    if (existing === socket) {
+      this.connections.delete(userId);
+    }
   }
 
   get(userId: string): WebSocket | undefined {
