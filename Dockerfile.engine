@@ -45,6 +45,7 @@ RUN apt-get update && \
 
 # Copy the compiled executable from builder stage
 COPY --from=builder /home/opam/app/_build/default/bin/chronos_engine.exe /usr/local/bin/chronos_engine.exe
+COPY --from=builder /home/opam/app/_build/default/bin/genesis.exe /usr/local/bin/genesis.exe
 
 # Set the command to run the engine
 CMD ["/usr/local/bin/chronos_engine.exe"]
