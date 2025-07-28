@@ -27,6 +27,7 @@ RUN opam install . --deps-only --with-test
 COPY --chown=opam:opam lib/ lib/
 COPY --chown=opam:opam bin/ bin/
 COPY --chown=opam:opam schemas/ schemas/
+COPY --chown=opam:opam world.json .
 
 # Build the release executable
 RUN eval $(opam env) && dune build --profile=release
