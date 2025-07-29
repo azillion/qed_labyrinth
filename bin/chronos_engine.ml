@@ -27,10 +27,10 @@ let register_systems () =
   r_event ~after:["CreateCharacter"] "CharacterListRequested" Character_system.CharacterList.handle;
   r_event "CreateCharacter" Character_system.CharacterCreate.handle;
   r_event "CharacterSelected" Character_system.CharacterSelect.handle;
-  r_event ~after:["UnloadCharacterFromECS"] "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
+  r_event "LoadCharacterIntoECS" Character_loading_system.LoadCharacter.handle;
   r_event ~after:["LoadCharacterIntoECS"] "CharacterActivated" Character_activation_system.CharacterActivated.handle;
   r_event "PlayerDisconnected" Character_disconnection_system.CharacterDisconnection.handle;
-  r_event ~after:["PlayerDisconnected"] "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle;
+  r_event "UnloadCharacterFromECS" Character_unloading_system.UnloadCharacter.handle;
   r_event "Move" Movement_system.Move.handle;
   r_event "PlayerMoved" Presence_system.PlayerMoved.handle;
   r_event "Say" Communication_system.Say.handle;

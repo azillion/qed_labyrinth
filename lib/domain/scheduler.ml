@@ -104,8 +104,18 @@ let top_sort (systems : system_record list) : (system_record list, string) Resul
         | _ -> ())
   done;
 
-  if List.length !sorted <> List.length systems then (
-    Lwt.ignore_result (Monitoring.Log.error "Cycle detected in system dependencies" ());
+  (* A cycle is detected if not all unique systems were sorted. Using the number of unique
+       system names avoids false positives when the same system is registered multiple times
+       with different criteria (e.g. OnTick vs OnEvent). *)
+  let unique_system_count = Hashtbl.length system_map in
+  if List.length !sorted <> unique_system_count then (
+    (* Collect the names of systems that could not be scheduled to aid debugging *)
+    let unscheduled =
+      List.filter systems ~f:(fun s -> not (List.exists !sorted ~f:(fun r -> String.equal r.name s.name)))
+      |> List.map ~f:(fun s -> s.name)
+    in
+    let data = [ ("unscheduled_systems", String.concat ~sep:", " unscheduled) ] in
+    Lwt.ignore_result (Monitoring.Log.error "Cycle detected in system dependencies" ~data ());
     Error "Cycle detected")
   else Ok (List.rev !sorted)
 
