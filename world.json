@@ -95,6 +95,8 @@
       "card_name": "Birthright: Unwavering Gaze",
       "power_cost": 0,
       "required_saga_tier": 1,
+      "default_title": "Unwavering Gaze",
+      "default_description": "This card represents the unyielding spirit with which you were born.",
       "bonus_1_type": "grit",
       "bonus_1_value": 1,
       "bonus_2_type": null,

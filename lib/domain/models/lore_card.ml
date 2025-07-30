@@ -7,6 +7,8 @@ module Template = struct
     card_name : string;
     power_cost : int;
     required_saga_tier : int;
+    default_title : string option;
+    default_description : string option;
     bonus_1_type : string option;
     bonus_1_value : int option;
     bonus_2_type : string option;
@@ -35,58 +37,34 @@ module Q = struct
   (* Custom caqti types *)
   let template_type : Template.t Caqti_type.t =
     let open Template in
+    let open Caqti_type.Std in
+    let first10_t = t10 string string int int (option string) (option string) (option string) (option int) (option string) (option int) in
+    let last3_t = t3 (option string) (option int) (option string) in
     Caqti_type.custom
-      ~encode:(fun {
-                 id;
-                 card_name;
-                 power_cost;
-                 required_saga_tier;
-                 bonus_1_type;
-                 bonus_1_value;
-                 bonus_2_type;
-                 bonus_2_value;
-                 bonus_3_type;
-                 bonus_3_value;
-                 grants_ability;
-               } ->
-        Ok
-          ( id,
-            card_name,
-            power_cost,
-            required_saga_tier,
-            bonus_1_type,
-            bonus_1_value,
-            bonus_2_type,
-            bonus_2_value,
-            bonus_3_type,
-            bonus_3_value,
-            grants_ability ))
-      ~decode:(fun ( id,
-                      card_name,
-                      power_cost,
-                      required_saga_tier,
-                      bonus_1_type,
-                      bonus_1_value,
-                      bonus_2_type,
-                      bonus_2_value,
-                      bonus_3_type,
-                      bonus_3_value,
-                      grants_ability ) ->
-        Ok
-          {
-            id;
-            card_name;
-            power_cost;
-            required_saga_tier;
-            bonus_1_type;
-            bonus_1_value;
-            bonus_2_type;
-            bonus_2_value;
-            bonus_3_type;
-            bonus_3_value;
-            grants_ability;
-          })
-      Caqti_type.Std.(t11 string string int int (option string) (option int) (option string) (option int) (option string) (option int) (option string))
+      ~encode:(fun t ->
+        let first10 =
+          ( t.id, t.card_name, t.power_cost, t.required_saga_tier,
+            t.default_title, t.default_description,
+            t.bonus_1_type, t.bonus_1_value,
+            t.bonus_2_type, t.bonus_2_value )
+        in
+        let last3 = (t.bonus_3_type, t.bonus_3_value, t.grants_ability) in
+        Ok (first10, last3))
+      ~decode:(fun (first10, (b3_type, b3_value, g_ability)) ->
+        let ( id, card_name, power_cost, required_saga_tier,
+              default_title, default_description,
+              bonus_1_type, bonus_1_value,
+              bonus_2_type, bonus_2_value ) = first10 in
+        Ok {
+          id; card_name; power_cost; required_saga_tier;
+          default_title; default_description;
+          bonus_1_type; bonus_1_value;
+          bonus_2_type; bonus_2_value;
+          bonus_3_type = b3_type;
+          bonus_3_value = b3_value;
+          grants_ability = g_ability;
+        })
+      (t2 first10_t last3_t)
   ;;
   let instance_type : Instance.t Caqti_type.t =
     let open Instance in
@@ -107,10 +85,10 @@ module Q = struct
     Caqti_request.Infix.(Caqti_type.Std.string ->* instance_with_template_type)
       {| SELECT plc.id, plc.character_id, plc.template_id, plc.title, plc.description, plc.is_active,
                tmpl.id, tmpl.card_name, tmpl.power_cost, tmpl.required_saga_tier,
-               tmpl.bonus_1_type, tmpl.bonus_1_value,
-               tmpl.bonus_2_type, tmpl.bonus_2_value,
-               tmpl.bonus_3_type, tmpl.bonus_3_value,
-               tmpl.grants_ability
+                tmpl.default_title, tmpl.default_description,
+                tmpl.bonus_1_type, tmpl.bonus_1_value,
+                tmpl.bonus_2_type, tmpl.bonus_2_value,
+               tmpl.bonus_3_type, tmpl.bonus_3_value, tmpl.grants_ability
          FROM player_lore_cards plc
          JOIN lore_card_templates tmpl ON plc.template_id = tmpl.id
          WHERE plc.character_id = ? AND plc.is_active = TRUE |}
@@ -120,10 +98,10 @@ module Q = struct
   let find_template_by_instance_id =
     Caqti_request.Infix.(Caqti_type.Std.string ->? template_type)
       {| SELECT tmpl.id, tmpl.card_name, tmpl.power_cost, tmpl.required_saga_tier,
-               tmpl.bonus_1_type, tmpl.bonus_1_value,
-               tmpl.bonus_2_type, tmpl.bonus_2_value,
-               tmpl.bonus_3_type, tmpl.bonus_3_value,
-               tmpl.grants_ability
+                 tmpl.default_title, tmpl.default_description,
+                 tmpl.bonus_1_type, tmpl.bonus_1_value,
+                 tmpl.bonus_2_type, tmpl.bonus_2_value,
+               tmpl.bonus_3_type, tmpl.bonus_3_value, tmpl.grants_ability
          FROM lore_card_templates tmpl
          JOIN player_lore_cards plc ON tmpl.id = plc.template_id
          WHERE plc.id = ? |}
@@ -139,10 +117,10 @@ module Q = struct
   let find_template_by_id =
     Caqti_request.Infix.(Caqti_type.Std.string ->? template_type)
       {| SELECT id, card_name, power_cost, required_saga_tier,
-               bonus_1_type, bonus_1_value,
-               bonus_2_type, bonus_2_value,
-               bonus_3_type, bonus_3_value,
-               grants_ability
+                 default_title, default_description,
+                 bonus_1_type, bonus_1_value,
+                 bonus_2_type, bonus_2_value,
+               bonus_3_type, bonus_3_value, grants_ability
          FROM lore_card_templates
          WHERE id = ? |}
 
@@ -163,7 +141,7 @@ module Q = struct
       {| UPDATE player_lore_cards SET is_active = ? WHERE id = ? |}
 end
 
-let create_instance ~character_id ~template_id ~title ~description =
+let create_instance ~character_id ~template_id ~title ~description ?conn () =
   let id = Uuidm.to_string (uuid ()) in
   let record =
     Instance.{
@@ -178,21 +156,36 @@ let create_instance ~character_id ~template_id ~title ~description =
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     match%lwt Db.exec Q.insert_instance record with
     | Ok () -> Lwt_result.return record
-    | Error e -> Lwt_result.fail e
+    | Error e ->
+        let%lwt () = Infra.Monitoring.Log.error "LoreCard create_instance failed"
+          ~data:[ ("caqti_error", Caqti_error.show e) ] () in
+        Lwt_result.fail e
   in
-  match%lwt Database.Pool.use db_operation with
-  | Ok r -> Lwt.return_ok r
-  | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))
+  (match conn with
+  | Some conn_module -> (
+      match%lwt db_operation conn_module with
+      | Ok r -> Lwt.return_ok r
+      | Error err -> Lwt.return_error (Qed_error.DatabaseError (Caqti_error.show err)))
+  | None -> (
+      match%lwt Database.Pool.use db_operation with
+      | Ok r -> Lwt.return_ok r
+      | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))))
 
-let find_template_by_id template_id =
+let find_template_by_id template_id ?conn () =
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     match%lwt Db.find_opt Q.find_template_by_id template_id with
     | Ok tmpl_opt -> Lwt_result.return tmpl_opt
     | Error e -> Lwt_result.fail e
   in
-  match%lwt Database.Pool.use db_operation with
-  | Ok tmpl_opt -> Lwt.return_ok tmpl_opt
-  | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))
+  (match conn with
+  | Some conn_module -> (
+      match%lwt db_operation conn_module with
+      | Ok tmpl_opt -> Lwt.return_ok tmpl_opt
+      | Error err -> Lwt.return_error (Qed_error.DatabaseError (Caqti_error.show err)))
+  | None -> (
+      match%lwt Database.Pool.use db_operation with
+      | Ok tmpl_opt -> Lwt.return_ok tmpl_opt
+      | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))))
 
 let find_instances_by_character_id character_id =
   let db_operation (module Db : Caqti_lwt.CONNECTION) =

@@ -100,20 +100,28 @@ let genesis_transaction (world_data : Seeding.t)
   (* 3. Seed Lore Card Templates *)
   let lct_insert_req =
     let open Caqti_type.Std in
-    Caqti_request.Infix.( (t11 string string int int (option string) (option int) (option string) (option int) (option string) (option int) (option string)) ->. unit)
-      {| INSERT INTO lore_card_templates
-           (id, card_name, power_cost, required_saga_tier,
-            bonus_1_type, bonus_1_value,
-            bonus_2_type, bonus_2_value,
-            bonus_3_type, bonus_3_value,
-            grants_ability)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING |}
+    (* use t3 nesting to represent 13 values: first 11 then bonus_3_value then grants_ability *)
+    Caqti_request.Infix.( (t3
+                             (t11 string string int int (option string) (option string) (option string) (option int) (option string) (option int) (option string))
+                             (option int)
+                             (option string) ->. unit)
+        {| INSERT INTO lore_card_templates
+             (id, card_name, power_cost, required_saga_tier,
+              default_title, default_description,
+              bonus_1_type, bonus_1_value,
+              bonus_2_type, bonus_2_value,
+              bonus_3_type, bonus_3_value,
+              grants_ability)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING |})
   in
 
   let rec insert_templates = function
     | [] -> Lwt_result.return ()
-    | (id, name, cost, tier, b1t, b1v, b2t, b2v, b3t, b3v, ability) :: rest ->
-        let* () = Db.exec lct_insert_req (id, name, cost, tier, b1t, b1v, b2t, b2v, b3t, b3v, ability) in
+    | ( id, name, cost, tier, dtitle, ddesc,
+        b1t, b1v, b2t, b2v, b3t, b3v, ability ) :: rest ->
+        let first11 = ( id, name, cost, tier, dtitle, ddesc,
+                         b1t, b1v, b2t, b2v, b3t ) in
+        let* () = Db.exec lct_insert_req (first11, b3v, ability) in
         insert_templates rest
   in
   let* () = insert_templates (Seeding.get_lore_card_templates world_data) in

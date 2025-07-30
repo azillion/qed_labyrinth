@@ -12,7 +12,7 @@ module PlayerMovedLogic : System.S with type event = Event.player_moved_payload 
     | None -> Lwt.return_none
     | Some char_entity_id ->
         let char_id_str = Uuidm.to_string char_entity_id in
-        let%lwt char_res = Character.find_by_id char_id_str in
+        let%lwt char_res = Character.find_by_id char_id_str () in
         (match char_res with
         | Ok (Some char_record) -> Lwt.return (Some char_record.name)
         | _ -> Lwt.return_none)

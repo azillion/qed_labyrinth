@@ -57,7 +57,7 @@ let create ~user_id ~name =
       let mapped = if String.is_substring msg ~substring:"characters_name_key" then Qed_error.NameTaken else Qed_error.DatabaseError msg in
       Lwt.return_error mapped
 
-let find_by_id character_id =
+let find_by_id character_id ?conn () =
   let db_operation (module Db : Caqti_lwt.CONNECTION) =
     match%lwt Db.find_opt Q.find_character_by_id character_id with
     | Ok (Some (id, user_id, name, proficiency_level, current_xp, saga_tier, current_ip)) ->
@@ -65,9 +65,15 @@ let find_by_id character_id =
     | Ok None -> Lwt_result.return None
     | Error e -> Lwt_result.fail e
   in
-  match%lwt Database.Pool.use db_operation with
-  | Ok res -> Lwt.return_ok res
-  | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))
+  (match conn with
+  | Some conn_module -> (
+      match%lwt db_operation conn_module with
+      | Ok res -> Lwt.return_ok res
+      | Error err -> Lwt.return_error (Qed_error.DatabaseError (Caqti_error.show err)))
+  | None -> (
+      match%lwt Database.Pool.use db_operation with
+      | Ok res -> Lwt.return_ok res
+      | Error err -> Lwt.return_error (Qed_error.DatabaseError (Error.to_string_hum err))))
 
 let find_all_by_user ~user_id =
   let db_operation (module Db : Caqti_lwt.CONNECTION) =

@@ -77,6 +77,8 @@ module Schema = struct
            card_name TEXT NOT NULL,
            power_cost INTEGER NOT NULL,
            required_saga_tier INTEGER NOT NULL DEFAULT 1,
+           default_title TEXT,
+           default_description TEXT,
            bonus_1_type TEXT,
            bonus_1_value INTEGER,
            bonus_2_type TEXT,

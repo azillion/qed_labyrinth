@@ -33,6 +33,8 @@ services:
       QED_DB_NAME: ${QED_DB_NAME}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
 
   api_server:
     build:
@@ -52,6 +54,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     ports:
       - "3001:3001"
 

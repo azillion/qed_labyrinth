@@ -24,7 +24,7 @@ module CheckForProgressionLogic : System.S with type event = Event.player_gained
   let execute state trace_id ({ Event.character_id } : event) =
     let open Lwt_result.Syntax in
     (* Fetch current character record *)
-    let* char_opt = Character.find_by_id character_id in
+    let* char_opt = Character.find_by_id character_id () in
     match char_opt with
     | None -> Lwt.return_ok ()
     | Some c ->

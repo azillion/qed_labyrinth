@@ -48,6 +48,7 @@ let register_systems () =
   r_event "AwardExperience" Experience_system.AwardExperience.handle;
   r_event ~after:["AwardExperience"] "PlayerGainedExperience" Progression_system.CheckForProgression.handle;
   r_event "AwardLoreCard" Award_lore_card_system.AwardLoreCard.handle;
+  r_event "LoreCardAwarded" Send_lore_card_awarded_system.SendLoreCardAwarded.handle;
 
   (* Lore Card Loadout Systems *)
   r_event "ActivateLoreCard" Manage_loadout_system.ActivateLoreCard.handle;

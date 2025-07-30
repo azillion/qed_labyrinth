@@ -60,6 +60,8 @@ module Internal = struct
     card_name : string;
     power_cost : int;
     required_saga_tier : int;
+    default_title : string option [@default None];
+    default_description : string option [@default None];
     bonus_1_type : string option;
     bonus_1_value : int option;
     bonus_2_type : string option;
@@ -118,6 +120,7 @@ let get_exits world =
 let get_lore_card_templates world =
   List.map world.Internal.lore_card_templates ~f:(fun (t : Internal.lore_card_template) ->
     ( t.id, t.card_name, t.power_cost, t.required_saga_tier,
+      t.default_title, t.default_description,
       t.bonus_1_type, t.bonus_1_value,
       t.bonus_2_type, t.bonus_2_value,
       t.bonus_3_type, t.bonus_3_value,

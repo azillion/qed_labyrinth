@@ -42,7 +42,7 @@ module MoveLogic : System.S with type event = Event.move_payload = struct
         let char_id_str = Uuidm.to_string char_entity_id in
 
         let* char_name =
-          (let%lwt name_res = Character.find_by_id char_id_str in
+          (let%lwt name_res = Character.find_by_id char_id_str () in
            match name_res with
            | Ok (Some c) -> Lwt.return_ok c.name
            | _ -> Lwt.return_error CharacterNotFound)

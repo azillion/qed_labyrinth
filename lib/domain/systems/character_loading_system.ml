@@ -11,7 +11,7 @@ module LoadCharacterLogic : System.S with type event = Event.load_character_into
     (* let user_id = (payload : event).user_id in *)
     let character_id = (payload : event).character_id in
     let open Lwt_result.Syntax in
-    let* character_opt = Character.find_by_id character_id in
+    let* character_opt = Character.find_by_id character_id () in
     match character_opt with
     | None -> Lwt_result.fail CharacterNotFound
     | Some character ->

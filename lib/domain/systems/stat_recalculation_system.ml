@@ -10,7 +10,7 @@ module RecalculateStatsLogic : System.S with type event = Event.loadout_changed_
   let execute state trace_id ({ character_id } : event) =
     let open Lwt_result.Syntax in
     (* Resolve character entity UUID and user_id *)
-    let* char_opt = Character.find_by_id character_id in
+    let* char_opt = Character.find_by_id character_id () in
     let* character = match char_opt with
       | Some c -> Lwt_result.return c
       | None -> Lwt_result.fail Qed_error.CharacterNotFound

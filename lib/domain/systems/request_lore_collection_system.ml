@@ -15,7 +15,7 @@ module RequestLoreCollectionLogic : System.S with type event = Event.request_lor
     (* Helper to build protobuf instance *)
     let build_pb (inst : Lore_card.Instance.t) =
       let open Lwt_result.Syntax in
-      let* tmpl_opt = Lore_card.find_template_by_id inst.template_id in
+      let* tmpl_opt = Lore_card.find_template_by_id inst.template_id () in
       let power, bonuses_list =
         match tmpl_opt with
         | Some t ->

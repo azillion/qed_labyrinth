@@ -66,7 +66,7 @@ module TellLogic : System.S with type event = Event.tell_payload = struct
     | Some id_str ->
       match Uuidm.of_string id_str with
       | Some _char_entity_id ->
-          let%lwt name_opt = (let%lwt res = Character.find_by_id id_str in Lwt.return (Result.ok res |> Option.bind ~f:Fn.id |> Option.map ~f:(fun c -> c.name))) in
+          let%lwt name_opt = (let%lwt res = Character.find_by_id id_str () in Lwt.return (Result.ok res |> Option.bind ~f:Fn.id |> Option.map ~f:(fun c -> c.name))) in
           Lwt.return (Option.value name_opt ~default:"Unknown")
       | None -> Lwt.return "Unknown"
 

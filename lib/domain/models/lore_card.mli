@@ -6,6 +6,8 @@ module Template : sig
     card_name : string;
     power_cost : int;
     required_saga_tier : int;
+    default_title : string option;
+    default_description : string option;
     bonus_1_type : string option;
     bonus_1_value : int option;
     bonus_2_type : string option;
@@ -32,9 +34,15 @@ val create_instance :
   template_id:string ->
   title:string ->
   description:string ->
+  ?conn:(module Caqti_lwt.CONNECTION) ->
+  unit ->
   (Instance.t, Qed_error.t) Result.t Lwt.t
 
-val find_template_by_id : string -> (Template.t option, Qed_error.t) Result.t Lwt.t
+val find_template_by_id :
+  string ->
+  ?conn:(module Caqti_lwt.CONNECTION) ->
+  unit ->
+  (Template.t option, Qed_error.t) Result.t Lwt.t
 val find_instances_by_character_id : string -> (Instance.t list, Qed_error.t) Result.t Lwt.t
 val find_active_instances_by_character_id : string -> (Instance.t list, Qed_error.t) Result.t Lwt.t
 val find_active_instances_with_templates : string -> ((Instance.t * Template.t) list, Qed_error.t) Result.t Lwt.t

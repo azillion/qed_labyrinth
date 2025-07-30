@@ -27,7 +27,7 @@ module ActivateLoreCardLogic : System.S with type event = Event.activate_lore_ca
     let* _ = authenticate_character_action state user_id character_id in
 
     (* 2. Fetch character record to derive power budget *)
-    let* char_opt = Character.find_by_id character_id in
+    let* char_opt = Character.find_by_id character_id () in
     let* char_record =
       match char_opt with
       | Some c -> Lwt_result.return c
