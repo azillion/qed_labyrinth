@@ -2,6 +2,10 @@ import { TerminalText } from "@components/ui/TerminalText";
 import { theme } from "@stores/themeStore";
 import { loreActions } from "@features/game/stores/lore";
 
+const toTitleCase = (str) => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 export const LoreCard = (props) => {
   const card = props.card;
 
@@ -23,6 +27,17 @@ export const LoreCard = (props) => {
       <TerminalText class={`mt-2 ${theme().textDim}`}>
         {card.description}
       </TerminalText>
+
+      {/* Bonus Stats */}
+      {card.bonusesList && card.bonusesList.length > 0 && (
+        <div class="mt-2 space-y-1">
+          {card.bonusesList.map((bonus) => (
+            <TerminalText class="text-sm text-blue-300">
+              {toTitleCase(bonus.type)}: +{bonus.value}
+            </TerminalText>
+          ))}
+        </div>
+      )}
       <div
         class={`mt-4 pt-2 border-t ${theme().border} flex justify-between items-center`}
       >
