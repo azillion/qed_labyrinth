@@ -224,15 +224,42 @@ let run ?events schedule state =
         (fun system ->
           match system.criteria with
           | OnTick | OnComponentChange _ ->
-              let%lwt _ = system.handler state None None in
-              Lwt.return_ok () |> Lwt.map (fun _ -> ())
+              let%lwt result = system.handler state None None in
+              let%lwt () =
+                match result with
+                | Ok () -> Lwt.return_unit
+                | Error e ->
+                    let data =
+                      [
+                        ("system", system.name);
+                        ("error", Qed_error.to_string e);
+                      ]
+                    in
+                    Monitoring.Log.warn "Scheduler caught an error from tick-based system" ~data ()
+              in
+              Lwt.return_unit
           | OnEvent key ->
               let relevant_events =
                 List.filter events_for_tick ~f:(fun (_, e) -> String.equal (string_of_event_type e) key)
               in
               Lwt_list.iter_s
                 (fun (trace_id_opt, event) ->
-                  let%lwt _ = system.handler state trace_id_opt (Some event) in
+                  let%lwt result = system.handler state trace_id_opt (Some event) in
+                  let%lwt () =
+                    match result with
+                    | Ok () -> Lwt.return_unit
+                    | Error e ->
+                        let user_id = Event.get_user_id event |> Option.value ~default:"N/A" in
+                        let data =
+                          [
+                            ("system", system.name);
+                            ("error", Qed_error.to_string e);
+                            ("user_id", user_id);
+                            ("trace_id", Option.value trace_id_opt ~default:"N/A");
+                          ]
+                        in
+                        Monitoring.Log.warn "Scheduler caught an error from event-based system" ~data ()
+                  in
                   Lwt.return_unit)
                 relevant_events)
         sorted_systems 
