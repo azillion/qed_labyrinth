@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils"
 const footerLinks = [
   { href: '/', icon: '/home.svg', label: 'Home' },
   { href: '/lore', icon: '/scroll.svg', label: 'Lore' },
+  { href: '/blog', icon: '/scroll.svg', label: 'Blog' },
   { href: '/chronicles', icon: '/scroll.svg', label: 'Chronicles' },
   { href: '/characters', icon: '/sword.svg', label: 'Characters' },
   { href: '/world', icon: '/world.svg', label: 'World' },
