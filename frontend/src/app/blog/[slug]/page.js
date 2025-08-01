@@ -55,7 +55,7 @@ export default async function BlogPostPage({ params }) {
             </a>
           </div>
           <div className="prose prose-invert prose-lg max-w-none">
-            <div className="whitespace-pre-line font-serif leading-relaxed text-stone-200/90 text-lg">
+            <div className="font-serif leading-relaxed text-stone-200/90 text-lg">
               {post.content.split('\n').map((line, index) => {
                 // Check if line contains an image markdown
                 const imageMatch = line.match(/!\[([^\]]*)\]\(([^)]+)\)/);
@@ -63,7 +63,41 @@ export default async function BlogPostPage({ params }) {
                   const [, alt, src] = imageMatch;
                   return <BlogImage key={index} src={src} alt={alt} />;
                 }
-                return <p key={index}>{line}</p>;
+                
+                // Handle headers
+                if (line.startsWith('## ')) {
+                  return <h2 key={index} className="text-2xl font-bold text-stone-100 mt-8 mb-4">{line.replace('## ', '')}</h2>;
+                }
+                if (line.startsWith('### ')) {
+                  return <h3 key={index} className="text-xl font-semibold text-stone-100 mt-6 mb-3">{line.replace('### ', '')}</h3>;
+                }
+                
+                // Handle horizontal rule
+                if (line.trim() === '---') {
+                  return <hr key={index} className="border-stone-700 my-8" />;
+                }
+                
+                // Handle bold text
+                if (line.includes('**')) {
+                  const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                  return (
+                    <p key={index} className="mb-4">
+                      {parts.map((part, partIndex) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return <strong key={partIndex} className="font-semibold text-stone-100">{part.slice(2, -2)}</strong>;
+                        }
+                        return part;
+                      })}
+                    </p>
+                  );
+                }
+                
+                // Regular paragraphs
+                if (line.trim()) {
+                  return <p key={index} className="mb-4">{line}</p>;
+                }
+                
+                return null;
               })}
             </div>
           </div>
