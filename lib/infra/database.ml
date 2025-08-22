@@ -70,6 +70,16 @@ module Schema = struct
            UNIQUE(from_area_id, direction)
          ) |}
 
+  let create_archetypes_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS archetypes (
+          id TEXT PRIMARY KEY,
+          version INTEGER NOT NULL,
+          params JSONB,
+          prompts JSONB
+        ) |}
+;;
+
   let create_lore_card_templates_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS lore_card_templates (
@@ -99,16 +109,25 @@ module Schema = struct
            is_active BOOLEAN NOT NULL DEFAULT false
          ) |}
 
+  let create_archetypes_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS archetypes (
+          id TEXT PRIMARY KEY,
+          version INTEGER NOT NULL,
+          params JSONB,
+          prompts JSONB
+        ) |}
+
   let create_comm_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
       {| CREATE TABLE IF NOT EXISTS communications (
-           id TEXT PRIMARY KEY,
-           message_type TEXT NOT NULL,
-           sender_id TEXT,
-           content TEXT NOT NULL,
-           area_id TEXT REFERENCES areas(id),
-           timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-         ) |}
+          id TEXT PRIMARY KEY,
+          message_type TEXT NOT NULL,
+          sender_id TEXT,
+          content TEXT NOT NULL,
+          area_id TEXT REFERENCES areas(id),
+          timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ) |}
 
   (* Helper to run a list of statements in sequence *)
   let exec_statements (module C : Caqti_lwt.CONNECTION) statements =
@@ -153,6 +172,7 @@ module Schema = struct
 
         (* Tier-1 relational tables *)
         let* () = C.exec create_users_table () in
+        let* () = C.exec create_archetypes_table () in
         let* () = C.exec create_areas_table () in
         let* () = C.exec create_exits_table () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)

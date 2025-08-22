@@ -17,3 +17,5 @@ val get_lore_card_templates :
   * string option * int option  (* bonus_3 *)
   * string option              (* grants_ability *) )
   list 
+
+val get_archetypes : t -> Archetype.t list

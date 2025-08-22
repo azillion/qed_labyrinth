@@ -48,10 +48,18 @@ module Internal = struct
     direction : string;
   } [@@deriving yojson { strict = false }]
 
+  type archetype_props = {
+    id: string;
+    version: int;
+    params: Yojson.Safe.t;
+    prompts: Yojson.Safe.t;
+  } [@@deriving yojson { strict = false }]
+
   type world = {
     item_definitions : item_definition_props list;
     areas : area list;
     exits : exit list;
+    archetypes : archetype_props list [@default []];
     lore_card_templates : lore_card_template list [@default []];
   } [@@deriving yojson { strict = false }]
 
@@ -124,4 +132,6 @@ let get_lore_card_templates world =
       t.bonus_1_type, t.bonus_1_value,
       t.bonus_2_type, t.bonus_2_value,
       t.bonus_3_type, t.bonus_3_value,
-      t.grants_ability )) 
+      t.grants_ability ))
+
+let get_archetypes world = world.Internal.archetypes

@@ -89,6 +89,25 @@
       "direction": "south"
     }
   ],
+  "archetypes": [
+    {
+      "id": "archetype_humanoid_artisan",
+      "version": 1,
+      "params": {
+        "physicality": { "can_speak": true, "can_manipulate_objects": true },
+        "behavior": {
+          "agenda_template": "weekday_artisan",
+          "combat_strategy": "Flee"
+        },
+        "initial_inventory": { "wood": 10, "iron_ore": 5 }
+      },
+      "prompts": {
+        "description_base": "A humanoid artisan. Give them a unique name and one physical feature.",
+        "agenda_planning": "You are a blacksmith. Your inventory is {inventory}. Your wallet has {wallet} gold. Create a plan to get materials and craft goods.",
+        "remediation": "Your current plan to {failed_goal} has failed because {reason}. Choose the best single next step to resolve this."
+      }
+    }
+  ],
   "lore_card_templates": [
     {
       "id": "birthright_unwavering_gaze",

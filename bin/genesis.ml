@@ -126,6 +126,26 @@ let genesis_transaction (world_data : Seeding.t)
   in
   let* () = insert_templates (Seeding.get_lore_card_templates world_data) in
 
+  (* 4. Seed Archetypes *)
+  let archetype_insert_req =
+    let open Caqti_type.Std in
+    Caqti_request.Infix.((t4 string int string string ->. unit)
+        "INSERT INTO archetypes (id, version, params, prompts) VALUES (?, ?, ?::jsonb, ?::jsonb) ON CONFLICT (id) DO UPDATE SET version = EXCLUDED.version, params = EXCLUDED.params, prompts = EXCLUDED.prompts")
+  in
+  let rec insert_archetypes = function
+    | [] -> Lwt_result.return ()
+    | archetype :: rest ->
+        let open Seeding.Internal in
+        let* () = Db.exec archetype_insert_req
+          (archetype.id,
+            archetype.version,
+            Yojson.Safe.to_string archetype.params,
+            Yojson.Safe.to_string archetype.prompts)
+        in
+        insert_archetypes rest
+  in
+  let* () = insert_archetypes (Seeding.get_archetypes world_data) in
+
   Db.commit ()
 
 let () =
