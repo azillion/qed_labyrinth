@@ -78,6 +78,7 @@ type activate_lore_card_payload = { user_id: string; character_id: string; card_
 type deactivate_lore_card_payload = { user_id: string; character_id: string; card_instance_id: string }
 type loadout_changed_payload = { character_id: string }
 type request_lore_collection_payload = { user_id: string; character_id: string }
+type spawn_npc_payload = { archetype_id: string; location_id: string }
 
 (* Disconnection Events *)
 type player_disconnected_payload = { user_id: string }
@@ -151,6 +152,7 @@ type t =
   | DeactivateLoreCard of deactivate_lore_card_payload
   | LoadoutChanged of loadout_changed_payload
   | RequestLoreCollection of request_lore_collection_payload
+  | SpawnNpc of spawn_npc_payload
   (* Connection Management Events *)
   | PlayerDisconnected of player_disconnected_payload
 
@@ -200,5 +202,6 @@ let get_user_id = function
   | DeactivateLoreCard e -> Some e.user_id
   | LoadoutChanged _ -> None
   | RequestLoreCollection e -> Some e.user_id
+  | SpawnNpc _ -> None
   | PlayerDisconnected e -> Some e.user_id
   | _ -> None

@@ -177,6 +177,7 @@ let string_of_event_type (event : Event.t) =
   | LoadoutChanged _ -> "LoadoutChanged"
   | RequestLoreCollection _ -> "RequestLoreCollection"
   | PlayerDisconnected _ -> "PlayerDisconnected"
+  | SpawnNpc _ -> "SpawnNpc"
 
 (* ------------------------------------------------------------------------- *)
 (* Helper to filter runnable systems                                          *)

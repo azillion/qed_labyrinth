@@ -70,6 +70,16 @@ module Schema = struct
            UNIQUE(from_area_id, direction)
          ) |}
 
+  let create_npcs_table =
+    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
+      {| CREATE TABLE IF NOT EXISTS npcs (
+           id TEXT PRIMARY KEY REFERENCES entities(id) ON DELETE CASCADE,
+           archetype_id TEXT NOT NULL REFERENCES archetypes(id),
+           name TEXT NOT NULL,
+           description TEXT
+         ) |}
+  ;;
+
 
   let create_lore_card_templates_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
@@ -168,6 +178,7 @@ module Schema = struct
         (* Tier-1 relational tables *)
         let* () = C.exec create_users_table () in
         let* () = C.exec create_archetypes_table () in
+        let* () = C.exec create_npcs_table () in
         let* () = C.exec create_areas_table () in
         let* () = C.exec create_exits_table () in
         let* () = C.exec (Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)

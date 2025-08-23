@@ -56,6 +56,7 @@ let string_of_event_type (event : Event.t) =
   | LoadoutChanged _ -> "LoadoutChanged"
   | RequestLoreCollection _ -> "RequestLoreCollection"
   | PlayerDisconnected _ -> "PlayerDisconnected"
+  | SpawnNpc _ -> "SpawnNpc"
 
 let direction_of_proto = function
   | Schemas_generated.Input.North -> Components.ExitComponent.North
