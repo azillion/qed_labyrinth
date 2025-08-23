@@ -18,4 +18,13 @@ val get_lore_card_templates :
   * string option              (* grants_ability *) )
   list 
 
-val get_archetypes : t -> Archetype.t list
+module Internal : sig
+  type archetype_props = {
+    id: string;
+    version: int;
+    params: Yojson.Safe.t;
+    prompts: Yojson.Safe.t;
+  }
+end
+
+val get_archetypes : t -> Internal.archetype_props list

@@ -70,15 +70,6 @@ module Schema = struct
            UNIQUE(from_area_id, direction)
          ) |}
 
-  let create_archetypes_table =
-    Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
-      {| CREATE TABLE IF NOT EXISTS archetypes (
-          id TEXT PRIMARY KEY,
-          version INTEGER NOT NULL,
-          params JSONB,
-          prompts JSONB
-        ) |}
-;;
 
   let create_lore_card_templates_table =
     Caqti_request.Infix.(Caqti_type.unit ->. Caqti_type.unit)
@@ -162,6 +153,10 @@ module Schema = struct
         let* () = C.exec (create_component_table "items") () in
         let* () = C.exec (create_component_table "inventories") () in
         let* () = C.exec (create_component_table "item_positions") () in
+        let* () = C.exec (create_component_table "archetype_ids") () in
+        let* () = C.exec (create_component_table "physicalities") () in
+        let* () = C.exec (create_component_table "behaviors") () in
+        let* () = C.exec (create_component_table "goals") () in
         let* () = C.exec (create_component_table "unconscious_states") () in
         let* () = C.exec (create_component_table "equipments") () in
         let* () = C.exec (create_component_table "bonus_stats") () in

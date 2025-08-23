@@ -140,6 +140,40 @@ module ItemPositionComponent = struct
   let table_name = "item_positions"
 end
 
+module ArchetypeComponent = struct
+  type t = {
+    entity_id: string;
+    archetype_id: string;
+  } [@@deriving yojson]
+  let table_name = "archetype_ids"
+end
+
+module PhysicalityComponent = struct
+  type t = {
+    entity_id: string;
+    can_speak: bool;
+    can_manipulate_objects: bool;
+  } [@@deriving yojson]
+  let table_name = "physicalities"
+end
+
+module BehaviorComponent = struct
+  type t = {
+    entity_id: string;
+    traits: string list;
+  } [@@deriving yojson]
+  let table_name = "behaviors"
+end
+
+module GoalComponent = struct
+  type t = {
+    entity_id: string;
+    active_goal: string; (* e.g., "Idle", "MoveTo" *)
+    context: Yojson.Safe.t; (* e.g., {"destination_id": "loc_123"} *)
+  } [@@deriving yojson]
+  let table_name = "goals"
+end
+
 module ProgressionComponent = struct
   type t = {
     entity_id: string;
