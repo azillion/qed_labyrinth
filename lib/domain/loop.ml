@@ -119,7 +119,7 @@ let event_of_protobuf (proto_event : Schemas_generated.Input.input_event) : (str
       Option.map event_opt ~f:(fun event -> (trace_id, event))
 
 let subscribe_to_player_commands (state : State.t) =
-  let redis_host = try Stdlib.Sys.getenv "REDIS_HOST" with _ -> failwith "REDIS_HOST environment variable is not set" in
+  let redis_host = Stdlib.Sys.getenv_opt "REDIS_HOST" |> Option.value ~default:"127.0.0.1" in
   let%lwt subscriber_conn = Redis_lwt.Client.connect { host = redis_host; port = 6379 } in
   let%lwt () = Redis_lwt.Client.subscribe subscriber_conn ["player_commands"] in
   let%lwt () = Monitoring.Log.info "Subscribed to player_commands" () in

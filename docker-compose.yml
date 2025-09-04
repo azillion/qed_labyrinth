@@ -38,7 +38,7 @@ services:
 
   api_server:
     build:
-      context: .
+      context: ./api-server
       dockerfile: Dockerfile.api
     depends_on:
       postgres:
@@ -58,6 +58,22 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     ports:
       - "3001:3001"
+    volumes:
+      - ./api-server:/usr/src/app
+    environment:
+      - NODE_ENV=development
+
+  agent_mind_service:
+    build:
+      context: ./agent-mind-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./agent-mind-service:/usr/src/app # For live-reloading during dev
+      - ./schemas:/usr/src/app/schemas
+    ports:
+      - "5001:5001"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
 
 volumes:
   pg_data:

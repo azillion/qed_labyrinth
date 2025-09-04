@@ -10,12 +10,18 @@
  (action
   (run ocaml-protoc --binary --ml_out . ../../schemas/output.proto)))
 
+(rule
+ (targets ai_comms.ml ai_comms.mli)
+ (deps ../../schemas/ai_comms.proto)
+ (action
+  (run ocaml-protoc --binary --ml_out . ../../schemas/ai_comms.proto)))
+
 (library
  (name schemas_generated)
  (public_name qed_labyrinth.schemas_generated)
- (modules input output)
+ (modules input output ai_comms)
  (libraries pbrt))
 
 (alias
  (name schemas)
- (deps input.ml input.mli output.ml output.mli))
+ (deps input.ml input.mli output.ml output.mli ai_comms.ml ai_comms.mli))

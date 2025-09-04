@@ -68,6 +68,8 @@ let register_systems () =
   (* Tick-based Systems *)
   r_tick "ApRegen" Update Ap_regen_system.APRegen.handle;
   r_tick "Recovery" Update Recovery_system.Recovery.handle;
+  r_tick "NpcDecision" Update Npc_decision_system.NpcDecision.handle;
+  register ~after:["NpcDecision"] ~name:"NpcAction" ~schedule:Update ~criteria:OnTick Npc_action_system.NpcAction.handle;
   r_tick "EntityCleanup" PostUpdate Entity_cleanup_system.EntityCleanup.handle;
 
   (* PostUpdate tickable systems *)
