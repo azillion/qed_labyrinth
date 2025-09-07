@@ -1,18 +1,8 @@
 open Base
 open Error_utils
-open Qed_error
 
 (* Helper copied from Item_system for auth *)
-let authenticate_character_action (state : State.t) (user_id : string) (character_id : string) =
-  let open Lwt_result.Syntax in
-  match Uuidm.of_string character_id with
-  | None -> Lwt_result.fail InvalidCharacter
-  | Some char_uuid -> (
-      match State.get_active_character state user_id with
-      | Some active_uuid when Uuidm.equal active_uuid char_uuid -> Lwt_result.return char_uuid
-      | _ ->
-          let* () = wrap_ok (State.enqueue state (Event.ActionFailed { user_id; reason = "You cannot control that character." })) in
-          Lwt_result.fail (LogicError "Character action authorization failed"))
+(* authenticate_character_action removed in favor of facade *)
 
 module RequestCharacterSheetLogic : System.S with type event = Event.request_character_sheet_payload = struct
   let name = "RequestCharacterSheet"
@@ -20,38 +10,38 @@ module RequestCharacterSheetLogic : System.S with type event = Event.request_cha
   let event_type = function Event.RequestCharacterSheet e -> Some e | _ -> None
 
   let execute state trace_id (p : event) =
-    let user_id = p.user_id
-    and character_id = p.character_id in
+    let user_id = p.user_id in
     let open Lwt_result.Syntax in
-    let* char_entity = authenticate_character_action state user_id character_id in
+    let* character = Character_actions.find_active ~state ~user_id |> Lwt.map (Result.map_error ~f:(fun s -> Qed_error.LogicError s)) in
 
-    (* Fetch components *)
-    let* health_opt = wrap_val (Ecs.HealthStorage.get char_entity) in
-    let* ap_opt = wrap_val (Ecs.ActionPointsStorage.get char_entity) in
-    let* core_stats_opt = wrap_val (Ecs.CoreStatsStorage.get char_entity) in
-    let* derived_opt = wrap_val (Ecs.DerivedStatsStorage.get char_entity) in
-    let* prog_opt = wrap_val (Ecs.ProgressionStorage.get char_entity) in
+    (* Fetch all data via the new facade *)
+    let* name = Character_actions.get_name ~character in
+    let* health, max_health = wrap_val (Character_actions.get_health ~character) |> Lwt.map (Result.map ~f:(Option.value ~default:(0,0))) in
+    let* ap, max_ap = wrap_val (Character_actions.get_action_points ~character) |> Lwt.map (Result.map ~f:(Option.value ~default:(0,0))) in
+    let* core_attrs = wrap_val (Character_actions.get_core_stats ~character) |> Lwt.map (Result.map ~f:(Option.value ~default:Types.{might=0;finesse=0;wits=0;grit=0;presence=0})) in
+    let* derived_stats = wrap_val (Character_actions.get_derived_stats ~character) |> Lwt.map (Result.map ~f:(Option.value ~default:Types.{physical_power=0;spell_power=0;accuracy=0;evasion=0;armor=0;resolve=0})) in
+    let* prof_lvl, p_budget = wrap_val (Character_actions.get_progression ~character) |> Lwt.map (Result.map ~f:(Option.value ~default:(1,0))) in
 
-    match core_stats_opt with
-    | None -> Lwt_result.return () (* Should not happen *)
-    | Some core_stats ->
-        let (health, max_health) = Option.value_map health_opt ~default:(0,0) ~f:(fun h -> (h.current, h.max)) in
-        let (ap, max_ap) = Option.value_map ap_opt ~default:(0,0) ~f:(fun ap -> (ap.current, ap.max)) in
-        let core_attrs = Types.{ might=core_stats.might; finesse=core_stats.finesse; wits=core_stats.wits; grit=core_stats.grit; presence=core_stats.presence } in
-        let derived_stats = Option.value_map derived_opt ~default:Types.{physical_power=0;spell_power=0;accuracy=0;evasion=0;armor=0;resolve=0} ~f:(fun d -> Types.{physical_power=d.physical_power;spell_power=d.spell_power;accuracy=d.accuracy;evasion=d.evasion;armor=d.armor;resolve=d.resolve}) in
-        let sheet : Types.character_sheet = { id=character_id; name=""; health; max_health; action_points=ap; max_action_points=max_ap; core_attributes=core_attrs; derived_stats } in
-        let of_i = Int32.of_int_exn in
-        let pb_core_attrs : Schemas_generated.Output.core_attributes = { might=of_i sheet.core_attributes.might; finesse=of_i sheet.core_attributes.finesse; wits=of_i sheet.core_attributes.wits; grit=of_i sheet.core_attributes.grit; presence=of_i sheet.core_attributes.presence } in
-        let pb_derived_stats : Schemas_generated.Output.derived_stats = { physical_power=of_i sheet.derived_stats.physical_power; spell_power=of_i sheet.derived_stats.spell_power; accuracy=of_i sheet.derived_stats.accuracy; evasion=of_i sheet.derived_stats.evasion; armor=of_i sheet.derived_stats.armor; resolve=of_i sheet.derived_stats.resolve } in
-        let (prof_lvl, p_budget) =
-          match prog_opt with
-          | Some p -> (p.proficiency_level, p.power_budget)
-          | None -> (1, 0)
-        in
-        let sheet_msg : Schemas_generated.Output.character_sheet = { id=sheet.id; name=sheet.name; health=of_i sheet.health; max_health=of_i sheet.max_health; action_points=of_i sheet.action_points; max_action_points=of_i sheet.max_action_points; core_attributes=Some pb_core_attrs; derived_stats=Some pb_derived_stats; proficiency_level = Int32.of_int_exn prof_lvl; power_budget = Int32.of_int_exn p_budget } in
-        let output_event : Schemas_generated.Output.output_event = { target_user_ids=[user_id]; payload=Character_sheet sheet_msg; trace_id=Option.value trace_id ~default:"" } in
-        let* () = Publisher.publish_event state ?trace_id output_event in
-        Lwt_result.return ()
+    (* Build and publish the protobuf message *)
+    let of_i = Int32.of_int_exn in
+    let pb_core_attrs : Schemas_generated.Output.core_attributes = { might=of_i core_attrs.might; finesse=of_i core_attrs.finesse; wits=of_i core_attrs.wits; grit=of_i core_attrs.grit; presence=of_i core_attrs.presence } in
+    let pb_derived_stats : Schemas_generated.Output.derived_stats = { physical_power=of_i derived_stats.physical_power; spell_power=of_i derived_stats.spell_power; accuracy=of_i derived_stats.accuracy; evasion=of_i derived_stats.evasion; armor=of_i derived_stats.armor; resolve=of_i derived_stats.resolve } in
+    
+    let sheet_msg : Schemas_generated.Output.character_sheet = {
+      id = Character_actions.get_id ~character;
+      name;
+      health = of_i health;
+      max_health = of_i max_health;
+      action_points = of_i ap;
+      max_action_points = of_i max_ap;
+      core_attributes = Some pb_core_attrs;
+      derived_stats = Some pb_derived_stats;
+      proficiency_level = of_i prof_lvl;
+      power_budget = of_i p_budget;
+    } in
+    let output_event : Schemas_generated.Output.output_event = { target_user_ids=[user_id]; payload=Character_sheet sheet_msg; trace_id=Option.value trace_id ~default:"" } in
+    let* () = Publisher.publish_event state ?trace_id output_event in
+    Lwt_result.return ()
 end
 
 module RequestCharacterSheet = System.Make(RequestCharacterSheetLogic) 
