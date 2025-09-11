@@ -182,3 +182,25 @@ module RequestInventoryLogic : System.S with type event = Event.request_inventor
     Lwt_result.return ()
 end
 module RequestInventory = System.Make(RequestInventoryLogic) 
+
+(* --- Use Item System --- *)
+module UseItemLogic : System.S with type event = Event.use_item_payload = struct
+  let name = "UseItem"
+  type event = Event.use_item_payload
+  let event_type = function Event.UseItem e -> Some e | _ -> None
+
+  let execute state _trace_id (p : event) =
+    let open Lwt_result.Syntax in
+    let* character = Character_actions.find_active ~state ~user_id:p.user_id |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s)) in
+    let* item = Item_actions.find ~item_entity_id_str:p.item_entity_id |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s)) in
+
+    match%lwt Character_actions.use ~state ~character ~item with
+    | Ok effect_description ->
+        let* () = Character_actions.send_message ~state ~character ~message:effect_description in
+        let* () = Character_actions.refresh_client_ui ~state ~character in
+        Lwt_result.return ()
+    | Error reason ->
+        let* () = Character_actions.send_message ~state ~character ~message:reason in
+        Lwt_result.return ()
+end
+module UseItem = System.Make(UseItemLogic)

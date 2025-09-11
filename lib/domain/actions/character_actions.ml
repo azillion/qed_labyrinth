@@ -39,3 +39,44 @@ let get_progression ~character =
   let%lwt prog_opt = Ecs.ProgressionStorage.get character.entity_id in
   Lwt.return (Option.map prog_opt ~f:(fun p -> (p.proficiency_level, p.power_budget)))
 
+let send_message ~state ~character ~message =
+  Publisher.publish_system_message_to_user state character.user_id message
+
+let refresh_client_ui ~state ~character =
+  let open Lwt_result.Syntax in
+  let char_id_str = get_id ~character in
+  let* () = Error_utils.wrap_ok (State.enqueue state (Event.RequestInventory { user_id = character.user_id; character_id = char_id_str })) in
+  let* () = Error_utils.wrap_ok (State.enqueue state (Event.RequestCharacterSheet { user_id = character.user_id; character_id = char_id_str })) in
+  Lwt_result.return ()
+
+let use ~state:_ ~(character : t) ~(item : Item_actions.t) =
+  let%lwt inventory_comp_opt = Ecs.InventoryStorage.get character.entity_id in
+  let inventory_comp = Option.value inventory_comp_opt
+    ~default:Components.InventoryComponent.{entity_id = get_id ~character; items = []}
+  in
+  let has_item =
+    List.mem inventory_comp.items (Item_actions.get_id ~item) ~equal:String.equal
+  in
+
+  if not has_item then Lwt.return (Error "You don't have that item.")
+  else if not (Item_actions.is_usable ~item) then Lwt.return (Error "You cannot use that item.")
+  else
+    match Item_actions.get_effect ~item with
+    | Some (`Heal amount) ->
+        let%lwt health_comp_opt = Ecs.HealthStorage.get character.entity_id in
+        (match health_comp_opt with
+        | Some hc ->
+            let new_health = Int.min hc.max (hc.current + amount) in
+            let%lwt () =
+              if new_health = hc.current then Lwt.return_unit
+              else Ecs.HealthStorage.set character.entity_id { hc with current = new_health }
+            in
+            let updated_items = Utils.remove_first_item_by_id inventory_comp.items (Item_actions.get_id ~item) in
+            let%lwt () = Ecs.InventoryStorage.set character.entity_id { inventory_comp with items = updated_items } in
+            Lwt.return (Ok ("You use the " ^ (Item_actions.get_name ~item) ^ " and feel refreshed."))
+        | None ->
+            let updated_items = Utils.remove_first_item_by_id inventory_comp.items (Item_actions.get_id ~item) in
+            let%lwt () = Ecs.InventoryStorage.set character.entity_id { inventory_comp with items = updated_items } in
+            Lwt.return (Ok ("You use the " ^ (Item_actions.get_name ~item) ^ ".")))
+    | None -> Lwt.return (Error "That item has no usable effect.")
+

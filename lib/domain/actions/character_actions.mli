@@ -26,3 +26,11 @@ val get_derived_stats : character:t -> Types.derived_stats option Lwt.t
 (** Gets the character's progression info as (level, power_budget). *)
 val get_progression : character:t -> (int * int) option Lwt.t
 
+(** High-level action to use an item. Orchestrates all sub-steps. *)
+val use : state:State.t -> character:t -> item:Item_actions.t -> (string, string) Result.t Lwt.t
+
+(** Sends a system message to the character's player. *)
+val send_message : state:State.t -> character:t -> message:string -> (unit, Qed_error.t) Result.t Lwt.t
+
+(** Triggers all necessary client UI updates after an action. *)
+val refresh_client_ui : state:State.t -> character:t -> (unit, Qed_error.t) Result.t Lwt.t

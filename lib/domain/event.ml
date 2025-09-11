@@ -67,6 +67,7 @@ type request_admin_metrics_payload = { user_id: string }
 type equip_payload = { user_id: string; character_id: string; item_entity_id: string }
 type unequip_payload = { user_id: string; character_id: string; slot: Item_definition.slot }
 type request_character_sheet_payload = { user_id: string; character_id: string }
+type use_item_payload = { user_id: string; item_entity_id: string }
 
 (* Progression & Lore Card Events *)
 type award_experience_payload = { character_id: string; xp: int; ip: int }
@@ -140,6 +141,7 @@ type t =
 
   (* Character Sheet Events *)
   | RequestCharacterSheet of request_character_sheet_payload
+  | UseItem of use_item_payload
 
   (* Progression & Lore Card Events *)
   | AwardExperience of award_experience_payload

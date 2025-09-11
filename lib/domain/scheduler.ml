@@ -165,6 +165,7 @@ let string_of_event_type (event : Event.t) =
   | Equip _ -> "Equip"
   | Unequip _ -> "Unequip"
   | RequestCharacterSheet _ -> "RequestCharacterSheet"
+  | UseItem _ -> "UseItem"
   (* Progression & Lore Card *)
   | AwardExperience _ -> "AwardExperience"
   | PlayerGainedExperience _ -> "PlayerGainedExperience"

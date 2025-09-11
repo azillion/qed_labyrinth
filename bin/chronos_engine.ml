@@ -43,6 +43,7 @@ let register_systems () =
   r_event "LoadAreaIntoECS" Area_loading_system.LoadArea.handle;
   r_event "RequestAdminMetrics" Metrics_system.RequestMetrics.handle;
   r_event "RequestCharacterSheet" Character_sheet_system.RequestCharacterSheet.handle;
+  r_event "UseItem" Item_system.UseItem.handle;
 
   (* Progression & Lore Card Systems *)
   r_event "AwardExperience" Experience_system.AwardExperience.handle;
