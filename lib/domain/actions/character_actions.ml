@@ -80,3 +80,37 @@ let use ~state:_ ~(character : t) ~(item : Item_actions.t) =
             Lwt.return (Ok ("You use the " ^ (Item_actions.get_name ~item) ^ ".")))
     | None -> Lwt.return (Error "That item has no usable effect.")
 
+let get_area ~character =
+  let open Lwt_result.Syntax in
+  let* pos_comp = Ecs.CharacterPositionStorage.get character.entity_id
+    |> Lwt.map (Result.of_option ~error:"Character has no position component.")
+  in
+  Area_actions.find_by_id ~area_id_str:pos_comp.area_id
+
+let move ~state ~character ~direction =
+  let open Lwt_result.Syntax in
+  let* current_area = get_area ~character in
+  let* exit_record = Area_actions.find_exit ~area:current_area ~direction in
+
+  let old_area_id = Area_actions.get_id current_area in
+  let new_area_id = exit_record.to_area_id in
+
+  let* char_name = get_name ~character |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+  let direction_str = Components.ExitComponent.direction_to_string direction in
+  let departure_msg_content = Printf.sprintf "%s has left, heading %s." char_name direction_str in
+  let* departure_msg = Communication.create ~message_type:System ~sender_id:None ~content:departure_msg_content ~area_id:(Some old_area_id)
+    |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+  in
+  let* () = Error_utils.wrap_ok (State.enqueue state (Event.Announce { area_id = old_area_id; message = departure_msg })) |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+
+  let* () =
+    let* pos_comp = Ecs.CharacterPositionStorage.get character.entity_id |> Lwt.map (Result.of_option ~error:"Position component missing") in
+    let new_pos_comp = { pos_comp with area_id = new_area_id } in
+    Error_utils.wrap_ok (Ecs.CharacterPositionStorage.set character.entity_id new_pos_comp) |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+  in
+
+  let* () = Error_utils.wrap_ok (State.enqueue state
+    (Event.PlayerMoved { user_id = character.user_id; old_area_id; new_area_id; direction })) |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+  in
+  Lwt_result.return ()
+

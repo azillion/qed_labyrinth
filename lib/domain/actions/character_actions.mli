@@ -34,3 +34,9 @@ val send_message : state:State.t -> character:t -> message:string -> (unit, Qed_
 
 (** Triggers all necessary client UI updates after an action. *)
 val refresh_client_ui : state:State.t -> character:t -> (unit, Qed_error.t) Result.t Lwt.t
+
+(** Gets the rich area handle for the character's current location. *)
+val get_area : character:t -> (Area_actions.t, string) Result.t Lwt.t
+
+(** High-level action for moving a character. Handles all logic and side-effects. *)
+val move : state:State.t -> character:t -> direction:Components.ExitComponent.direction -> (unit, string) Result.t Lwt.t
