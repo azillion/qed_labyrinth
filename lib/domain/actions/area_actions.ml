@@ -22,3 +22,56 @@ let find_exit ~area ~direction =
   | Some exit_record -> Lwt_result.return exit_record
   | None -> Lwt_result.fail "You can't go that way."
 
+
+let find_item ~area ~item_id_str =
+  let open Lwt_result.Syntax in
+  let* item = Item_actions.find ~item_entity_id_str:item_id_str in
+  let item_uuid =
+    match Uuidm.of_string (Item_actions.get_id ~item) with
+    | None -> None
+    | Some eid -> Some eid
+  in
+  let* pos_comp_opt =
+    match item_uuid with
+    | None -> Lwt_result.fail "Invalid item ID format."
+    | Some eid ->
+        let%lwt pos_opt = Ecs.ItemPositionStorage.get eid in
+        Lwt_result.return pos_opt
+  in
+  match pos_comp_opt with
+  | Some pos when String.equal pos.area_id (get_id area) -> Lwt_result.return item
+  | _ -> Lwt_result.fail "That item is not here."
+
+let remove_item ~area ~item =
+  let open Lwt_result.Syntax in
+  let item_uuid =
+    match Uuidm.of_string (Item_actions.get_id ~item) with
+    | None -> None
+    | Some eid -> Some eid
+  in
+  let* pos_comp_opt =
+    match item_uuid with
+    | None -> Lwt_result.fail "Invalid item ID format."
+    | Some eid ->
+        let%lwt pos_opt = Ecs.ItemPositionStorage.get eid in
+        Lwt_result.return pos_opt
+  in
+  match pos_comp_opt with
+  | Some pos when String.equal pos.area_id (get_id area) ->
+      (match item_uuid with
+      | None -> Lwt_result.fail (Qed_error.LogicError "Invalid item ID format.")
+      | Some eid -> Error_utils.wrap_ok (Ecs.ItemPositionStorage.remove eid))
+      |> Lwt.map (Result.map_error ~f:(fun e -> Qed_error.to_string e))
+  | _ -> Lwt_result.fail "Item is not in the specified area to remove."
+
+let add_item ~area ~item =
+  match Uuidm.of_string (Item_actions.get_id ~item) with
+  | None -> Lwt_result.fail "Invalid item ID format."
+  | Some eid ->
+      let new_pos_comp = Components.ItemPositionComponent.{
+        entity_id = Item_actions.get_id ~item;
+        area_id = get_id area;
+      } in
+      Error_utils.wrap_ok (Ecs.ItemPositionStorage.set eid new_pos_comp)
+      |> Lwt.map (Result.map_error ~f:(fun e -> Qed_error.to_string e))
+

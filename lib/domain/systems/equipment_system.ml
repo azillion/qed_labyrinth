@@ -28,7 +28,7 @@ module EquipLogic : System.S with type event = Event.equip_payload = struct
       | None -> Lwt_result.fail (LogicError "Invalid item entity ID")
       | Some id -> Lwt_result.return id)
     in
-    let* inventory = wrap_val (Item_system.get_character_inventory char_entity) in
+    let* inventory = Character_actions.get_inventory ~character:(Character_actions.of_ids ~entity_id:char_entity ~user_id) in
 
     if not (List.mem inventory.items item_entity_id ~equal:String.equal) then
       let* () = Publisher.publish_system_message_to_user state ?trace_id user_id "You do not have that item." in
@@ -125,7 +125,7 @@ module UnequipLogic : System.S with type event = Event.unequip_payload = struct
             Lwt_result.return ()
         | Some item_id ->
             let updated_equipment = Fieldslib.Field.fset field equipment None in
-            let* inventory = wrap_val (Item_system.get_character_inventory char_entity) in
+            let* inventory = Character_actions.get_inventory ~character:(Character_actions.of_ids ~entity_id:char_entity ~user_id) in
             let updated_inventory = { inventory with items = item_id :: inventory.items } in
             let* () = wrap_ok (Ecs.EquipmentStorage.set char_entity updated_equipment) in
             let* () = wrap_ok (Ecs.InventoryStorage.set char_entity updated_inventory) in

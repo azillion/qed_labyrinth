@@ -8,19 +8,16 @@ module SayLogic : System.S with type event = Event.say_payload = struct
   type event = Event.say_payload
   let event_type = function Event.Say e -> Some e | _ -> None
 
-  let execute state trace_id ({ user_id; content } : event) =
+  let execute state _trace_id ({ user_id; content } : event) =
     let open Lwt_result.Syntax in
-    let* char_entity_id =
-      (match State.get_active_character state user_id with
-      | Some eid -> Lwt.return_ok eid
-      | None -> Lwt.return_error CharacterNotFound)
-    in
-    let* char_pos = Ecs.CharacterPositionStorage.get char_entity_id |> Lwt.map (Result.of_option ~error:(ServerError "Character has no position")) in
-    let area_id = char_pos.area_id in
-    let sender_char_id_str = Some (Uuidm.to_string char_entity_id) in
-    let* message = Communication.create ~message_type:Chat ~sender_id:sender_char_id_str ~content ~area_id:(Some area_id) in
-    let* () = wrap_ok (State.enqueue ?trace_id state (Event.Announce { area_id; message })) in
-    Lwt.return_ok ()
+    let* character = Character_actions.find_active ~state ~user_id |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s)) in
+
+    match%lwt Character_actions.say ~state ~character ~content with
+    | Ok () -> Lwt_result.return ()
+    | Error reason ->
+        (* In the future, we might want to send this failure back to the user.
+           For now, a logic error is appropriate as "say" shouldn't fail. *)
+        Lwt_result.fail (LogicError reason)
 end
 module Say = System.Make(SayLogic)
 

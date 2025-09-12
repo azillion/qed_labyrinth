@@ -4,6 +4,8 @@ type t = { entity_id: Uuidm.t; user_id: string }
 
 let get_id ~character = Uuidm.to_string character.entity_id
 
+let of_ids ~entity_id ~user_id : t = { entity_id; user_id }
+
 let find_active ~state ~user_id =
   match State.get_active_character state user_id with
   | None -> Lwt_result.fail "You do not have an active character."
@@ -48,6 +50,74 @@ let refresh_client_ui ~state ~character =
   let* () = Error_utils.wrap_ok (State.enqueue state (Event.RequestInventory { user_id = character.user_id; character_id = char_id_str })) in
   let* () = Error_utils.wrap_ok (State.enqueue state (Event.RequestCharacterSheet { user_id = character.user_id; character_id = char_id_str })) in
   Lwt_result.return ()
+
+let get_area ~character =
+  let open Lwt_result.Syntax in
+  let* pos_comp = Ecs.CharacterPositionStorage.get character.entity_id
+    |> Lwt.map (Result.of_option ~error:"Character has no position component.")
+  in
+  Area_actions.find_by_id ~area_id_str:pos_comp.area_id
+
+let get_inventory ~character =
+  let open Lwt_result.Syntax in
+  let* inventory_opt = Error_utils.wrap_val (Ecs.InventoryStorage.get character.entity_id) in
+  let inventory = Option.value inventory_opt ~default:Components.InventoryComponent.{
+    entity_id = get_id ~character;
+    items = [];
+  } in
+  Lwt_result.return inventory
+
+let take ~state ~character ~item =
+  let open Lwt_result.Syntax in
+  let* current_area = get_area ~character in
+  (* Verify item is in the current area before proceeding *)
+  let* _ = Area_actions.find_item ~area:current_area ~item_id_str:(Item_actions.get_id ~item) in
+
+  (* Perform the actions *)
+  let* () = Area_actions.remove_item ~area:current_area ~item in
+  let* inventory_comp =
+    Error_utils.wrap_val (Ecs.InventoryStorage.get character.entity_id)
+    |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+    |> Lwt.map (Result.map ~f:(Option.value ~default:
+        (Components.InventoryComponent.{entity_id = get_id ~character; items = []})))
+  in
+  let updated_inventory = { inventory_comp with items = (Item_actions.get_id ~item) :: inventory_comp.items } in
+  let* () = Error_utils.wrap_ok (Ecs.InventoryStorage.set character.entity_id updated_inventory)
+    |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+
+  (* Send feedback and refresh UI *)
+  let* () = send_message ~state ~character ~message:("You take the " ^ (Item_actions.get_name ~item) ^ ".")
+    |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+  in
+  let* () = refresh_client_ui ~state ~character |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+  let* () = Error_utils.wrap_ok (State.enqueue state (Event.AreaQuery { user_id = character.user_id; area_id = Area_actions.get_id current_area }))
+    |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+  Lwt_result.return ()
+
+let drop ~state ~character ~item =
+  let open Lwt_result.Syntax in
+  let* inventory_comp = Ecs.InventoryStorage.get character.entity_id
+    |> Lwt.map (Result.of_option ~error:"You have no items to drop.")
+  in
+  let item_id_str = Item_actions.get_id ~item in
+  if not (List.mem inventory_comp.items item_id_str ~equal:String.equal) then
+    Lwt_result.fail "You do not have that item."
+  else
+    let* current_area = get_area ~character in
+    (* Perform the actions *)
+    let updated_inventory = { inventory_comp with items = Utils.remove_first_item_by_id inventory_comp.items item_id_str } in
+    let* () = Error_utils.wrap_ok (Ecs.InventoryStorage.set character.entity_id updated_inventory)
+      |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+    let* () = Area_actions.add_item ~area:current_area ~item in
+
+    (* Send feedback and refresh UI *)
+    let* () = send_message ~state ~character ~message:("You drop the " ^ (Item_actions.get_name ~item) ^ ".")
+      |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+    in
+    let* () = refresh_client_ui ~state ~character |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+    let* () = Error_utils.wrap_ok (State.enqueue state (Event.AreaQuery { user_id = character.user_id; area_id = Area_actions.get_id current_area }))
+      |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+    Lwt_result.return ()
 
 let use ~state:_ ~(character : t) ~(item : Item_actions.t) =
   let%lwt inventory_comp_opt = Ecs.InventoryStorage.get character.entity_id in
@@ -111,6 +181,25 @@ let move ~state ~character ~direction =
 
   let* () = Error_utils.wrap_ok (State.enqueue state
     (Event.PlayerMoved { user_id = character.user_id; old_area_id; new_area_id; direction })) |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+  in
+  Lwt_result.return ()
+
+let say ~state ~character ~content =
+  let open Lwt_result.Syntax in
+  let* current_area = get_area ~character in
+  let area_id_str = Area_actions.get_id current_area in
+  let sender_char_id_str = Some (get_id ~character) in
+
+  let* message = Communication.create
+    ~message_type:Chat
+    ~sender_id:sender_char_id_str
+    ~content
+    ~area_id:(Some area_id_str)
+    |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+  in
+
+  let* () = Error_utils.wrap_ok (State.enqueue state (Event.Announce { area_id = area_id_str; message }))
+    |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
   in
   Lwt_result.return ()
 

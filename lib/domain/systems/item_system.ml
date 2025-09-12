@@ -14,16 +14,6 @@ let authenticate_character_action (state : State.t) (user_id : string) (characte
           let* () = wrap_ok (State.enqueue state (Event.ActionFailed { user_id; reason = "You cannot control that character." })) in
           Lwt_result.fail (LogicError "Character action authorization failed"))
 
-(* Internal helper, not a system itself *)
-let get_character_inventory (char_entity : Uuidm.t) =
-  let%lwt inventory_opt = Ecs.InventoryStorage.get char_entity in
-  let inventory =
-    Option.value inventory_opt ~default:Components.InventoryComponent.{
-      entity_id = Uuidm.to_string char_entity;
-      items = [];
-    }
-  in
-  Lwt.return inventory
 
 (* --- Take Item System --- *)
 module TakeItemLogic : System.S with type event = Event.take_item_payload = struct
@@ -31,30 +21,15 @@ module TakeItemLogic : System.S with type event = Event.take_item_payload = stru
   type event = Event.take_item_payload
   let event_type = function Event.TakeItem e -> Some e | _ -> None
 
-  let execute state trace_id (p : event) =
-    let user_id        = p.user_id
-    and character_id   = p.character_id
-    and item_entity_id = p.item_entity_id in
+  let execute state _trace_id (p : event) =
     let open Lwt_result.Syntax in
-    let* char_entity = authenticate_character_action state user_id character_id in
-    let* item_entity =
-      Uuidm.of_string item_entity_id |> Lwt.return |> Lwt.map (Result.of_option ~error:(LogicError "Invalid item entity ID"))
-    in
-    let* char_pos = Ecs.CharacterPositionStorage.get char_entity |> Lwt.map (Result.of_option ~error:(LogicError "Character has no position")) in
-    let* item_pos_opt = wrap_val (Ecs.ItemPositionStorage.get item_entity) in
+    let* character = Character_actions.find_active ~state ~user_id:p.user_id |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s)) in
+    let* item = Item_actions.find ~item_entity_id_str:p.item_entity_id |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s)) in
 
-    match item_pos_opt with
-    | Some item_pos when String.equal item_pos.area_id char_pos.area_id ->
-        let* () = wrap_ok (Ecs.ItemPositionStorage.remove item_entity) in
-        let* inventory = wrap_val (get_character_inventory char_entity) in
-        let updated_inventory = { inventory with items = item_entity_id :: inventory.items } in
-        let* () = wrap_ok (Ecs.InventoryStorage.set char_entity updated_inventory) in
-        let* () = Publisher.publish_system_message_to_user state ?trace_id user_id "You take the item." in
-        let* () = wrap_ok (State.enqueue ?trace_id state (Event.RequestInventory { user_id; character_id })) in
-        let* () = wrap_ok (State.enqueue ?trace_id state (Event.AreaQuery { user_id; area_id = char_pos.area_id })) in
-        Lwt_result.return ()
-    | _ ->
-        let* () = wrap_ok (State.enqueue ?trace_id state (Event.ActionFailed { user_id; reason = "The item is not here." })) in
+    match%lwt Character_actions.take ~state ~character ~item with
+    | Ok () -> Lwt_result.return ()
+    | Error reason ->
+        let* () = Character_actions.send_message ~state ~character ~message:reason in
         Lwt_result.return ()
 end
 module TakeItem = System.Make(TakeItemLogic)
@@ -65,31 +40,16 @@ module DropItemLogic : System.S with type event = Event.drop_item_payload = stru
   type event = Event.drop_item_payload
   let event_type = function Event.DropItem e -> Some e | _ -> None
 
-  let execute state trace_id (p : event) =
-    let user_id        = p.user_id
-    and character_id   = p.character_id
-    and item_entity_id = p.item_entity_id in
+  let execute state _trace_id (p : event) =
     let open Lwt_result.Syntax in
-    let* char_entity = authenticate_character_action state user_id character_id in
-    let* inventory = wrap_val (get_character_inventory char_entity) in
+    let* character = Character_actions.find_active ~state ~user_id:p.user_id |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s)) in
+    let* item = Item_actions.find ~item_entity_id_str:p.item_entity_id |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s)) in
 
-    if not (List.exists inventory.items ~f:(String.equal item_entity_id)) then (
-      let* () = wrap_ok (State.enqueue ?trace_id state (Event.ActionFailed { user_id; reason = "You do not have that item." })) in
-      Lwt_result.return ()
-    ) else
-      let updated_inventory = { inventory with items = Utils.remove_first_item_by_id inventory.items item_entity_id } in
-      let* () = wrap_ok (Ecs.InventoryStorage.set char_entity updated_inventory) in
-      let* char_pos = Ecs.CharacterPositionStorage.get char_entity |> Lwt.map (Result.of_option ~error:(LogicError "Character has no position")) in
-      let* item_entity =
-        Uuidm.of_string item_entity_id |> Lwt.return |> Lwt.map (Result.of_option ~error:(LogicError "Invalid item entity ID"))
-      in
-      let new_item_pos = Components.ItemPositionComponent.{ entity_id = item_entity_id; area_id = char_pos.area_id } in
-      let* () = wrap_ok (Ecs.ItemPositionStorage.set item_entity new_item_pos) in
-      let* () = wrap_ok (Lwt_io.printl (Printf.sprintf "[DROP] inserted ItemPosition (%s → %s)" item_entity_id char_pos.area_id)) in
-      let* () = Publisher.publish_system_message_to_user state ?trace_id user_id "You drop the item." in
-      let* () = wrap_ok (State.enqueue ?trace_id state (Event.RequestInventory { user_id; character_id })) in
-      let* () = wrap_ok (State.enqueue ?trace_id state (Event.AreaQuery { user_id; area_id = char_pos.area_id })) in
-      Lwt_result.return ()
+    match%lwt Character_actions.drop ~state ~character ~item with
+    | Ok () -> Lwt_result.return ()
+    | Error reason ->
+        let* () = Character_actions.send_message ~state ~character ~message:reason in
+        Lwt_result.return ()
 end
 module DropItem = System.Make(DropItemLogic)
 
@@ -104,7 +64,7 @@ module RequestInventoryLogic : System.S with type event = Event.request_inventor
     and character_id = p.character_id in
     let open Lwt_result.Syntax in
     let* char_entity = authenticate_character_action state user_id character_id in
-    let* inventory = wrap_val (get_character_inventory char_entity) in
+    let* inventory = Character_actions.get_inventory ~character:(Character_actions.of_ids ~entity_id:char_entity ~user_id) in
     let build_item_details (item_eid_str : string) : (string * string * string * int) option Lwt.t =
       match Uuidm.of_string item_eid_str with
       | None -> Lwt.return_none
