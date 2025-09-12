@@ -55,3 +55,9 @@ val drop : state:State.t -> character:t -> item:Item_actions.t -> (unit, string)
 
 (** High-level action for a character to say something in their current area. *)
 val say : state:State.t -> character:t -> content:string -> (unit, string) Result.t Lwt.t
+
+(** High-level action for equipping an item from inventory. *)
+val equip : state:State.t -> character:t -> item:Item_actions.t -> (unit, string) Result.t Lwt.t
+
+(** High-level action for unequipping an item from a specific slot. *)
+val unequip : state:State.t -> character:t -> slot:Item_definition.slot -> (unit, string) Result.t Lwt.t

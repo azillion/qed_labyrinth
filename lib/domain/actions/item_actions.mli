@@ -20,3 +20,6 @@ val get_effect : item:t -> effect option
 (** Gets the item's entity ID as a string. *)
 val get_id : item:t -> string
 
+(** Gets the item's intended equipment slot. *)
+val get_slot : item:t -> Item_definition.slot Lwt.t
+

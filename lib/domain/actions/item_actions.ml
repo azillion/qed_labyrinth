@@ -44,3 +44,13 @@ let get_effect ~(item : t) =
 let get_id ~(item : t) = Uuidm.to_string item.entity_id
 
 
+let get_slot ~item =
+  let open Lwt.Syntax in
+  let* item_comp_opt = Ecs.ItemStorage.get item.entity_id in
+  match item_comp_opt with
+  | None -> Lwt.return Item_definition.None
+  | Some item_comp ->
+      let* def_res = Item_definition.find_by_id item_comp.item_definition_id in
+      (match def_res with
+      | Ok (Some def) -> Lwt.return def.slot
+      | _ -> Lwt.return Item_definition.None)

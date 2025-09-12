@@ -184,6 +184,105 @@ let move ~state ~character ~direction =
   in
   Lwt_result.return ()
 
+let equip ~state ~character ~item =
+  let open Lwt_result.Syntax in
+  let* inventory = get_inventory ~character |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+  let item_id_str = Item_actions.get_id ~item in
+
+  if not (List.mem inventory.items item_id_str ~equal:String.equal) then
+    Lwt_result.fail "You do not have that item."
+  else
+    let* slot = Error_utils.wrap_val (Item_actions.get_slot ~item)
+      |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+    in
+    if Item_definition.(phys_equal slot None) then
+      Lwt_result.fail "You cannot equip that."
+    else
+      let open Fieldslib.Field in
+      let slot_field_opt : _ Fieldslib.Field.t option =
+        match slot with
+        | Item_definition.MainHand -> Some Equipment_component.Fields.main_hand
+        | Item_definition.OffHand  -> Some Equipment_component.Fields.off_hand
+        | Item_definition.Head     -> Some Equipment_component.Fields.head
+        | Item_definition.Chest    -> Some Equipment_component.Fields.chest
+        | Item_definition.Legs     -> Some Equipment_component.Fields.legs
+        | Item_definition.Feet     -> Some Equipment_component.Fields.feet
+        | Item_definition.None     -> None
+      in
+      (match slot_field_opt with
+      | None -> Lwt_result.fail "That item has an invalid equipment slot."
+      | Some field ->
+          let* equipment =
+            Error_utils.wrap_val (Ecs.EquipmentStorage.get character.entity_id)
+            |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+            |> Lwt.map (Result.map ~f:(Option.value ~default:(Equipment_component.empty (get_id ~character))))
+          in
+          let item_previously_in_slot = get field equipment in
+
+          (* 1. Unequip old item (if any) and add to inventory list *)
+          let items_after_unequip =
+            match item_previously_in_slot with
+            | Some old_item_id -> old_item_id :: inventory.items
+            | None -> inventory.items
+          in
+
+          (* 2. Remove the new item from the list *)
+          let final_inventory_items = Utils.remove_first_item_by_id items_after_unequip item_id_str in
+
+          (* 3. Construct final states *)
+          let final_inventory = { inventory with items = final_inventory_items } in
+          let final_equipment = fset field equipment (Some item_id_str) in
+
+          (* 4. Persist states *)
+          let* () = Error_utils.wrap_ok (Ecs.EquipmentStorage.set character.entity_id final_equipment)
+            |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+          let* () = Error_utils.wrap_ok (Ecs.InventoryStorage.set character.entity_id final_inventory)
+            |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+
+          (* 5. Fire event *)
+          let* () = Error_utils.wrap_ok (State.enqueue state (Event.LoadoutChanged { character_id = get_id ~character }))
+            |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+          Lwt_result.return () )
+
+let unequip ~state ~character ~slot =
+  let open Lwt_result.Syntax in
+  let open Fieldslib.Field in
+  let slot_field_opt : _ Fieldslib.Field.t option =
+    match slot with
+    | Item_definition.MainHand -> Some Equipment_component.Fields.main_hand
+    | Item_definition.OffHand  -> Some Equipment_component.Fields.off_hand
+    | Item_definition.Head     -> Some Equipment_component.Fields.head
+    | Item_definition.Chest    -> Some Equipment_component.Fields.chest
+    | Item_definition.Legs     -> Some Equipment_component.Fields.legs
+    | Item_definition.Feet     -> Some Equipment_component.Fields.feet
+    | Item_definition.None     -> None
+  in
+  match slot_field_opt with
+  | None -> Lwt_result.fail "Invalid slot specified."
+  | Some field ->
+      let* equipment =
+        Error_utils.wrap_val (Ecs.EquipmentStorage.get character.entity_id)
+        |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
+        |> Lwt.map (Result.map ~f:(Option.value ~default:(Equipment_component.empty (get_id ~character))))
+      in
+      (match get field equipment with
+      | None -> Lwt_result.fail "You have nothing equipped in that slot."
+      | Some item_id_str ->
+          let updated_equipment = fset field equipment None in
+          let* inventory = get_inventory ~character |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+          let updated_inventory = { inventory with items = item_id_str :: inventory.items } in
+
+          (* Persist state *)
+          let* () = Error_utils.wrap_ok (Ecs.EquipmentStorage.set character.entity_id updated_equipment)
+            |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+          let* () = Error_utils.wrap_ok (Ecs.InventoryStorage.set character.entity_id updated_inventory)
+            |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+
+          (* Fire event *)
+          let* () = Error_utils.wrap_ok (State.enqueue state (Event.LoadoutChanged { character_id = get_id ~character }))
+            |> Lwt.map (Result.map_error ~f:Qed_error.to_string) in
+          Lwt_result.return () )
+
 let say ~state ~character ~content =
   let open Lwt_result.Syntax in
   let* current_area = get_area ~character in
