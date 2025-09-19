@@ -47,13 +47,24 @@ The engine is event-driven and architected around a Dispatcher and modular Syste
 *   **Dispatcher:** A central module that holds a registry of all observable systems. The main game loop no longer contains business logic; it simply pops an event from the queue and passes it to the `Dispatcher`, which routes it to the correct, wrapped system handler.
 *   **Distributed Tracing:** Every command entering the `api-server` is assigned a unique `trace_id`. This ID is propagated through Redis, the OCaml engine's event queue, the dispatcher, and back out through Redis to the `api-server`, allowing for complete end-to-end tracing of any action.
 
+### The Domain Facade (Action-Oriented API)
+
+To keep game logic clean and separate from data implementation details, we use a "Domain Facade" located in `lib/domain/actions/`. This layer provides a high-level, action-oriented API for interacting with game concepts like Characters, Items, and Areas.
+
+-   **Systems should ALWAYS use the facade.** Systems should never call `Ecs.*Storage` modules or database `Models` directly.
+-   **Facade functions are verbs:** `Character_actions.move`, `Item_actions.use`, etc.
+-   **Facade handles complexity:** A single call like `Character_actions.take` orchestrates multiple state changes (removing from area, adding to inventory), hides the underlying data structures, and provides clear, user-facing error messages.
+
 ### Adding a New Game Action (Event)
 
-1.  Add a new variant to `lib/domain/event.ml`.
-2.  Create a new logic module in the relevant `systems/` file that implements the `System.S` interface.
-3.  Wrap the logic module with the `System.Make` functor.
-4.  In `bin/chronos_engine.ml`, register the new, wrapped system with the `Dispatcher`.
-5.  If the action originates from the client, add the command to `schemas/input.proto` and update the `api-server`'s `commandService.ts`.
+1.  **Define the Command:** If the action originates from the client, add the command to `schemas/input.proto` and update the `api-server`'s `commandService.ts`.
+2.  **Define the Internal Event:** Add a new variant to `lib/domain/event.ml` and map it in `lib/domain/loop.ml`.
+3.  **Implement the Core Logic (in the Facade):** Add a new function to the appropriate module in `lib/domain/actions/` (e.g., a new character ability would go in `character_actions.ml`). This function contains the detailed implementation and is the "source of truth" for the action.
+4.  **Create the System:** Create a new, simple system in the `systems/` directory. Its `execute` function should do three things only:
+    a. Find the relevant domain objects using the facade (e.g., `Character_actions.find_active`).
+    b. Call the new facade action function.
+    c. Handle the `Ok`/`Error` result, usually by sending a message back to the player.
+5.  **Register the System:** Add the new system to the scheduler in `bin/chronos_engine.ml`.
 
 ## Shared Schemas (The Contract)
 

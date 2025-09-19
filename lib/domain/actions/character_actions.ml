@@ -4,8 +4,6 @@ type t = { entity_id: Uuidm.t; user_id: string }
 
 let get_id ~character = Uuidm.to_string character.entity_id
 
-let of_ids ~entity_id ~user_id : t = { entity_id; user_id }
-
 let find_active ~state ~user_id =
   match State.get_active_character state user_id with
   | None -> Lwt_result.fail "You do not have an active character."
@@ -183,6 +181,14 @@ let move ~state ~character ~direction =
     (Event.PlayerMoved { user_id = character.user_id; old_area_id; new_area_id; direction })) |> Lwt.map (Result.map_error ~f:Qed_error.to_string)
   in
   Lwt_result.return ()
+
+let find_active_and_verify_id ~state ~user_id ~character_id_str =
+  let open Lwt_result.Syntax in
+  let* character = find_active ~state ~user_id in
+  if String.equal (get_id ~character) character_id_str then
+    Lwt_result.return character
+  else
+    Lwt_result.fail "The specified character is not the one you are currently controlling."
 
 let equip ~state ~character ~item =
   let open Lwt_result.Syntax in

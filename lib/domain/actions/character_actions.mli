@@ -11,8 +11,6 @@ val get_name : character:t -> (string, Qed_error.t) Result.t Lwt.t
 (** Gets the character's id as a string. *)
 val get_id : character:t -> string
 
-(** Constructs a character handle from ids for internal use. *)
-val of_ids : entity_id:Uuidm.t -> user_id:string -> t
 
 (** Gets the character's health as a (current, max) tuple. *)
 val get_health : character:t -> (int * int) option Lwt.t
@@ -61,3 +59,6 @@ val equip : state:State.t -> character:t -> item:Item_actions.t -> (unit, string
 
 (** High-level action for unequipping an item from a specific slot. *)
 val unequip : state:State.t -> character:t -> slot:Item_definition.slot -> (unit, string) Result.t Lwt.t
+
+(** Finds the active character for a user and verifies its ID matches the given string. *)
+val find_active_and_verify_id : state:State.t -> user_id:string -> character_id_str:string -> (t, string) Result.t Lwt.t

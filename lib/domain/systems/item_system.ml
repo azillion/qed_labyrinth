@@ -2,18 +2,6 @@ open Base
 open Qed_error
 open Error_utils
 
-(* Internal helper, not a system itself *)
-let authenticate_character_action (state : State.t) (user_id : string) (character_id : string) =
-  let open Lwt_result.Syntax in
-  match Uuidm.of_string character_id with
-  | None -> Lwt_result.fail InvalidCharacter
-  | Some char_uuid -> (
-      match State.get_active_character state user_id with
-      | Some active_uuid when Uuidm.equal active_uuid char_uuid -> Lwt_result.return char_uuid
-      | _ ->
-          let* () = wrap_ok (State.enqueue state (Event.ActionFailed { user_id; reason = "You cannot control that character." })) in
-          Lwt_result.fail (LogicError "Character action authorization failed"))
-
 
 (* --- Take Item System --- *)
 module TakeItemLogic : System.S with type event = Event.take_item_payload = struct
@@ -63,8 +51,10 @@ module RequestInventoryLogic : System.S with type event = Event.request_inventor
     let user_id      = p.user_id
     and character_id = p.character_id in
     let open Lwt_result.Syntax in
-    let* char_entity = authenticate_character_action state user_id character_id in
-    let* inventory = Character_actions.get_inventory ~character:(Character_actions.of_ids ~entity_id:char_entity ~user_id) in
+    let* character = Character_actions.find_active_and_verify_id ~state ~user_id ~character_id_str:character_id
+      |> Lwt.map (Result.map_error ~f:(fun s -> LogicError s))
+    in
+    let* inventory = Character_actions.get_inventory ~character in
     let build_item_details (item_eid_str : string) : (string * string * string * int) option Lwt.t =
       match Uuidm.of_string item_eid_str with
       | None -> Lwt.return_none
@@ -95,8 +85,14 @@ module RequestInventoryLogic : System.S with type event = Event.request_inventor
     let* () = Publisher.publish_event state ?trace_id output_event in
 
     (* Send current equipment state using new EquipmentUpdate message *)
-    let%lwt equip_comp_opt = Ecs.EquipmentStorage.get char_entity in
-    let equip_comp = Option.value equip_comp_opt ~default:(Equipment_component.empty (Uuidm.to_string char_entity)) in
+    let char_id_str = Character_actions.get_id ~character in
+    let%lwt equip_comp =
+      match Uuidm.of_string char_id_str with
+      | None -> Lwt.return (Equipment_component.empty char_id_str)
+      | Some eid ->
+          let%lwt equip_opt = Ecs.EquipmentStorage.get eid in
+          Lwt.return (Option.value equip_opt ~default:(Equipment_component.empty char_id_str))
+    in
 
     let to_pb_item_opt (id_name_opt : (string * string) option) : Schemas_generated.Output.equipped_item option =
       Option.map id_name_opt ~f:(fun (eid, nm) -> (Schemas_generated.Output.{ id = eid; name = nm } : Schemas_generated.Output.equipped_item))
