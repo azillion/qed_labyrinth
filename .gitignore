@@ -29,7 +29,6 @@ setup.log
 _opam/
 
 # Local files
-game_events.json
 .DS_Store
 
 # solidjs
@@ -37,6 +36,5 @@ game_events.json
 .env
 *.sqlite3
 node_modules/
-api-server/node_modules/
-api-server/dist/
-api-server/dump.rdb
+api/dist/
+api/dump.rdb

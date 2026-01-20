@@ -73,15 +73,21 @@ The engine uses a hybrid data model to leverage the strengths of both paradigms,
 
 ```
 .
-├── api-server/        # Node.js/Fastify gateway for auth and WebSockets
+├── api/               # Node.js/Fastify gateway for auth and WebSockets
 ├── bin/               # OCaml executables (the engine and world seeder)
-├── game-client/       # SolidJS frontend application
-├── lib/               # Core OCaml source code
+├── data/              # Game data files
+│   └── world.json     # Data for seeding the game world
+├── engine/            # Core OCaml source code
 │   ├── domain/        # Game logic, ECS, systems, models
-│   └── infra/         # Database, Redis queue, monitoring tools
+│   ├── infra/         # Database, Redis queue, monitoring tools
+│   ├── llm/           # LLM client and providers
+│   └── schemas_generated/  # Auto-generated protobuf code
+├── game-client/       # SolidJS game application
 ├── schemas/           # Protobuf definitions for inter-service communication
 ├── test/              # OCaml tests
-├── world.json         # Data for seeding the game world
+├── tools/
+│   └── simulator/     # Python simulation tools
+├── website/           # Next.js marketing/SEO site
 └── docker-compose.yml # Development environment setup
 ```
 
@@ -135,7 +141,7 @@ The easiest way to run the entire project is with Docker Compose.
     The game client will be available at `http://localhost:3000`.
 
 5.  **Seed the World:**
-    With the services running, execute the `genesis` script inside the `chronos_engine` container to populate the database from `world.json`.
+    With the services running, execute the `genesis` script inside the `chronos_engine` container to populate the database from `data/world.json`.
     ```bash
     docker-compose exec chronos_engine dune exec genesis
     ```
@@ -164,10 +170,10 @@ dune exec bin/genesis.ml
 dune exec bin/chronos_engine.ml
 ```
 
-#### 2. Node.js API Server (`api-server`)
+#### 2. Node.js API Server (`api`)
 
 ```bash
-cd api-server
+cd api
 
 # Install Node.js dependencies
 npm install
@@ -192,12 +198,12 @@ npm run dev
 
 ### Schema Changes (Protobuf)
 
-The `schemas/` directory defines the contract for messages between the `api-server` and `chronos_engine`. If you modify any `.proto` file, you must regenerate the corresponding code for both services.
+The `schemas/` directory defines the contract for messages between the API server and `chronos_engine`. If you modify any `.proto` file, you must regenerate the corresponding code for both services.
 
 -   **For the OCaml Engine:** The `dune build` command will automatically detect changes and regenerate the OCaml modules.
--   **For the API Server:** Run the generation script from the `api-server` directory.
+-   **For the API Server:** Run the generation script from the `api` directory.
     ```bash
-    cd api-server
+    cd api
     npm run proto:gen
     ```
 

@@ -5,7 +5,7 @@
   It is responsible for data access operations like finding users by ID or username.
   
   IMPORTANT: This module does NOT handle authentication (password checking) or user
-  registration. That logic is the sole responsibility of the `api-server`.
+  registration. That logic is the sole responsibility of the API server.
   The engine trusts that the `userId` it receives in commands is authenticated.
 *)
 

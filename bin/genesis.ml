@@ -135,10 +135,10 @@ let () =
       Stdio.prerr_endline ("Failed to connect to database: " ^ Error.to_string_hum err);
       Stdlib.exit 1
   | Ok () ->
-      Stdio.print_endline "Database connected. Reading world.json...";
-      (match Seeding.from_file "world.json" with
+      Stdio.print_endline "Database connected. Reading data/world.json...";
+      (match Seeding.from_file "data/world.json" with
       | Error e ->
-          Stdio.eprintf "Failed to parse world.json: %s\n" e;
+          Stdio.eprintf "Failed to parse data/world.json: %s\n" e;
           Stdlib.exit 1
       | Ok world_data ->
           Stdio.print_endline "Seeding world...";

@@ -24,10 +24,10 @@ COPY --chown=opam:opam *.opam .
 RUN opam install . --deps-only --with-test
 
 # Copy project source code
-COPY --chown=opam:opam lib/ lib/
+COPY --chown=opam:opam engine/ engine/
 COPY --chown=opam:opam bin/ bin/
 COPY --chown=opam:opam schemas/ schemas/
-COPY --chown=opam:opam world.json .
+COPY --chown=opam:opam data/ data/
 
 # Build the release executable
 RUN eval $(opam env) && dune build --profile=release
@@ -47,7 +47,7 @@ RUN apt-get update && \
 # Copy the compiled executable from builder stage
 COPY --from=builder /home/opam/app/_build/default/bin/chronos_engine.exe /usr/local/bin/chronos_engine.exe
 COPY --from=builder /home/opam/app/_build/default/bin/genesis.exe /usr/local/bin/genesis.exe
-COPY --from=builder /home/opam/app/world.json /usr/local/bin/world.json
+COPY --from=builder /home/opam/app/data/world.json /usr/local/bin/data/world.json
 
 # Set the command to run the engine
 CMD ["/usr/local/bin/chronos_engine.exe"]
