@@ -1,0 +1,17 @@
+(library
+ (name chronos_engine)
+ (libraries
+  base
+  eio
+  eio_main
+  digestif
+  ptime
+  ptime.clock.os
+  caqti
+  caqti-eio
+  uri
+  uuidm
+  unix
+  schemas_generated)
+ (preprocess (pps ppx_let))
+ (modules :standard))

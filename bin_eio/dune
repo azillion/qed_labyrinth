@@ -1,0 +1,14 @@
+(executable
+ (name main)
+ (modules main)
+ (preprocess (pps ppx_let))
+ (libraries
+  chronos_engine
+  eio
+  eio_main
+  base
+  caqti
+  caqti-eio
+  caqti-driver-postgresql
+  caqti-driver-sqlite3
+  stdio))
