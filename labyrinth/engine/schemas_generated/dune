@@ -1,14 +1,14 @@
 (rule
  (targets input.ml input.mli)
- (deps ../../schemas/input.proto)
+ (deps ../../../schemas/input.proto)
  (action
-  (run ocaml-protoc --binary --ml_out . ../../schemas/input.proto)))
+  (run ocaml-protoc --binary --ml_out . ../../../schemas/input.proto)))
 
 (rule
  (targets output.ml output.mli)
- (deps ../../schemas/output.proto)
+ (deps ../../../schemas/output.proto)
  (action
-  (run ocaml-protoc --binary --ml_out . ../../schemas/output.proto)))
+  (run ocaml-protoc --binary --ml_out . ../../../schemas/output.proto)))
 
 (library
  (name schemas_generated)

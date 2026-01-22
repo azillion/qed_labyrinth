@@ -1,3 +1,7 @@
 {
-    "makefile.configureOnOpen": false
+    "makefile.configureOnOpen": false,
+    "ocaml.sandbox": {
+        "kind": "dune",
+        "root": "${workspaceFolder:qed_labyrinth}"
+    }
 }

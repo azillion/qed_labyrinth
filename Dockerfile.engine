@@ -18,19 +18,21 @@ WORKDIR /home/opam/app
 USER root
 # Copy project dependency definitions
 COPY --chown=opam:opam dune-project .
-COPY --chown=opam:opam *.opam .
+COPY --chown=opam:opam labyrinth/dune-project labyrinth/
+COPY --chown=opam:opam labyrinth/*.opam labyrinth/
 
 # Install OCaml dependencies. This is cached to speed up builds.
-RUN opam install . --deps-only --with-test
+RUN opam install labyrinth/ --deps-only --with-test
 
 # Copy project source code
-COPY --chown=opam:opam engine/ engine/
-COPY --chown=opam:opam bin/ bin/
+COPY --chown=opam:opam labyrinth/engine/ labyrinth/engine/
+COPY --chown=opam:opam labyrinth/bin/ labyrinth/bin/
+COPY --chown=opam:opam labyrinth/test/ labyrinth/test/
 COPY --chown=opam:opam schemas/ schemas/
 COPY --chown=opam:opam data/ data/
 
 # Build the release executable
-RUN eval $(opam env) && dune build --profile=release
+RUN eval $(opam env) && dune build labyrinth/ --profile=release
 USER opam
 
 # Production stage
@@ -45,8 +47,8 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled executable from builder stage
-COPY --from=builder /home/opam/app/_build/default/bin/chronos_engine.exe /usr/local/bin/chronos_engine.exe
-COPY --from=builder /home/opam/app/_build/default/bin/genesis.exe /usr/local/bin/genesis.exe
+COPY --from=builder /home/opam/app/_build/default/labyrinth/bin/chronos_engine.exe /usr/local/bin/chronos_engine.exe
+COPY --from=builder /home/opam/app/_build/default/labyrinth/bin/genesis.exe /usr/local/bin/genesis.exe
 COPY --from=builder /home/opam/app/data/world.json /usr/local/bin/data/world.json
 
 # Set the command to run the engine

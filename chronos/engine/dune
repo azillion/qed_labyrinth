@@ -1,0 +1,4 @@
+; Subdirectory libraries are defined in their own dune files:
+; - infra/dune -> infra library (Redis, Queue, Config)
+; - domain/dune -> domain library (State, Publisher)
+; - schemas_generated/dune -> schemas_generated_eio library

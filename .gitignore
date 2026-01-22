@@ -28,6 +28,18 @@ setup.log
 # Local OPAM switch
 _opam/
 
+# website
+website/node_modules/
+website/dist/
+website/dump.rdb
+
+# game-client
+game-client/node_modules/
+game-client/dist/
+game-client/dump.rdb
+
+dune.lock/
+
 # Local files
 .DS_Store
 

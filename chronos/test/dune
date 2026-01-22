@@ -1,0 +1,7 @@
+(tests
+ (names test_resp test_redis)
+ (libraries
+  infra
+  alcotest
+  eio
+  eio_main))

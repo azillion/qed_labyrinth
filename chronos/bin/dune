@@ -3,7 +3,9 @@
  (modules main)
  (preprocess (pps ppx_let))
  (libraries
-  chronos_engine
+  infra
+  domain
+  schemas_generated_eio
   eio
   eio_main
   base

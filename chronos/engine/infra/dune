@@ -1,0 +1,10 @@
+(library
+ (name infra)
+ (libraries
+  base
+  eio
+  eio_main
+  uri
+  uuidm
+  unix)
+ (preprocess (pps ppx_let)))

@@ -1,0 +1,9 @@
+(library
+ (name domain)
+ (libraries
+  base
+  infra
+  schemas_generated_eio
+  uuidm
+  unix)
+ (preprocess (pps ppx_let)))
